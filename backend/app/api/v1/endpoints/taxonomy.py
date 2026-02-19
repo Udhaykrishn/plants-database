@@ -24,8 +24,14 @@ async def get_taxonomy_tree(
     taxons = result.scalars().all()
     
     # Build tree
-    # 1. Create a map of id -> taxon
-    taxon_map = {t.id:  TaxonTree.model_validate(t) for t in taxons}
+    # 1. Create a map of id -> TaxonTree (with empty children initially)
+    # We use TaxonResponse to validate from ORM (ignoring children relationship),
+    # then dump to dict and create TaxonTree.
+    taxon_map = {}
+    for t in taxons:
+        # Validate as response (no children field) to avoid lazy load trigger
+        base_data = TaxonResponse.model_validate(t).model_dump()
+        taxon_map[t.id] = TaxonTree(**base_data, children=[])
     
     # 2. Assign children
     roots = []

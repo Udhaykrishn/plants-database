@@ -21,6 +21,6 @@ if settings.BACKEND_CORS_ORIGINS:
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Landshaft Plants Database API"}
+    return {"message": "Welcome to Landschaft Plants Database API"}
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

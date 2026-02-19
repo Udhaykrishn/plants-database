@@ -5,11 +5,7 @@ def create_connection():
     connection = None
     try:
         connection = psycopg2.connect(
-            database="postgres",
-            user="postgres",
-            password="password",
-            host="localhost",
-            port="5432",
+
         )
         print("Connection to PostgreSQL DB successful")
     except OperationalError as e:
