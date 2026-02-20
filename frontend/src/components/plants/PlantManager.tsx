@@ -223,9 +223,9 @@ export const PlantManager = () => {
 
     return (
         <div className="plant-manager">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0, borderBottom: 'none', paddingBottom: 0 }}>Plant Catalog</h2>
+                    <h2 style={{ margin: 0, borderBottom: 'none', paddingBottom: 0, fontSize: '1.75rem', fontWeight: 500, letterSpacing: '-0.02em', textTransform: 'uppercase' }}>Plant Catalog</h2>
                     <div className="view-toggle">
                         <button className={`btn-toggle ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')} title="Card View">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
@@ -250,7 +250,7 @@ export const PlantManager = () => {
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <label className="btn" style={{ background: '#28a745', cursor: 'pointer' }}>
+                    <label className="btn" style={{ background: '#f4f4f4', color: '#1a1a1a', border: '1px solid #eaeaea', cursor: 'pointer' }}>
                         Import CSV
                         <input type="file" accept=".csv" onChange={handleFileUpload} style={{ display: 'none' }} />
                     </label>
@@ -260,28 +260,28 @@ export const PlantManager = () => {
                 </div>
             </div>
 
-            <div className="toolbar" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+            <div className="toolbar" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
                 <input
                     type="text"
-                    placeholder="Search by common name..."
+                    placeholder="Search catalog..."
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
-                    style={{ flex: 1, minWidth: '200px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                    style={{ flex: 1, minWidth: '200px', padding: '10px 14px' }}
                 />
                 <select
                     value={filterCategory}
                     onChange={e => setFilterCategory(e.target.value as PlantCategory | '')}
-                    style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                    style={{ padding: '10px 14px' }}
                 >
-                    <option value="">Categories</option>
+                    <option value="">All Categories</option>
                     {Object.values(PlantCategory).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 8px', border: '1px solid #ddd', borderRadius: '4px', height: '35px', background: '#fff' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                <div className="checkbox-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 14px', height: '42px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#444' }}>
                         <input type="checkbox" checked={filterIndoor} onChange={e => setFilterIndoor(e.target.checked)} />
                         Indoor
                     </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#444' }}>
                         <input type="checkbox" checked={filterOutdoor} onChange={e => setFilterOutdoor(e.target.checked)} />
                         Outdoor
                     </label>
@@ -289,7 +289,7 @@ export const PlantManager = () => {
                 <select
                     value={sortOrder}
                     onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')}
-                    style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                    style={{ padding: '10px 14px' }}
                 >
                     <option value="asc">A-Z</option>
                     <option value="desc">Z-A</option>
@@ -373,7 +373,7 @@ export const PlantManager = () => {
                             {editingPlantId ? 'Save Changes' : 'Create Plant'}
                         </button>
                         {editingPlantId && (
-                            <button type="button" className="btn" onClick={cancelEdit} style={{ background: '#6c757d' }}>
+                            <button type="button" className="btn" onClick={cancelEdit} style={{ background: '#f4f4f4', color: '#1a1a1a', borderColor: '#eaeaea' }}>
                                 Cancel
                             </button>
                         )}
@@ -429,8 +429,8 @@ export const PlantManager = () => {
                         </div>
                         {displayedPlants.map((plant: Plant) => (
                             <div key={plant.id} className="plant-table-row">
-                                <div style={{ flex: 2, fontWeight: '500', color: '#2c3e50' }}>{plant.common_name}</div>
-                                <div style={{ flex: 2, fontStyle: 'italic', color: '#666' }}>{plant.taxon?.name}</div>
+                                <div style={{ flex: 2, fontWeight: '500', color: '#1a1a1a' }}>{plant.common_name}</div>
+                                <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.taxon?.name}</div>
                                 <div style={{ flex: 1 }}><span className="tag">{plant.category}</span></div>
                                 <div style={{ flex: 1 }}><span className="tag">{plant.planting_place}</span></div>
                                 <div style={{ width: '40px', textAlign: 'right' }}>
