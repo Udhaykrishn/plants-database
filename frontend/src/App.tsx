@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { TaxonomyManager } from './components/taxonomy/TaxonomyManager';
 import { PlantManager } from './components/plants/PlantManager';
 import { ProjectManager } from './components/projects/ProjectManager';
@@ -14,12 +14,12 @@ function Layout() {
   return (
     <div className="app-container">
       <nav className="sidebar">
-        <h1>Landshaft</h1>
+        <h1>Landschaft</h1>
         <ul>
-          <li><Link to="/">Dashboard</Link></li>
-          <li><Link to="/taxonomy">Taxonomy</Link></li>
-          <li><Link to="/plants">Plants</Link></li>
-          <li><Link to="/projects">Projects</Link></li>
+          <li><NavLink to="/" end>Dashboard</NavLink></li>
+          <li><NavLink to="/taxonomy">Taxonomy</NavLink></li>
+          <li><NavLink to="/plants">Plants</NavLink></li>
+          <li><NavLink to="/projects">Projects</NavLink></li>
         </ul>
       </nav>
       <main className="content">
