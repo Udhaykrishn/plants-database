@@ -23,7 +23,8 @@ export const PlantManager = () => {
     // Filters & Sort
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState<PlantCategory | ''>('');
-    const [filterPlace, setFilterPlace] = useState<PlantingPlace | ''>('');
+    const [filterIndoor, setFilterIndoor] = useState(false);
+    const [filterOutdoor, setFilterOutdoor] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     // Import Handler
@@ -44,7 +45,8 @@ export const PlantManager = () => {
     // Form State
     const [commonName, setCommonName] = useState('');
     const [category, setCategory] = useState<PlantCategory>(PlantCategory.OTHER);
-    const [plantingPlace, setPlantingPlace] = useState<PlantingPlace>(PlantingPlace.BOTH);
+    const [isIndoor, setIsIndoor] = useState(true);
+    const [isOutdoor, setIsOutdoor] = useState(true);
     const [description, setDescription] = useState('');
     const [taxonId, setTaxonId] = useState('');
 
@@ -114,7 +116,8 @@ export const PlantManager = () => {
     const resetForm = () => {
         setCommonName('');
         setCategory(PlantCategory.OTHER);
-        setPlantingPlace(PlantingPlace.BOTH);
+        setIsIndoor(true);
+        setIsOutdoor(true);
         setDescription('');
         setTaxonId('');
     };
@@ -125,7 +128,8 @@ export const PlantManager = () => {
         setActiveDropdown(null);
         setCommonName(plant.common_name);
         setCategory(plant.category);
-        setPlantingPlace(plant.planting_place);
+        setIsIndoor(plant.planting_place === PlantingPlace.INDOOR || plant.planting_place === PlantingPlace.BOTH);
+        setIsOutdoor(plant.planting_place === PlantingPlace.OUTDOOR || plant.planting_place === PlantingPlace.BOTH);
         setDescription(plant.description || '');
         setTaxonId(plant.taxon_id);
     };
@@ -168,6 +172,14 @@ export const PlantManager = () => {
             showAlert("Please select a Species", 'warning');
             return;
         }
+        if (!isIndoor && !isOutdoor) {
+            showAlert("Please select at least one Planting Place (Indoor or Outdoor)", 'warning');
+            return;
+        }
+
+        let plantingPlace: PlantingPlace = PlantingPlace.BOTH;
+        if (isIndoor && !isOutdoor) plantingPlace = PlantingPlace.INDOOR;
+        if (!isIndoor && isOutdoor) plantingPlace = PlantingPlace.OUTDOOR;
 
         const plantData: Partial<PlantCreate> = {
             common_name: commonName,
@@ -189,14 +201,25 @@ export const PlantManager = () => {
         return [...plants].filter(plant => {
             const matchesSearch = plant.common_name.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesCategory = filterCategory === '' || plant.category === filterCategory;
-            const matchesPlace = filterPlace === '' || plant.planting_place === filterPlace;
+
+            let matchesPlace = true;
+            if (!filterIndoor && !filterOutdoor) {
+                matchesPlace = true;
+            } else if (filterIndoor && !filterOutdoor) {
+                matchesPlace = plant.planting_place === PlantingPlace.INDOOR || plant.planting_place === PlantingPlace.BOTH;
+            } else if (!filterIndoor && filterOutdoor) {
+                matchesPlace = plant.planting_place === PlantingPlace.OUTDOOR || plant.planting_place === PlantingPlace.BOTH;
+            } else if (filterIndoor && filterOutdoor) {
+                matchesPlace = plant.planting_place === PlantingPlace.BOTH;
+            }
+
             return matchesSearch && matchesCategory && matchesPlace;
         }).sort((a, b) => {
             const nameA = a.common_name.toLowerCase();
             const nameB = b.common_name.toLowerCase();
             return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
         });
-    }, [plants, searchTerm, filterCategory, filterPlace, sortOrder]);
+    }, [plants, searchTerm, filterCategory, filterIndoor, filterOutdoor, sortOrder]);
 
     return (
         <div className="plant-manager">
@@ -253,14 +276,16 @@ export const PlantManager = () => {
                     <option value="">Categories</option>
                     {Object.values(PlantCategory).map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
-                <select
-                    value={filterPlace}
-                    onChange={e => setFilterPlace(e.target.value as PlantingPlace | '')}
-                    style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                >
-                    <option value="">Places</option>
-                    {Object.values(PlantingPlace).map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 8px', border: '1px solid #ddd', borderRadius: '4px', height: '35px', background: '#fff' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                        <input type="checkbox" checked={filterIndoor} onChange={e => setFilterIndoor(e.target.checked)} />
+                        Indoor
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.9rem' }}>
+                        <input type="checkbox" checked={filterOutdoor} onChange={e => setFilterOutdoor(e.target.checked)} />
+                        Outdoor
+                    </label>
+                </div>
                 <select
                     value={sortOrder}
                     onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')}
@@ -314,14 +339,24 @@ export const PlantManager = () => {
                         </div>
                         <div className="form-group">
                             <label>Planting Place</label>
-                            <select
-                                value={plantingPlace}
-                                onChange={e => setPlantingPlace(e.target.value as PlantingPlace)}
-                            >
-                                {Object.values(PlantingPlace).map(p => (
-                                    <option key={p} value={p}>{p}</option>
-                                ))}
-                            </select>
+                            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={isIndoor}
+                                        onChange={e => setIsIndoor(e.target.checked)}
+                                    />
+                                    Indoor
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={isOutdoor}
+                                        onChange={e => setIsOutdoor(e.target.checked)}
+                                    />
+                                    Outdoor
+                                </label>
+                            </div>
                         </div>
                     </div>
 
