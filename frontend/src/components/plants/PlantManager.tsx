@@ -18,6 +18,7 @@ export const PlantManager = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+    const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
 
     // Import Handler
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,8 +180,32 @@ export const PlantManager = () => {
 
     return (
         <div className="plant-manager">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h2>Plant Catalog</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <h2 style={{ margin: 0, borderBottom: 'none', paddingBottom: 0 }}>Plant Catalog</h2>
+                    <div className="view-toggle">
+                        <button className={`btn-toggle ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')} title="Card View">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                                <rect x="3" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="3" width="7" height="7"></rect>
+                                <rect x="14" y="14" width="7" height="7"></rect>
+                                <rect x="3" y="14" width="7" height="7"></rect>
+                            </svg>
+                            Cards
+                        </button>
+                        <button className={`btn-toggle ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')} title="Table View">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                                <line x1="8" y1="6" x2="21" y2="6"></line>
+                                <line x1="8" y1="12" x2="21" y2="12"></line>
+                                <line x1="8" y1="18" x2="21" y2="18"></line>
+                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                            </svg>
+                            List
+                        </button>
+                    </div>
+                </div>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                     <label className="btn" style={{ background: '#28a745', cursor: 'pointer' }}>
                         Import CSV
@@ -268,41 +293,72 @@ export const PlantManager = () => {
             )}
 
             {plantsLoading ? <p>Loading plants...</p> : (
-                <div className="plant-list">
-                    {plants?.map(plant => (
-                        <div key={plant.id} className="plant-card">
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                <h3>{plant.common_name}</h3>
-                                <div className="actions-menu-container">
-                                    <button
-                                        className="icon-btn"
-                                        onClick={() => toggleDropdown(plant.id)}
-                                    >
-                                        ⋮
-                                    </button>
-                                    {activeDropdown === plant.id && (
-                                        <div className="dropdown-menu">
-                                            <button className="dropdown-item" onClick={() => handleEdit(plant)}>
-                                                Edit
-                                            </button>
-                                            <button className="dropdown-item danger" onClick={() => handleDelete(plant.id, plant.common_name)}>
-                                                Delete
-                                            </button>
-                                        </div>
-                                    )}
+                viewMode === 'card' ? (
+                    <div className="plant-list">
+                        {plants?.map(plant => (
+                            <div key={plant.id} className="plant-card">
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <h3>{plant.common_name}</h3>
+                                    <div className="actions-menu-container">
+                                        <button
+                                            className="icon-btn"
+                                            onClick={() => toggleDropdown(plant.id)}
+                                        >
+                                            ⋮
+                                        </button>
+                                        {activeDropdown === plant.id && (
+                                            <div className="dropdown-menu">
+                                                <button className="dropdown-item" onClick={() => handleEdit(plant)}>
+                                                    Edit
+                                                </button>
+                                                <button className="dropdown-item danger" onClick={() => handleDelete(plant.id, plant.common_name)}>
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="taxonomy-info">
+                                    <i>{plant.taxon?.name}</i>
+                                </div>
+                                <div className="plant-meta">
+                                    <span className="tag">{plant.category}</span>
+                                    <span className="tag">{plant.planting_place}</span>
+                                </div>
+                                <p>{plant.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="plants-table-container">
+                        <div className="plant-table-header">
+                            <div style={{ flex: 2 }}>Common Name</div>
+                            <div style={{ flex: 2 }}>Species</div>
+                            <div style={{ flex: 1 }}>Category</div>
+                            <div style={{ flex: 1 }}>Place</div>
+                            <div style={{ width: '40px' }}></div>
+                        </div>
+                        {plants?.map(plant => (
+                            <div key={plant.id} className="plant-table-row">
+                                <div style={{ flex: 2, fontWeight: '500', color: '#2c3e50' }}>{plant.common_name}</div>
+                                <div style={{ flex: 2, fontStyle: 'italic', color: '#666' }}>{plant.taxon?.name}</div>
+                                <div style={{ flex: 1 }}><span className="tag">{plant.category}</span></div>
+                                <div style={{ flex: 1 }}><span className="tag">{plant.planting_place}</span></div>
+                                <div style={{ width: '40px', textAlign: 'right' }}>
+                                    <div className="actions-menu-container">
+                                        <button className="icon-btn" onClick={() => toggleDropdown(`table-${plant.id}`)}>⋮</button>
+                                        {activeDropdown === `table-${plant.id}` && (
+                                            <div className="dropdown-menu">
+                                                <button className="dropdown-item" onClick={() => handleEdit(plant)}>Edit</button>
+                                                <button className="dropdown-item danger" onClick={() => handleDelete(plant.id, plant.common_name)}>Delete</button>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                            <div className="taxonomy-info">
-                                <i>{plant.taxon?.name}</i>
-                            </div>
-                            <div className="plant-meta">
-                                <span className="tag">{plant.category}</span>
-                                <span className="tag">{plant.planting_place}</span>
-                            </div>
-                            <p>{plant.description}</p>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+                )
             )}
         </div>
     );
