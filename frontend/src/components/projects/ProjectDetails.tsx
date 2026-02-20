@@ -5,6 +5,7 @@ import { projectsApi } from '../../api/projects';
 import { plantsApi } from '../../api/plants';
 import { ioApi } from '../../api/io';
 import type { ProjectPlantCreate } from '../../types/project';
+import { useAlert } from '../../contexts/AlertContext';
 import './Projects.css';
 
 export const ProjectDetails = () => {
@@ -28,21 +29,27 @@ export const ProjectDetails = () => {
         queryFn: plantsApi.getAll,
     });
 
+    const { showAlert } = useAlert();
+
     const addPlantMutation = useMutation({
         mutationFn: (data: ProjectPlantCreate) => projectsApi.addPlant(id!, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['project', id] });
+            showAlert('Plant added to project successfully', 'success');
             setIsAdding(false);
             setQuantity(1);
             setNotes('');
             setSelectedPlantId('');
         },
+        onError: (error: any) => {
+            showAlert("Failed to add plant: " + (error.response?.data?.detail || error.message), 'error');
+        }
     });
 
     const handleAddPlant = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedPlantId) {
-            alert("Select a plant");
+            showAlert("Please select a plant", 'warning');
             return;
         }
         addPlantMutation.mutate({

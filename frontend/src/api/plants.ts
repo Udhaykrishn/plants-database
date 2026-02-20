@@ -19,5 +19,10 @@ export const plantsApi = {
 
     delete: async (id: string): Promise<void> => {
         await client.delete(`/plants/${id}`);
+    },
+
+    update: async (id: string, data: Partial<PlantCreate>): Promise<PlantResponse> => {
+        const response = await client.put<PlantResponse>(`/plants/${id}`, data);
+        return response.data;
     }
 };

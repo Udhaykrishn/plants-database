@@ -89,7 +89,41 @@ async def read_plant(
         raise HTTPException(status_code=404, detail="Plant not found")
     return plant
 
-@router.delete("/{plant_id}", response_model=PlantResponse)
+@router.put("/{plant_id}", response_model=PlantResponse)
+async def update_plant(
+    *,
+    db: AsyncSession = Depends(get_db),
+    plant_id: uuid.UUID,
+    plant_in: PlantUpdate
+) -> Any:
+    """
+    Update plant by ID.
+    """
+    result = await db.execute(select(Plant).filter(Plant.id == plant_id))
+    plant = result.scalars().first()
+    if not plant:
+        raise HTTPException(status_code=404, detail="Plant not found")
+
+    if plant_in.taxon_id and plant_in.taxon_id != plant.taxon_id:
+        taxon_res = await db.execute(select(Taxon).filter(Taxon.id == plant_in.taxon_id))
+        taxon = taxon_res.scalars().first()
+        if not taxon or taxon.rank != Rank.SPECIES:
+            raise HTTPException(status_code=400, detail="Invalid Taxon or Rank must be Species")
+
+    update_data = plant_in.model_dump(exclude_unset=True)
+    for field in update_data:
+        setattr(plant, field, update_data[field])
+
+    await db.commit()
+    await db.refresh(plant)
+    
+    # Reload with relationships
+    result = await db.execute(
+        select(Plant).filter(Plant.id == plant.id).options(selectinload(Plant.taxon))
+    )
+    return result.scalars().first()
+
+@router.delete("/{plant_id}")
 async def delete_plant(
     *,
     db: AsyncSession = Depends(get_db),
@@ -105,4 +139,4 @@ async def delete_plant(
     
     await db.delete(plant)
     await db.commit()
-    return plant
+    return {"success": True}

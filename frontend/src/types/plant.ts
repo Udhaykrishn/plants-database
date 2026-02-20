@@ -19,7 +19,7 @@ export type PlantCategory = typeof PlantCategory[keyof typeof PlantCategory];
 export const PlantingPlace = {
     INDOOR: "Indoor",
     OUTDOOR: "Outdoor",
-    BOTH: "Both",
+    BOTH: "Indoor & Outdoor",
 } as const;
 
 export type PlantingPlace = typeof PlantingPlace[keyof typeof PlantingPlace];
