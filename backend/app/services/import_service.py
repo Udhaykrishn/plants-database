@@ -124,7 +124,7 @@ async def process_csv_import(db: AsyncSession, file_content: bytes) -> Dict[str,
             except ValueError:
                 category = PlantCategory.OTHER
                 
-            place_str = row.get("planting_place", "Both").title()
+            place_str = row.get("planting_place", "Indoor & Outdoor").title()
             try:
                 planting_place = PlantingPlace(place_str)
             except ValueError:

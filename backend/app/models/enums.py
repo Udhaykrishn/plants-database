@@ -12,7 +12,7 @@ class Rank(str, Enum):
 class PlantingPlace(str, Enum):
     INDOOR = "Indoor"
     OUTDOOR = "Outdoor"
-    BOTH = "Both"
+    BOTH = "Indoor & Outdoor"
 
 class PlantCategory(str, Enum):
     TREE = "Tree"

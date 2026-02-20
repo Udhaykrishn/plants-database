@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { plantsApi } from '../../api/plants';
 import { taxonomyApi } from '../../api/taxonomy';
@@ -19,6 +19,12 @@ export const PlantManager = () => {
     const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+
+    // Filters & Sort
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterCategory, setFilterCategory] = useState<PlantCategory | ''>('');
+    const [filterPlace, setFilterPlace] = useState<PlantingPlace | ''>('');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
     // Import Handler
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,6 +184,20 @@ export const PlantManager = () => {
         }
     };
 
+    const displayedPlants = useMemo(() => {
+        if (!plants) return [];
+        return [...plants].filter(plant => {
+            const matchesSearch = plant.common_name.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesCategory = filterCategory === '' || plant.category === filterCategory;
+            const matchesPlace = filterPlace === '' || plant.planting_place === filterPlace;
+            return matchesSearch && matchesCategory && matchesPlace;
+        }).sort((a, b) => {
+            const nameA = a.common_name.toLowerCase();
+            const nameB = b.common_name.toLowerCase();
+            return sortOrder === 'asc' ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+        });
+    }, [plants, searchTerm, filterCategory, filterPlace, sortOrder]);
+
     return (
         <div className="plant-manager">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
@@ -215,6 +235,40 @@ export const PlantManager = () => {
                         {isCreating ? 'Cancel Create' : '+ Add Plant'}
                     </button>
                 </div>
+            </div>
+
+            <div className="toolbar" style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                <input
+                    type="text"
+                    placeholder="Search by common name..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    style={{ flex: 1, minWidth: '200px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                />
+                <select
+                    value={filterCategory}
+                    onChange={e => setFilterCategory(e.target.value as PlantCategory | '')}
+                    style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                >
+                    <option value="">Categories</option>
+                    {Object.values(PlantCategory).map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <select
+                    value={filterPlace}
+                    onChange={e => setFilterPlace(e.target.value as PlantingPlace | '')}
+                    style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                >
+                    <option value="">Places</option>
+                    {Object.values(PlantingPlace).map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <select
+                    value={sortOrder}
+                    onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')}
+                    style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
+                >
+                    <option value="asc">A-Z</option>
+                    <option value="desc">Z-A</option>
+                </select>
             </div>
 
             {(isCreating || editingPlantId) && (
@@ -295,7 +349,7 @@ export const PlantManager = () => {
             {plantsLoading ? <p>Loading plants...</p> : (
                 viewMode === 'card' ? (
                     <div className="plant-list">
-                        {plants?.map(plant => (
+                        {displayedPlants.map((plant: Plant) => (
                             <div key={plant.id} className="plant-card">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <h3>{plant.common_name}</h3>
@@ -338,7 +392,7 @@ export const PlantManager = () => {
                             <div style={{ flex: 1 }}>Place</div>
                             <div style={{ width: '40px' }}></div>
                         </div>
-                        {plants?.map(plant => (
+                        {displayedPlants.map((plant: Plant) => (
                             <div key={plant.id} className="plant-table-row">
                                 <div style={{ flex: 2, fontWeight: '500', color: '#2c3e50' }}>{plant.common_name}</div>
                                 <div style={{ flex: 2, fontStyle: 'italic', color: '#666' }}>{plant.taxon?.name}</div>
