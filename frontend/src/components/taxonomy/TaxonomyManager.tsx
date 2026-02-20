@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { taxonomyApi } from '../../api/taxonomy';
 import { Rank } from '../../types/taxon';
 import type { TaxonTree } from '../../types/taxon';
+import { useAlert } from '../../contexts/AlertContext';
 import './Taxonomy.css';
 
 interface GreetingProps {
@@ -56,6 +57,8 @@ export const TaxonomyManager = () => {
     const [newRank, setNewRank] = useState<Rank>(Rank.KINGDOM);
     const [description, setDescription] = useState('');
 
+    const { showAlert } = useAlert();
+
     const { data: tree, isLoading, error } = useQuery({
         queryKey: ['taxonomy', 'tree'],
         queryFn: taxonomyApi.getTree,
@@ -65,10 +68,14 @@ export const TaxonomyManager = () => {
         mutationFn: taxonomyApi.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['taxonomy'] });
+            showAlert('Taxon created successfully', 'success');
             setIsCreating(false);
             setNewName('');
             setDescription('');
         },
+        onError: (error: any) => {
+            showAlert("Failed to create taxon: " + (error.response?.data?.detail || error.message), 'error');
+        }
     });
 
     const handleCreate = (e: React.FormEvent) => {
@@ -97,7 +104,7 @@ export const TaxonomyManager = () => {
                 setNewRank(next);
                 setIsCreating(true);
             } else {
-                alert("Cannot create child of Species");
+                showAlert("Cannot create child of Species", 'warning');
             }
         } else {
             setNewRank(Rank.KINGDOM);

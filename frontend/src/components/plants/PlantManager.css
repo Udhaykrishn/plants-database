@@ -59,3 +59,63 @@
 .form-row .form-group {
     flex: 1;
 }
+
+/* Dropdown Menu Styles */
+.actions-menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6c757d;
+    padding: 0 0.5rem;
+    line-height: 1;
+}
+
+.icon-btn:hover {
+    color: #343a40;
+}
+
+.dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: white;
+    min-width: 120px;
+    box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    display: flex;
+    flex-direction: column;
+}
+
+.dropdown-item {
+    padding: 10px 16px;
+    text-decoration: none;
+    display: block;
+    cursor: pointer;
+    background: none;
+    border: none;
+    text-align: left;
+    width: 100%;
+    font-size: 0.9rem;
+    color: #333;
+}
+
+.dropdown-item:hover {
+    background-color: #f1f1f1;
+}
+
+.dropdown-item.danger {
+    color: #dc3545;
+}
+
+.dropdown-item.danger:hover {
+    background-color: #f8d7da;
+    color: #721c24;
+}

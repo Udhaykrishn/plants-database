@@ -35,11 +35,18 @@ function Layout() {
   );
 }
 
+import { AlertProvider } from './contexts/AlertContext';
+import { ConfirmProvider } from './contexts/ConfirmContext';
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Layout />
+        <AlertProvider>
+          <ConfirmProvider>
+            <Layout />
+          </ConfirmProvider>
+        </AlertProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

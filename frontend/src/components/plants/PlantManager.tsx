@@ -3,26 +3,32 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { plantsApi } from '../../api/plants';
 import { taxonomyApi } from '../../api/taxonomy';
 import { PlantCategory, PlantingPlace } from '../../types/plant';
-import type { PlantCreate } from '../../types/plant';
+import type { PlantCreate, Plant } from '../../types/plant';
 import { Rank } from '../../types/taxon';
 import './PlantManager.css';
 
 import { ioApi } from '../../api/io';
+import { useAlert } from '../../contexts/AlertContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 
 export const PlantManager = () => {
     const queryClient = useQueryClient();
+    const { showAlert } = useAlert();
+    const { confirm } = useConfirm();
     const [isCreating, setIsCreating] = useState(false);
+    const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
+    const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
     // Import Handler
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             try {
                 const result = await ioApi.importCsv(e.target.files[0]);
-                alert(`Import Complete!\nSuccess: ${result.success}\nFailed: ${result.failed}`);
+                showAlert(`Import Complete! Success: ${result.success}, Failed: ${result.failed}`, 'success');
                 queryClient.invalidateQueries({ queryKey: ['plants'] });
                 queryClient.invalidateQueries({ queryKey: ['taxonomy'] });
             } catch (error: any) {
-                alert("Import failed: " + error.message);
+                showAlert("Import failed: " + error.message, 'error');
             }
         }
     };
@@ -41,16 +47,11 @@ export const PlantManager = () => {
         queryFn: plantsApi.getAll,
     });
 
-    // NOTE: In a real app we would use a proper AsyncSelect to search for Species.
-    // Here we are fetching the whole tree and flattening or just fetching taxons.
-    // For simplicity of this Phase 1, we will just use an input for ID or simple dropdown if possible.
-    // Actually, let's fetch tree and flatten finding species for the dropdown.
     const { data: taxonomyTree } = useQuery({
         queryKey: ['taxonomy', 'tree'],
         queryFn: taxonomyApi.getTree,
     });
 
-    // Helper to extract species from tree
     const getSpecies = (nodes: any[]): any[] => {
         let species: any[] = [];
         nodes.forEach(node => {
@@ -70,36 +71,110 @@ export const PlantManager = () => {
         mutationFn: plantsApi.create,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plants'] });
+            showAlert('Plant created successfully', 'success');
             setIsCreating(false);
             resetForm();
         },
         onError: (error: any) => {
-            alert("Error creating plant: " + (error.response?.data?.detail || error.message));
+            showAlert("Error creating plant: " + (error.response?.data?.detail || error.message), 'error');
+        }
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string, data: Partial<PlantCreate> }) => plantsApi.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['plants'] });
+            showAlert('Plant updated successfully', 'success');
+            setEditingPlantId(null);
+            resetForm();
+        },
+        onError: (error: any) => {
+            showAlert("Error updating plant: " + (error.response?.data?.detail || error.message), 'error');
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: plantsApi.delete,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['plants'] });
+            showAlert('Plant deleted successfully', 'success');
+        },
+        onError: (error: any) => {
+            showAlert("Error deleting plant: " + (error.response?.data?.detail || error.message), 'error');
         }
     });
 
     const resetForm = () => {
         setCommonName('');
         setCategory(PlantCategory.OTHER);
+        setPlantingPlace(PlantingPlace.BOTH);
         setDescription('');
         setTaxonId('');
+    };
+
+    const handleEdit = (plant: Plant) => {
+        setEditingPlantId(plant.id);
+        setIsCreating(false);
+        setActiveDropdown(null);
+        setCommonName(plant.common_name);
+        setCategory(plant.category);
+        setPlantingPlace(plant.planting_place);
+        setDescription(plant.description || '');
+        setTaxonId(plant.taxon_id);
+    };
+
+    const handleDelete = (id: string, name: string) => {
+        confirm({
+            title: 'Delete Plant',
+            message: `Are you sure you want to delete ${name}? This action cannot be undone.`,
+            confirmText: 'Delete',
+            onConfirm: () => {
+                deleteMutation.mutate(id);
+            }
+        });
+        setActiveDropdown(null);
+    };
+
+    const toggleDropdown = (id: string) => {
+        setActiveDropdown(activeDropdown === id ? null : id);
+    };
+
+    const cancelEdit = () => {
+        setEditingPlantId(null);
+        resetForm();
+    };
+
+    const toggleCreate = () => {
+        if (isCreating) {
+            setIsCreating(false);
+            resetForm();
+        } else {
+            setEditingPlantId(null);
+            resetForm();
+            setIsCreating(true);
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!taxonId) {
-            alert("Please select a Species");
+            showAlert("Please select a Species", 'warning');
             return;
         }
 
-        const newPlant: PlantCreate = {
+        const plantData: Partial<PlantCreate> = {
             common_name: commonName,
             category,
             planting_place: plantingPlace,
             description,
             taxon_id: taxonId,
         };
-        createMutation.mutate(newPlant);
+
+        if (editingPlantId) {
+            updateMutation.mutate({ id: editingPlantId, data: plantData });
+        } else {
+            createMutation.mutate(plantData as PlantCreate);
+        }
     };
 
     return (
@@ -111,15 +186,15 @@ export const PlantManager = () => {
                         Import CSV
                         <input type="file" accept=".csv" onChange={handleFileUpload} style={{ display: 'none' }} />
                     </label>
-                    <button className="btn" onClick={() => setIsCreating(!isCreating)}>
-                        {isCreating ? 'Cancel' : '+ Add Plant'}
+                    <button className="btn" onClick={toggleCreate}>
+                        {isCreating ? 'Cancel Create' : '+ Add Plant'}
                     </button>
                 </div>
             </div>
 
-            {isCreating && (
+            {(isCreating || editingPlantId) && (
                 <form className="create-plant-form" onSubmit={handleSubmit}>
-                    <h3>New Plant</h3>
+                    <h3>{editingPlantId ? 'Edit Plant' : 'New Plant'}</h3>
                     <div className="form-row">
                         <div className="form-group">
                             <label>Common Name</label>
@@ -179,7 +254,16 @@ export const PlantManager = () => {
                         />
                     </div>
 
-                    <button type="submit" className="btn">Create Plant</button>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button type="submit" className="btn">
+                            {editingPlantId ? 'Save Changes' : 'Create Plant'}
+                        </button>
+                        {editingPlantId && (
+                            <button type="button" className="btn" onClick={cancelEdit} style={{ background: '#6c757d' }}>
+                                Cancel
+                            </button>
+                        )}
+                    </div>
                 </form>
             )}
 
@@ -187,7 +271,27 @@ export const PlantManager = () => {
                 <div className="plant-list">
                     {plants?.map(plant => (
                         <div key={plant.id} className="plant-card">
-                            <h3>{plant.common_name}</h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <h3>{plant.common_name}</h3>
+                                <div className="actions-menu-container">
+                                    <button
+                                        className="icon-btn"
+                                        onClick={() => toggleDropdown(plant.id)}
+                                    >
+                                        ⋮
+                                    </button>
+                                    {activeDropdown === plant.id && (
+                                        <div className="dropdown-menu">
+                                            <button className="dropdown-item" onClick={() => handleEdit(plant)}>
+                                                Edit
+                                            </button>
+                                            <button className="dropdown-item danger" onClick={() => handleDelete(plant.id, plant.common_name)}>
+                                                Delete
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                             <div className="taxonomy-info">
                                 <i>{plant.taxon?.name}</i>
                             </div>
