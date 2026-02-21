@@ -3,12 +3,12 @@ import type { PlantCreate, PlantResponse } from "../types/plant";
 
 export const plantsApi = {
     getAll: async (): Promise<PlantResponse[]> => {
-        const response = await client.get<PlantResponse[]>("/plants");
+        const response = await client.get<PlantResponse[]>("/plants/");
         return response.data;
     },
 
     create: async (data: PlantCreate): Promise<PlantResponse> => {
-        const response = await client.post<PlantResponse>("/plants", data);
+        const response = await client.post<PlantResponse>("/plants/", data);
         return response.data;
     },
 
