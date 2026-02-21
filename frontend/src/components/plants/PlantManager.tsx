@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { plantsApi } from '../../api/plants';
 import { taxonomyApi } from '../../api/taxonomy';
+import { projectsApi } from '../../api/projects';
 import { PlantCategory, PlantingPlace } from '../../types/plant';
 import type { PlantCreate, Plant } from '../../types/plant';
 import { Rank } from '../../types/taxon';
@@ -20,7 +21,41 @@ export const PlantManager = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-    const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+    const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
+
+    const [selectedPlantIds, setSelectedPlantIds] = useState<string[]>(() => {
+        const saved = sessionStorage.getItem('plantSelection');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    useEffect(() => {
+        sessionStorage.setItem('plantSelection', JSON.stringify(selectedPlantIds));
+    }, [selectedPlantIds]);
+    const [showProjectModal, setShowProjectModal] = useState(false);
+    const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+
+    const { data: projectsData } = useQuery({
+        queryKey: ['projects'],
+        queryFn: projectsApi.getAll
+    });
+
+    const addPlantsToProjectMutation = useMutation({
+        mutationFn: async (args: { projectId: string; plantIds: string[] }) => {
+            const promises = args.plantIds.map(plantId =>
+                projectsApi.addPlant(args.projectId, { plant_id: plantId, notes: '' })
+            );
+            return Promise.all(promises);
+        },
+        onSuccess: () => {
+            showAlert(`Successfully added ${selectedPlantIds.length} plant(s) to project.`, 'success');
+            setSelectedPlantIds([]);
+            setShowProjectModal(false);
+            setSelectedProjectId('');
+        },
+        onError: (error: any) => {
+            showAlert("Failed to add plants to project: " + (error.response?.data?.detail || error.message), 'error');
+        }
+    });
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -168,9 +203,16 @@ export const PlantManager = () => {
     };
 
     const handleRowClick = (id: string, e: React.MouseEvent) => {
-        // Ignore row clicks if user clicked inside the actions menu
-        if ((e.target as Element).closest('.actions-menu-container') || (e.target as Element).closest('.dropdown-menu')) return;
+        // Ignore row clicks if user clicked inside the actions menu or checkbox
+        if ((e.target as Element).closest('.actions-menu-container') || (e.target as Element).closest('.dropdown-menu') || (e.target as Element).tagName.toLowerCase() === 'input') return;
+
         navigate(`/plants/${id}`);
+    };
+
+    const openSingleProjectModal = (plantId: string) => {
+        setSelectedPlantIds([plantId]);
+        setShowProjectModal(true);
+        setActiveDropdown(null);
     };
 
     const cancelEdit = () => {
@@ -406,71 +448,203 @@ export const PlantManager = () => {
 
             {plantsLoading ? <p>Loading plants...</p> : (
                 viewMode === 'card' ? (
-                    <div className="plant-list">
-                        {displayedPlants.map((plant: Plant) => (
-                            <div key={plant.id} className="plant-card" onClick={(e) => handleRowClick(plant.id, e)} style={{ cursor: 'pointer' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                    <h3>{plant.common_name}</h3>
-                                    <div className="actions-menu-container">
-                                        <button
-                                            className="icon-btn"
-                                            onClick={(e) => toggleDropdown(plant.id, e)}
-                                        >
-                                            ⋮
-                                        </button>
-                                        {activeDropdown === plant.id && (
-                                            <div className="dropdown-menu">
-                                                <button className="dropdown-item" onClick={() => handleEdit(plant)}>
-                                                    Edit
-                                                </button>
-                                                <button className="dropdown-item danger" onClick={() => handleDelete(plant.id, plant.common_name)}>
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        )}
+                    <div className="plant-list" style={{ position: 'relative' }}>
+                        {displayedPlants.map((plant: Plant) => {
+                            const isSelected = selectedPlantIds.includes(plant.id);
+                            return (
+                                <div
+                                    key={plant.id}
+                                    className={`plant-card ${isSelected ? 'selected-card' : ''}`}
+                                    onClick={(e) => handleRowClick(plant.id, e)}
+                                    style={{
+                                        cursor: 'pointer',
+                                        outline: isSelected ? '2px solid #0056b3' : 'none',
+                                        transition: 'outline 0.15s ease-in-out',
+                                        userSelect: 'none'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                            <input
+                                                type="checkbox"
+                                                checked={isSelected}
+                                                onChange={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedPlantIds(prev =>
+                                                        prev.includes(plant.id) ? prev.filter(p => p !== plant.id) : [...prev, plant.id]
+                                                    );
+                                                }}
+                                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                                onClick={e => e.stopPropagation()}
+                                            />
+                                            <h3 style={{ margin: 0 }}>{plant.common_name}</h3>
+                                        </div>
+                                        <div className="actions-menu-container">
+                                            <button
+                                                className="icon-btn"
+                                                onClick={(e) => toggleDropdown(plant.id, e)}
+                                            >
+                                                ⋮
+                                            </button>
+                                            {activeDropdown === plant.id && (
+                                                <div className="dropdown-menu">
+                                                    <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); openSingleProjectModal(plant.id); }}>
+                                                        Add to Project
+                                                    </button>
+                                                    <button className="dropdown-item" onClick={() => handleEdit(plant)}>
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        className="dropdown-item danger"
+                                                        onClick={() => handleDelete(plant.id, plant.common_name)}
+                                                        disabled={selectedPlantIds.length > 0}
+                                                        style={selectedPlantIds.length > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                                    >
+                                                        Delete
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
+                                    <div className="taxonomy-info">
+                                        <i>{plant.taxon?.name}</i>
+                                    </div>
+                                    <div className="plant-meta">
+                                        <span className="tag">{plant.category}</span>
+                                        <span className="tag">{plant.planting_place}</span>
+                                    </div>
+                                    <p>{plant.description}</p>
                                 </div>
-                                <div className="taxonomy-info">
-                                    <i>{plant.taxon?.name}</i>
-                                </div>
-                                <div className="plant-meta">
-                                    <span className="tag">{plant.category}</span>
-                                    <span className="tag">{plant.planting_place}</span>
-                                </div>
-                                <p>{plant.description}</p>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 ) : (
                     <div className="plants-table-container">
                         <div className="plant-table-header">
+                            <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={displayedPlants.length > 0 && selectedPlantIds.length === displayedPlants.length}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setSelectedPlantIds(displayedPlants.map((p: Plant) => p.id));
+                                        } else {
+                                            setSelectedPlantIds([]);
+                                        }
+                                    }}
+                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                />
+                            </div>
                             <div style={{ flex: 2 }}>Common Name</div>
                             <div style={{ flex: 2 }}>Species</div>
                             <div style={{ flex: 1 }}>Category</div>
                             <div style={{ flex: 1 }}>Place</div>
                             <div style={{ width: '40px' }}></div>
                         </div>
-                        {displayedPlants.map((plant: Plant) => (
-                            <div key={plant.id} className="plant-table-row" onClick={(e) => handleRowClick(plant.id, e)} style={{ cursor: 'pointer' }}>
-                                <div style={{ flex: 2, fontWeight: '500', color: '#1a1a1a' }}>{plant.common_name}</div>
-                                <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.taxon?.name}</div>
-                                <div style={{ flex: 1 }}><span className="tag">{plant.category}</span></div>
-                                <div style={{ flex: 1 }}><span className="tag">{plant.planting_place}</span></div>
-                                <div style={{ width: '40px', textAlign: 'right' }}>
-                                    <div className="actions-menu-container">
-                                        <button className="icon-btn" onClick={(e) => toggleDropdown(`table-${plant.id}`, e)}>⋮</button>
-                                        {activeDropdown === `table-${plant.id}` && (
-                                            <div className="dropdown-menu">
-                                                <button className="dropdown-item" onClick={() => handleEdit(plant)}>Edit</button>
-                                                <button className="dropdown-item danger" onClick={() => handleDelete(plant.id, plant.common_name)}>Delete</button>
-                                            </div>
-                                        )}
+                        {displayedPlants.map((plant: Plant) => {
+                            const isSelected = selectedPlantIds.includes(plant.id);
+                            return (
+                                <div
+                                    key={plant.id}
+                                    className={`plant-table-row ${isSelected ? 'selected-row' : ''}`}
+                                    onClick={(e) => handleRowClick(plant.id, e)}
+                                    style={{
+                                        cursor: 'pointer',
+                                        backgroundColor: isSelected ? '#f0f8ff' : '',
+                                        userSelect: 'none'
+                                    }}
+                                >
+                                    <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={isSelected}
+                                            onChange={(e) => {
+                                                e.stopPropagation();
+                                                setSelectedPlantIds(prev =>
+                                                    prev.includes(plant.id) ? prev.filter(p => p !== plant.id) : [...prev, plant.id]
+                                                );
+                                            }}
+                                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                            onClick={e => e.stopPropagation()}
+                                        />
+                                    </div>
+                                    <div style={{ flex: 2, fontWeight: '500', color: '#1a1a1a' }}>{plant.common_name}</div>
+                                    <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.taxon?.name}</div>
+                                    <div style={{ flex: 1 }}><span className="tag">{plant.category}</span></div>
+                                    <div style={{ flex: 1 }}><span className="tag">{plant.planting_place}</span></div>
+                                    <div style={{ width: '40px', textAlign: 'right' }}>
+                                        <div className="actions-menu-container">
+                                            <button className="icon-btn" onClick={(e) => toggleDropdown(`table-${plant.id}`, e)}>⋮</button>
+                                            {activeDropdown === `table-${plant.id}` && (
+                                                <div className="dropdown-menu">
+                                                    <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); openSingleProjectModal(plant.id); }}>Add to Project</button>
+                                                    <button className="dropdown-item" onClick={() => handleEdit(plant)}>Edit</button>
+                                                    <button
+                                                        className="dropdown-item danger"
+                                                        onClick={() => handleDelete(plant.id, plant.common_name)}
+                                                        disabled={selectedPlantIds.length > 0}
+                                                        style={selectedPlantIds.length > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                                    >Delete</button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 )
+            )}
+
+            {/* Bulk Selection ToolBar */}
+            {selectedPlantIds.length > 0 && !showProjectModal && (
+                <div style={{
+                    position: 'fixed', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
+                    background: '#222', color: 'white', padding: '1rem 2rem', borderRadius: '8px',
+                    display: 'flex', alignItems: 'center', gap: '1.5rem', boxShadow: '0 8px 24px rgba(0,0,0,0.2)', zIndex: 100
+                }}>
+                    <span style={{ fontWeight: '500' }}>{selectedPlantIds.length} plant(s) selected</span>
+                    <button className="btn" style={{ background: '#fff', color: '#222', padding: '0.4rem 1rem', fontSize: '0.9rem' }} onClick={() => setShowProjectModal(true)}>
+                        Add to Project
+                    </button>
+                    <button className="btn btn-cancel" style={{ background: 'transparent', color: '#ccc', border: '1px solid #666', padding: '0.4rem 1rem', fontSize: '0.9rem' }} onClick={() => setSelectedPlantIds([])}>
+                        Clear
+                    </button>
+                </div>
+            )}
+
+            {/* Project Selection Modal */}
+            {showProjectModal && (
+                <div className="confirm-overlay" style={{ zIndex: 110 }}>
+                    <div className="confirm-dialog">
+                        <h3>Select Project for {selectedPlantIds.length} Plant(s)</h3>
+                        <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem' }}>
+                            <select
+                                value={selectedProjectId}
+                                onChange={e => setSelectedProjectId(e.target.value)}
+                                style={{ width: '100%', padding: '0.75rem', borderRadius: '4px', border: '1px solid #ccc' }}
+                            >
+                                <option value="" disabled>-- Choose a Project --</option>
+                                {projectsData?.map(proj => (
+                                    <option key={proj.id} value={proj.id}>{proj.name} ({proj.client_name})</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="confirm-actions">
+                            <button className="btn btn-cancel" onClick={() => setShowProjectModal(false)}>
+                                Cancel
+                            </button>
+                            <button
+                                className="btn"
+                                style={{ background: selectedProjectId ? '#0056b3' : '#ccc', color: '#fff' }}
+                                disabled={!selectedProjectId}
+                                onClick={() => addPlantsToProjectMutation.mutate({ projectId: selectedProjectId, plantIds: selectedPlantIds })}
+                            >
+                                Add Plants
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );
