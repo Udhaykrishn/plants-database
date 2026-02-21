@@ -324,7 +324,6 @@ export const TaxonomyManager = () => {
                         <h2>{selectedNode.name}</h2>
                         <span className="rank-badge">{selectedNode.rank}</span>
                         <p>{selectedNode.description || "No description."}</p>
-                        <p>ID: {selectedNode.id}</p>
 
                         <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
                             <button className="btn" onClick={startCreateChild}>
