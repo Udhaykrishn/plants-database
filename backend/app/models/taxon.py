@@ -1,7 +1,9 @@
 import uuid
 from typing import List, Optional
 
-from sqlalchemy import ForeignKey, String, Text, Enum as SAEnum
+from datetime import datetime
+
+from sqlalchemy import ForeignKey, String, Text, Enum as SAEnum, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
@@ -13,6 +15,8 @@ class Taxon(Base):
     rank: Mapped[Rank] = mapped_column(SAEnum(Rank), nullable=False, index=True)
     parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("taxons.id"), nullable=True, index=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
     # Self-referencing relationship
     parent: Mapped[Optional["Taxon"]] = relationship("Taxon", remote_side=[id], back_populates="children")

@@ -12,6 +12,8 @@ class PlantBase(BaseModel):
     planting_place: PlantingPlace
     description: Optional[str] = None
     care_data: Optional[Dict[str, Any]] = None
+    icon_url: Optional[str] = None
+    image_url: Optional[str] = None
     taxon_id: uuid.UUID
 
 class PlantCreate(PlantBase):

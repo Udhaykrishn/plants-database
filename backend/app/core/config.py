@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     POSTGRES_PORT: str = "5432"
     
     SQLALCHEMY_DATABASE_URI: Union[PostgresDsn, str] = None
+    
+    # Cloudinary Config (Image Uploads)
+    CLOUDINARY_CLOUD_NAME: str = ""
+    CLOUDINARY_API_KEY: str = ""
+    CLOUDINARY_API_SECRET: str = ""
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: Union[str, None], values: dict[str, any]) -> any:

@@ -24,5 +24,17 @@ export const plantsApi = {
     update: async (id: string, data: Partial<PlantCreate>): Promise<PlantResponse> => {
         const response = await client.put<PlantResponse>(`/plants/${id}`, data);
         return response.data;
+    },
+
+    uploadImage: async (file: File, type: 'icon' | 'image'): Promise<{ url: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('image_type', type);
+        const response = await client.post<{ url: string }>("/plants/upload-image", formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        });
+        return response.data;
     }
 };

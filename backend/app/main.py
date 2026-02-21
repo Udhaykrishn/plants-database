@@ -3,11 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.api.v1.api import api_router
+from app.services.cloudinary_service import init_cloudinary
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
 )
+
+# Initialize external services
+init_cloudinary()
 
 # Set all CORS enabled origins
 if settings.BACKEND_CORS_ORIGINS:

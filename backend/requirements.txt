@@ -16,3 +16,4 @@ isort==5.13.2
 # File Handling
 python-multipart==0.0.9
 reportlab==4.0.9
+cloudinary==1.44.1
