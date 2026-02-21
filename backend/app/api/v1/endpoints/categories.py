@@ -18,8 +18,22 @@ async def read_categories(
     skip: int = 0,
     limit: int = 100
 ) -> Any:
-    result = await db.execute(select(Category).order_by(Category.name).offset(skip).limit(limit))
-    return result.scalars().all()
+    stmt = (
+        select(Category, func.count(Plant.id))
+        .outerjoin(Plant, Category.name == Plant.category)
+        .group_by(Category.id)
+        .order_by(Category.name)
+        .offset(skip)
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    
+    categories = []
+    for cat, count in result.all():
+        cat.plant_count = count
+        categories.append(cat)
+        
+    return categories
 
 @router.post("/", response_model=CategoryResponse)
 async def create_category(
@@ -35,7 +49,7 @@ async def create_category(
     category = Category(**category_in.model_dump())
     db.add(category)
     await db.commit()
-    await db.refresh(category)
+    category.plant_count = 0
     return category
 
 @router.put("/{category_id}", response_model=CategoryResponse)
@@ -73,6 +87,10 @@ async def update_category(
 
     await db.commit()
     await db.refresh(category)
+    
+    count_result = await db.execute(select(func.count(Plant.id)).where(Plant.category == category.name))
+    category.plant_count = count_result.scalar_one()
+    
     return category
 
 @router.delete("/{category_id}")

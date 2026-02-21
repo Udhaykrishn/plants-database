@@ -104,6 +104,7 @@ export const CategoryManager = () => {
                         <tr style={{ background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
                             <th style={{ padding: '1rem', textAlign: 'left' }}>Name</th>
                             <th style={{ padding: '1rem', textAlign: 'left' }}>Description</th>
+                            <th style={{ padding: '1rem', textAlign: 'left' }}>Members</th>
                             <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
                         </tr>
                     </thead>
@@ -112,6 +113,11 @@ export const CategoryManager = () => {
                             <tr key={cat.id} style={{ borderBottom: '1px solid #dee2e6' }}>
                                 <td style={{ padding: '1rem', fontWeight: 600 }}>{cat.name}</td>
                                 <td style={{ padding: '1rem', color: '#666' }}>{cat.description || '-'}</td>
+                                <td style={{ padding: '1rem', color: '#666' }}>
+                                    <span style={{ background: '#e9ecef', padding: '2px 8px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600 }}>
+                                        {cat.plant_count || 0}
+                                    </span>
+                                </td>
                                 <td style={{ padding: '1rem', textAlign: 'right' }}>
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                                         <button

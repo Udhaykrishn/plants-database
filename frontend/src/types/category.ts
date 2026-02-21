@@ -2,6 +2,7 @@ export interface Category {
     id: string;
     name: string;
     description?: string;
+    plant_count?: number;
 }
 
 export type CategoryResponse = Category;

@@ -15,5 +15,6 @@ class CategoryUpdate(CategoryBase):
 
 class CategoryResponse(CategoryBase):
     id: uuid.UUID
+    plant_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
