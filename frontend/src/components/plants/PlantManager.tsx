@@ -13,6 +13,7 @@ import { ioApi } from '../../api/io';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { SearchableSelect } from '../common/SearchableSelect';
+import { TaxonomyFormTable } from './TaxonomyFormTable';
 
 export const PlantManager = () => {
     const queryClient = useQueryClient();
@@ -102,7 +103,6 @@ export const PlantManager = () => {
     const [isOutdoor, setIsOutdoor] = useState(true);
     const [description, setDescription] = useState('');
     const [taxonId, setTaxonId] = useState('');
-    const [speciesSortOption, setSpeciesSortOption] = useState<'alpha' | 'recent'>('recent');
     const [iconFile, setIconFile] = useState<File | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [iconUrl, setIconUrl] = useState('');
@@ -127,21 +127,6 @@ export const PlantManager = () => {
             navigate(location.pathname, { replace: true, state: {} });
         }
     }, [location.state, plants, taxonomyTree, navigate]);
-
-    const getSpecies = (nodes: any[]): any[] => {
-        let species: any[] = [];
-        nodes.forEach(node => {
-            if (node.rank === Rank.SPECIES) {
-                species.push(node);
-            }
-            if (node.children) {
-                species = [...species, ...getSpecies(node.children)];
-            }
-        });
-        return species;
-    };
-
-    const speciesList = taxonomyTree ? getSpecies(taxonomyTree) : [];
 
     const createMutation = useMutation({
         mutationFn: plantsApi.create,
@@ -434,17 +419,15 @@ export const PlantManager = () => {
                                 required
                             />
                         </div>
-                        <div className="form-group">
-                            <label>Scientific Species (Taxon)</label>
-                            <SearchableSelect
-                                options={speciesList.map(s => ({ value: s.id, label: s.name }))}
-                                value={taxonId}
-                                onChange={setTaxonId}
-                                placeholder="Select Species..."
-                                sortOption={speciesSortOption}
-                                onSortChange={setSpeciesSortOption}
-                            />
-                        </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                        <label>Taxonomy line</label>
+                        <TaxonomyFormTable
+                            taxonomyTree={taxonomyTree || []}
+                            selectedTaxonId={taxonId}
+                            onChange={setTaxonId}
+                        />
                     </div>
 
                     <div className="form-row">

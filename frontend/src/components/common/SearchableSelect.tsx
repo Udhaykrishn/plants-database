@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 interface Option {
     value: string;
     label: string;
+    createdAt?: string;
 }
 
 interface SearchableSelectProps {
@@ -44,9 +45,11 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
         if (sortOption === 'alpha') {
             filtered = [...filtered].sort((a, b) => a.label.localeCompare(b.label));
         } else if (sortOption === 'recent') {
-            // we assume the original list is in 'recent' order, or we just reverse it
-            // if we want to show latest at top, reverse it.
-            filtered = [...filtered].reverse();
+            filtered = [...filtered].sort((a, b) => {
+                const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return timeB - timeA;
+            });
         }
         return filtered;
     }, [options, search, sortOption]);

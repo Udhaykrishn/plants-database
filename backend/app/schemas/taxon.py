@@ -1,5 +1,6 @@
 from typing import List, Optional, ForwardRef
 import uuid
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from app.models.enums import Rank
@@ -22,6 +23,8 @@ class TaxonUpdate(TaxonBase):
 
 class TaxonResponse(TaxonBase):
     id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
 class TaxonTree(TaxonResponse):
