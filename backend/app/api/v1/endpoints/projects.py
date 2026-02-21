@@ -127,6 +127,82 @@ async def add_plant_to_project(
     result = await db.execute(query)
     return result.scalars().first()
 
+@router.put("/{project_id}/plants/{plant_id}", response_model=ProjectResponse)
+async def update_plant_in_project(
+    *,
+    db: AsyncSession = Depends(get_db),
+    project_id: uuid.UUID,
+    plant_id: uuid.UUID,
+    plant_in: ProjectPlantCreate
+) -> Any:
+    """
+    Update a plant's quantity or notes in a project.
+    """
+    result = await db.execute(select(Project).filter(Project.id == project_id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    result = await db.execute(
+        select(ProjectPlant).filter(
+            ProjectPlant.project_id == project_id,
+            ProjectPlant.plant_id == plant_id
+        )
+    )
+    existing = result.scalars().first()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Plant not found in this project")
+
+    existing.quantity = plant_in.quantity
+    if plant_in.notes is not None:
+        existing.notes = plant_in.notes
+
+    project.updated_at = sa.func.now()
+    await db.commit()
+    await db.refresh(project)
+
+    query = select(Project).filter(Project.id == project_id).options(
+        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
+    )
+    result = await db.execute(query)
+    return result.scalars().first()
+
+@router.delete("/{project_id}/plants/{plant_id}", response_model=ProjectResponse)
+async def remove_plant_from_project(
+    *,
+    db: AsyncSession = Depends(get_db),
+    project_id: uuid.UUID,
+    plant_id: uuid.UUID
+) -> Any:
+    """
+    Remove a plant from a project.
+    """
+    result = await db.execute(select(Project).filter(Project.id == project_id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    result = await db.execute(
+        select(ProjectPlant).filter(
+            ProjectPlant.project_id == project_id,
+            ProjectPlant.plant_id == plant_id
+        )
+    )
+    existing = result.scalars().first()
+    if not existing:
+        raise HTTPException(status_code=404, detail="Plant not found in this project")
+
+    await db.delete(existing)
+    project.updated_at = sa.func.now()
+    await db.commit()
+    await db.refresh(project)
+
+    query = select(Project).filter(Project.id == project_id).options(
+        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
+    )
+    result = await db.execute(query)
+    return result.scalars().first()
+
 @router.put("/{project_id}", response_model=ProjectResponse)
 async def update_project(
     *,
