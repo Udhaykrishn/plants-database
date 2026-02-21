@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { projectsApi } from '../../api/projects';
@@ -15,7 +15,21 @@ export const ProjectManager = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-    const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+    const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as Element;
+            if (!target.closest('.actions-menu-container')) {
+                setActiveDropdown(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     // Search and Sort
     const [searchTerm, setSearchTerm] = useState('');
@@ -102,6 +116,24 @@ export const ProjectManager = () => {
                 deleteMutation.mutate(id);
             }
         });
+    };
+
+    const duplicateMutation = useMutation({
+        mutationFn: projectsApi.duplicate,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            showAlert('Project duplicated successfully', 'success');
+        },
+        onError: (error: any) => {
+            showAlert("Error duplicating project: " + (error.response?.data?.detail || error.message), 'error');
+        }
+    });
+
+    const handleDuplicate = (id: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveDropdown(null);
+        duplicateMutation.mutate(id);
     };
 
     const toggleCreate = () => {
@@ -269,6 +301,9 @@ export const ProjectManager = () => {
                                                     <button className="dropdown-item" onClick={(e) => handleEdit(project, e)}>
                                                         Edit
                                                     </button>
+                                                    <button className="dropdown-item" onClick={(e) => handleDuplicate(project.id, e)}>
+                                                        Duplicate
+                                                    </button>
                                                     <button className="dropdown-item danger" onClick={(e) => handleDelete(project.id, project.name, e)}>
                                                         Delete
                                                     </button>
@@ -299,34 +334,35 @@ export const ProjectManager = () => {
             ) : (
                 <div className="projects-table-container" onClick={() => setActiveDropdown(null)}>
                     <div className="project-table-header">
-                        <div style={{ flex: 3 }}>Name</div>
-                        <div style={{ flex: 2 }}>Client</div>
-                        <div style={{ flex: 2 }}>Location</div>
-                        <div style={{ flex: 1 }}>Last Updated</div>
-                        <div style={{ flex: 1 }}>Plants</div>
-                        <div style={{ width: '40px' }}></div>
+                        <div>Name</div>
+                        <div>Client</div>
+                        <div>Location</div>
+                        <div>Last Updated</div>
+                        <div>Plants</div>
+                        <div></div>
                     </div>
                     {displayedProjects.map(project => (
                         <div key={project.id} className="project-table-row">
                             <Link to={`/projects/${project.id}`} style={{ display: 'contents', textDecoration: 'none', color: 'inherit' }}>
-                                <div style={{ flex: 3, fontWeight: '500', color: '#1a1a1a' }}>{project.name}</div>
-                                <div style={{ flex: 2, color: '#666' }}>{project.client_name || '—'}</div>
-                                <div style={{ flex: 2, color: '#666' }}>{project.location || '—'}</div>
-                                <div style={{ flex: 1, color: '#888', fontSize: '0.9rem' }}>
+                                <div style={{ fontWeight: '500', color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.name}</div>
+                                <div style={{ color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.client_name || '—'}</div>
+                                <div style={{ color: '#666', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{project.location || '—'}</div>
+                                <div style={{ color: '#888', fontSize: '0.9rem' }}>
                                     {formatDate(project.updated_at || project.created_at)}
                                 </div>
-                                <div style={{ flex: 1 }}>
+                                <div>
                                     <span className="badge" style={{ background: '#f4f4f4', padding: '0.25rem 0.5rem', borderRadius: '2px', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#1a1a1a' }}>
                                         {project.plants?.length || 0}
                                     </span>
                                 </div>
                             </Link>
-                            <div style={{ width: '40px', textAlign: 'right', position: 'relative' }}>
+                            <div style={{ textAlign: 'right', position: 'relative' }}>
                                 <div className="actions-menu-container">
                                     <button className="icon-btn" onClick={(e) => toggleDropdown(`table-${project.id}`, e)}>⋮</button>
                                     {activeDropdown === `table-${project.id}` && (
                                         <div className="dropdown-menu">
                                             <button className="dropdown-item" onClick={(e) => handleEdit(project, e)}>Edit</button>
+                                            <button className="dropdown-item" onClick={(e) => handleDuplicate(project.id, e)}>Duplicate</button>
                                             <button className="dropdown-item danger" onClick={(e) => handleDelete(project.id, project.name, e)}>Delete</button>
                                         </div>
                                     )}

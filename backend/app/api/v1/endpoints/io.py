@@ -71,8 +71,7 @@ async def export_project_pdf(
     y = height - 130
     p.setFont("Helvetica-Bold", 12)
     p.drawString(50, y, "Plant")
-    p.drawString(300, y, "Qty")
-    p.drawString(400, y, "Notes")
+    p.drawString(300, y, "Notes")
     
     p.line(50, y - 5, 550, y - 5)
     y -= 25
@@ -81,12 +80,10 @@ async def export_project_pdf(
     p.setFont("Helvetica", 10)
     for pp in project.plants:
         plant_name = pp.plant.common_name if pp.plant else "Unknown"
-        qty = str(pp.quantity)
         notes = pp.notes or ""
         
         p.drawString(50, y, plant_name)
-        p.drawString(300, y, qty)
-        p.drawString(400, y, notes)
+        p.drawString(300, y, notes)
         
         y -= 20
         if y < 50:

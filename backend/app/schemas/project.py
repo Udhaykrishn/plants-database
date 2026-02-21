@@ -7,14 +7,12 @@ from app.schemas.plant import PlantResponse
 # ProjectPlant Schemas
 class ProjectPlantBase(BaseModel):
     plant_id: uuid.UUID
-    quantity: int = 1
     notes: Optional[str] = None
 
 class ProjectPlantCreate(ProjectPlantBase):
     pass
 
 class ProjectPlantUpdate(BaseModel):
-    quantity: Optional[int] = None
     notes: Optional[str] = None
 
 class ProjectPlantResponse(ProjectPlantBase):

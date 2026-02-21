@@ -1,5 +1,6 @@
 from typing import Any, List
 import uuid
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -100,8 +101,6 @@ async def add_plant_to_project(
     existing = result.scalars().first()
     
     if existing:
-        # Update quantity
-        existing.quantity += plant_in.quantity
         if plant_in.notes:
             existing.notes = plant_in.notes
         db.add(existing)
@@ -110,12 +109,11 @@ async def add_plant_to_project(
         new_association = ProjectPlant(
             project_id=project_id,
             plant_id=plant_in.plant_id,
-            quantity=plant_in.quantity,
             notes=plant_in.notes
         )
         db.add(new_association)
         
-    project.updated_at = sa.func.now()
+    project.updated_at = datetime.utcnow()
 
     await db.commit()
     await db.refresh(project)
@@ -136,7 +134,7 @@ async def update_plant_in_project(
     plant_in: ProjectPlantCreate
 ) -> Any:
     """
-    Update a plant's quantity or notes in a project.
+    Update a plant's notes in a project.
     """
     result = await db.execute(select(Project).filter(Project.id == project_id))
     project = result.scalars().first()
@@ -153,11 +151,10 @@ async def update_plant_in_project(
     if not existing:
         raise HTTPException(status_code=404, detail="Plant not found in this project")
 
-    existing.quantity = plant_in.quantity
     if plant_in.notes is not None:
         existing.notes = plant_in.notes
 
-    project.updated_at = sa.func.now()
+    project.updated_at = datetime.utcnow()
     await db.commit()
     await db.refresh(project)
 
@@ -193,7 +190,7 @@ async def remove_plant_from_project(
         raise HTTPException(status_code=404, detail="Plant not found in this project")
 
     await db.delete(existing)
-    project.updated_at = sa.func.now()
+    project.updated_at = datetime.utcnow()
     await db.commit()
     await db.refresh(project)
 
@@ -222,7 +219,7 @@ async def update_project(
     for field in update_data:
         setattr(project, field, update_data[field])
 
-    project.updated_at = sa.func.now()
+    project.updated_at = datetime.utcnow()
 
     await db.commit()
     await db.refresh(project)
@@ -251,3 +248,51 @@ async def delete_project(
     await db.delete(project)
     await db.commit()
     return {"success": True}
+
+@router.post("/{project_id}/duplicate", response_model=ProjectResponse)
+async def duplicate_project(
+    *,
+    db: AsyncSession = Depends(get_db),
+    project_id: uuid.UUID
+) -> Any:
+    """
+    Duplicate a project including its plants.
+    """
+    # Fetch source project
+    query = select(Project).filter(Project.id == project_id).options(
+        selectinload(Project.plants)
+    )
+    result = await db.execute(query)
+    source_project = result.scalars().first()
+    
+    if not source_project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Create new project
+    new_project = Project(
+        name=f"{source_project.name} (Copy)",
+        client_name=source_project.client_name,
+        location=source_project.location,
+        description=source_project.description
+    )
+    db.add(new_project)
+    await db.commit()
+    await db.refresh(new_project)
+
+    # Copy plants
+    for pp in source_project.plants:
+        new_pp = ProjectPlant(
+            project_id=new_project.id,
+            plant_id=pp.plant_id,
+            notes=pp.notes
+        )
+        db.add(new_pp)
+    
+    await db.commit()
+
+    # Reload with relationships
+    query = select(Project).filter(Project.id == new_project.id).options(
+        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
+    )
+    result = await db.execute(query)
+    return result.scalars().first()

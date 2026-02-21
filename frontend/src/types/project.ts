@@ -2,7 +2,6 @@ import type { Plant } from "./plant";
 
 export interface ProjectPlant {
     plant_id: string;
-    quantity: number;
     notes?: string;
     plant?: Plant;
 }
@@ -27,6 +26,5 @@ export interface ProjectCreate {
 
 export interface ProjectPlantCreate {
     plant_id: string;
-    quantity: number;
     notes?: string;
 }

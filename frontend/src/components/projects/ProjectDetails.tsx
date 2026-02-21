@@ -20,7 +20,6 @@ export const ProjectDetails = () => {
 
     // Form
     const [selectedPlantId, setSelectedPlantId] = useState('');
-    const [quantity, setQuantity] = useState(1);
     const [notes, setNotes] = useState('');
 
     const { data: project, isLoading } = useQuery({
@@ -69,10 +68,9 @@ export const ProjectDetails = () => {
         }
     });
 
-    const handleEditClick = (plantId: string, currentQuantity: number, currentNotes: string) => {
+    const handleEditClick = (plantId: string, currentNotes: string) => {
         setEditingPlantId(plantId);
         setSelectedPlantId(plantId);
-        setQuantity(currentQuantity);
         setNotes(currentNotes || '');
         setIsAdding(true);
     };
@@ -80,7 +78,6 @@ export const ProjectDetails = () => {
     const cancelEdit = () => {
         setEditingPlantId(null);
         setSelectedPlantId('');
-        setQuantity(1);
         setNotes('');
         setIsAdding(false);
     };
@@ -106,7 +103,6 @@ export const ProjectDetails = () => {
 
         const payload = {
             plant_id: selectedPlantId,
-            quantity,
             notes
         };
 
@@ -163,16 +159,6 @@ export const ProjectDetails = () => {
                                     ))}
                                 </select>
                             </div>
-                            <div className="form-group">
-                                <label>Quantity</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={quantity}
-                                    onChange={e => setQuantity(parseInt(e.target.value))}
-                                    required
-                                />
-                            </div>
                         </div>
                         <div className="form-group">
                             <label>Notes</label>
@@ -186,7 +172,6 @@ export const ProjectDetails = () => {
                     <div className="plant-row" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>
                         <div style={{ flex: 2 }}>Plant Name</div>
                         <div style={{ flex: 1 }}>Category</div>
-                        <div style={{ flex: 1 }}>Quantity</div>
                         <div style={{ flex: 2 }}>Notes</div>
                         <div style={{ width: '120px', textAlign: 'right' }}>Actions</div>
                     </div>
@@ -199,21 +184,22 @@ export const ProjectDetails = () => {
                             <div style={{ flex: 1 }}>
                                 <span className="tag">{pp.plant?.category}</span>
                             </div>
-                            <div style={{ flex: 1 }}>{pp.quantity}</div>
                             <div style={{ flex: 2 }}>{pp.notes || '-'}</div>
                             <div style={{ width: '120px', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                <button className="btn-small" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => handleEditClick(pp.plant_id, pp.quantity, pp.notes || '')}>Edit</button>
+                                <button className="btn-small" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => handleEditClick(pp.plant_id, pp.notes || '')}>Edit</button>
                                 <button className="btn-small danger" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => handleDeleteClick(pp.plant_id, pp.plant?.common_name || 'Plant')}>Remove</button>
                             </div>
                         </div>
                     ))}
-                    {project.plants.length === 0 && (
-                        <div className="plant-row" style={{ justifyContent: 'center', padding: '2rem' }}>
-                            No plants added yet.
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
+                    {
+                        project.plants.length === 0 && (
+                            <div className="plant-row" style={{ justifyContent: 'center', padding: '2rem' }}>
+                                No plants added yet.
+                            </div>
+                        )
+                    }
+                </div >
+            </div >
+        </div >
     );
 };

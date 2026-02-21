@@ -27,7 +27,6 @@ class ProjectPlant(Base):
     project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id"), primary_key=True)
     plant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("plants.id"), primary_key=True)
     
-    quantity: Mapped[int] = mapped_column(Integer, default=1)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     # Relationships

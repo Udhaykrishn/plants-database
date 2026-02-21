@@ -108,16 +108,25 @@
     color: #e03131;
 }
 
+/* Flip dropdown upwards if it's the last item in a table container or grid to prevent clipping */
+.project-table-row:nth-last-child(-n+2) .dropdown-menu,
+.project-list>div:nth-last-child(-n+2) .dropdown-menu {
+    top: auto;
+    bottom: 100%;
+}
+
 /* Table View Classes */
 .projects-table-container {
     background: #fff;
     border: 1px solid #eaeaea;
     border-radius: 4px;
-    overflow: hidden;
 }
 
 .project-table-header {
-    display: flex;
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.5fr 1fr 80px 40px;
+    align-items: center;
+    gap: 1rem;
     padding: 1rem 1.5rem;
     background: #fafafa;
     border-bottom: 1px solid #eaeaea;
@@ -129,11 +138,18 @@
 }
 
 .project-table-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 1.5fr 1fr 80px 40px;
+    align-items: center;
+    gap: 1rem;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid #eaeaea;
-    align-items: center;
     transition: background-color 0.2s ease;
+}
+
+.project-table-row>a>div,
+.project-table-row>div {
+    min-width: 0;
 }
 
 .project-table-row:last-child {
