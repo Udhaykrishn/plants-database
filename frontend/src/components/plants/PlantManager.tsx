@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { plantsApi } from '../../api/plants';
 import { taxonomyApi } from '../../api/taxonomy';
@@ -13,6 +14,7 @@ import { useConfirm } from '../../contexts/ConfirmContext';
 
 export const PlantManager = () => {
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const { showAlert } = useAlert();
     const { confirm } = useConfirm();
     const [isCreating, setIsCreating] = useState(false);
@@ -160,8 +162,15 @@ export const PlantManager = () => {
         setActiveDropdown(null);
     };
 
-    const toggleDropdown = (id: string) => {
+    const toggleDropdown = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
         setActiveDropdown(activeDropdown === id ? null : id);
+    };
+
+    const handleRowClick = (id: string, e: React.MouseEvent) => {
+        // Ignore row clicks if user clicked inside the actions menu
+        if ((e.target as Element).closest('.actions-menu-container') || (e.target as Element).closest('.dropdown-menu')) return;
+        navigate(`/plants/${id}`);
     };
 
     const cancelEdit = () => {
@@ -399,13 +408,13 @@ export const PlantManager = () => {
                 viewMode === 'card' ? (
                     <div className="plant-list">
                         {displayedPlants.map((plant: Plant) => (
-                            <div key={plant.id} className="plant-card">
+                            <div key={plant.id} className="plant-card" onClick={(e) => handleRowClick(plant.id, e)} style={{ cursor: 'pointer' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                     <h3>{plant.common_name}</h3>
                                     <div className="actions-menu-container">
                                         <button
                                             className="icon-btn"
-                                            onClick={() => toggleDropdown(plant.id)}
+                                            onClick={(e) => toggleDropdown(plant.id, e)}
                                         >
                                             ⋮
                                         </button>
@@ -442,14 +451,14 @@ export const PlantManager = () => {
                             <div style={{ width: '40px' }}></div>
                         </div>
                         {displayedPlants.map((plant: Plant) => (
-                            <div key={plant.id} className="plant-table-row">
+                            <div key={plant.id} className="plant-table-row" onClick={(e) => handleRowClick(plant.id, e)} style={{ cursor: 'pointer' }}>
                                 <div style={{ flex: 2, fontWeight: '500', color: '#1a1a1a' }}>{plant.common_name}</div>
                                 <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.taxon?.name}</div>
                                 <div style={{ flex: 1 }}><span className="tag">{plant.category}</span></div>
                                 <div style={{ flex: 1 }}><span className="tag">{plant.planting_place}</span></div>
                                 <div style={{ width: '40px', textAlign: 'right' }}>
                                     <div className="actions-menu-container">
-                                        <button className="icon-btn" onClick={() => toggleDropdown(`table-${plant.id}`)}>⋮</button>
+                                        <button className="icon-btn" onClick={(e) => toggleDropdown(`table-${plant.id}`, e)}>⋮</button>
                                         {activeDropdown === `table-${plant.id}` && (
                                             <div className="dropdown-menu">
                                                 <button className="dropdown-item" onClick={() => handleEdit(plant)}>Edit</button>
