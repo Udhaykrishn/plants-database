@@ -12,6 +12,7 @@ import './PlantManager.css';
 import { ioApi } from '../../api/io';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
+import { SearchableSelect } from '../common/SearchableSelect';
 
 export const PlantManager = () => {
     const queryClient = useQueryClient();
@@ -101,6 +102,7 @@ export const PlantManager = () => {
     const [isOutdoor, setIsOutdoor] = useState(true);
     const [description, setDescription] = useState('');
     const [taxonId, setTaxonId] = useState('');
+    const [speciesSortOption, setSpeciesSortOption] = useState<'alpha' | 'recent'>('recent');
     const [iconFile, setIconFile] = useState<File | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [iconUrl, setIconUrl] = useState('');
@@ -122,9 +124,9 @@ export const PlantManager = () => {
         if (location.state?.editPlant && plants && taxonomyTree) {
             handleEdit(location.state.editPlant);
             // Clear the state so it doesn't re-trigger on refresh
-            window.history.replaceState({}, document.title);
+            navigate(location.pathname, { replace: true, state: {} });
         }
-    }, [location.state, plants, taxonomyTree]);
+    }, [location.state, plants, taxonomyTree, navigate]);
 
     const getSpecies = (nodes: any[]): any[] => {
         let species: any[] = [];
@@ -148,6 +150,7 @@ export const PlantManager = () => {
             showAlert('Plant created successfully', 'success');
             setIsCreating(false);
             resetForm();
+            navigate('/plants', { replace: true });
         },
         onError: (error: any) => {
             showAlert("Error creating plant: " + (error.response?.data?.detail || error.message), 'error');
@@ -160,7 +163,9 @@ export const PlantManager = () => {
             queryClient.invalidateQueries({ queryKey: ['plants'] });
             showAlert('Plant updated successfully', 'success');
             setEditingPlantId(null);
+            setIsCreating(false);
             resetForm();
+            navigate('/plants', { replace: true });
         },
         onError: (error: any) => {
             showAlert("Error updating plant: " + (error.response?.data?.detail || error.message), 'error');
@@ -241,6 +246,7 @@ export const PlantManager = () => {
         setEditingPlantId(null);
         setIsCreating(false);
         resetForm();
+        navigate('/plants', { replace: true });
     };
 
     const toggleCreate = () => {
@@ -430,18 +436,14 @@ export const PlantManager = () => {
                         </div>
                         <div className="form-group">
                             <label>Scientific Species (Taxon)</label>
-                            <select
+                            <SearchableSelect
+                                options={speciesList.map(s => ({ value: s.id, label: s.name }))}
                                 value={taxonId}
-                                onChange={e => setTaxonId(e.target.value)}
-                                required
-                            >
-                                <option value="">Select Species...</option>
-                                {speciesList.map(s => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.name}
-                                    </option>
-                                ))}
-                            </select>
+                                onChange={setTaxonId}
+                                placeholder="Select Species..."
+                                sortOption={speciesSortOption}
+                                onSortChange={setSpeciesSortOption}
+                            />
                         </div>
                     </div>
 
