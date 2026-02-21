@@ -9,7 +9,7 @@ from sqlalchemy.orm import selectinload
 from app.db.session import get_db
 from app.models.project import Project, ProjectPlant
 from app.models.plant import Plant
-from app.schemas.project import ProjectCreate, ProjectResponse, ProjectPlantCreate
+from app.schemas.project import ProjectCreate, ProjectResponse, ProjectPlantCreate, ProjectUpdate
 
 router = APIRouter()
 
@@ -123,3 +123,50 @@ async def add_plant_to_project(
     )
     result = await db.execute(query)
     return result.scalars().first()
+
+@router.put("/{project_id}", response_model=ProjectResponse)
+async def update_project(
+    *,
+    db: AsyncSession = Depends(get_db),
+    project_id: uuid.UUID,
+    project_in: ProjectUpdate
+) -> Any:
+    """
+    Update a project by ID.
+    """
+    result = await db.execute(select(Project).filter(Project.id == project_id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    update_data = project_in.model_dump(exclude_unset=True)
+    for field in update_data:
+        setattr(project, field, update_data[field])
+
+    await db.commit()
+    await db.refresh(project)
+    
+    # Reload with relationships
+    query = select(Project).filter(Project.id == project.id).options(
+        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
+    )
+    result = await db.execute(query)
+    return result.scalars().first()
+
+@router.delete("/{project_id}")
+async def delete_project(
+    *,
+    db: AsyncSession = Depends(get_db),
+    project_id: uuid.UUID
+) -> Any:
+    """
+    Delete a project by ID.
+    """
+    result = await db.execute(select(Project).filter(Project.id == project_id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    await db.delete(project)
+    await db.commit()
+    return {"success": True}

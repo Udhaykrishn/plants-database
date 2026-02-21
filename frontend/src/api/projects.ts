@@ -20,5 +20,14 @@ export const projectsApi = {
     addPlant: async (projectId: string, data: ProjectPlantCreate): Promise<Project> => {
         const response = await client.post<Project>(`/projects/${projectId}/plants`, data);
         return response.data;
+    },
+
+    update: async (id: string, data: Partial<ProjectCreate>): Promise<Project> => {
+        const response = await client.put<Project>(`/projects/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id: string): Promise<void> => {
+        await client.delete(`/projects/${id}`);
     }
 };
