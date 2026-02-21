@@ -239,13 +239,13 @@ export const PlantManager = () => {
 
     const cancelEdit = () => {
         setEditingPlantId(null);
+        setIsCreating(false);
         resetForm();
     };
 
     const toggleCreate = () => {
-        if (isCreating) {
-            setIsCreating(false);
-            resetForm();
+        if (isCreating || editingPlantId) {
+            cancelEdit();
         } else {
             setEditingPlantId(null);
             resetForm();
@@ -335,76 +335,86 @@ export const PlantManager = () => {
         <div className="plant-manager">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <h2 style={{ margin: 0, borderBottom: 'none', paddingBottom: 0, fontSize: '1.75rem', fontWeight: 500, letterSpacing: '-0.02em', textTransform: 'uppercase' }}>Plant Catalog</h2>
-                    <div className="view-toggle">
-                        <button className={`btn-toggle ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')} title="Card View">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                                <rect x="3" y="3" width="7" height="7"></rect>
-                                <rect x="14" y="3" width="7" height="7"></rect>
-                                <rect x="14" y="14" width="7" height="7"></rect>
-                                <rect x="3" y="14" width="7" height="7"></rect>
-                            </svg>
-                            Cards
-                        </button>
-                        <button className={`btn-toggle ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')} title="Table View">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
-                                <line x1="8" y1="6" x2="21" y2="6"></line>
-                                <line x1="8" y1="12" x2="21" y2="12"></line>
-                                <line x1="8" y1="18" x2="21" y2="18"></line>
-                                <line x1="3" y1="6" x2="3.01" y2="6"></line>
-                                <line x1="3" y1="12" x2="3.01" y2="12"></line>
-                                <line x1="3" y1="18" x2="3.01" y2="18"></line>
-                            </svg>
-                            List
-                        </button>
-                    </div>
+                    <h2 style={{ margin: 0, borderBottom: 'none', paddingBottom: 0, fontSize: '1.75rem', fontWeight: 500, letterSpacing: '-0.02em', textTransform: 'uppercase' }}>
+                        {isCreating || editingPlantId ? 'Plant Editor' : 'Plant Catalog'}
+                    </h2>
+
+                    {!isCreating && !editingPlantId && (
+                        <div className="view-toggle">
+                            <button className={`btn-toggle ${viewMode === 'card' ? 'active' : ''}`} onClick={() => setViewMode('card')} title="Card View">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                                    <rect x="3" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="3" width="7" height="7"></rect>
+                                    <rect x="14" y="14" width="7" height="7"></rect>
+                                    <rect x="3" y="14" width="7" height="7"></rect>
+                                </svg>
+                                Cards
+                            </button>
+                            <button className={`btn-toggle ${viewMode === 'table' ? 'active' : ''}`} onClick={() => setViewMode('table')} title="Table View">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '6px' }}>
+                                    <line x1="8" y1="6" x2="21" y2="6"></line>
+                                    <line x1="8" y1="12" x2="21" y2="12"></line>
+                                    <line x1="8" y1="18" x2="21" y2="18"></line>
+                                    <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                                    <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                                    <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                                </svg>
+                                List
+                            </button>
+                        </div>
+                    )}
                 </div>
+
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <label className="btn" style={{ background: '#f4f4f4', color: '#1a1a1a', border: '1px solid #eaeaea', cursor: 'pointer' }}>
-                        Import CSV
-                        <input type="file" accept=".csv" onChange={handleFileUpload} style={{ display: 'none' }} />
-                    </label>
+                    {!isCreating && !editingPlantId && (
+                        <label className="btn" style={{ background: '#f4f4f4', color: '#1a1a1a', border: '1px solid #eaeaea', cursor: 'pointer' }}>
+                            Import CSV
+                            <input type="file" accept=".csv" onChange={handleFileUpload} style={{ display: 'none' }} />
+                        </label>
+                    )}
                     <button className="btn" onClick={toggleCreate}>
-                        {isCreating ? 'Cancel Create' : '+ Add Plant'}
+                        {isCreating || editingPlantId ? 'Cancel' : '+ Add Plant'}
                     </button>
                 </div>
             </div>
 
-            <div className="toolbar" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
-                <input
-                    type="text"
-                    placeholder="Search catalog..."
-                    value={searchTerm}
-                    onChange={e => setSearchTerm(e.target.value)}
-                    style={{ flex: 1, minWidth: '200px', padding: '10px 14px' }}
-                />
-                <select
-                    value={filterCategory}
-                    onChange={e => setFilterCategory(e.target.value as PlantCategory | '')}
-                    style={{ padding: '10px 14px' }}
-                >
-                    <option value="">All Categories</option>
-                    {Object.values(PlantCategory).map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <div className="checkbox-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 14px', height: '42px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#444' }}>
-                        <input type="checkbox" checked={filterIndoor} onChange={e => setFilterIndoor(e.target.checked)} />
-                        Indoor
-                    </label>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#444' }}>
-                        <input type="checkbox" checked={filterOutdoor} onChange={e => setFilterOutdoor(e.target.checked)} />
-                        Outdoor
-                    </label>
+            {!isCreating && !editingPlantId && (
+                <div className="toolbar" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                    <input
+                        type="text"
+                        placeholder="Search catalog..."
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                        style={{ flex: 1, minWidth: '200px', padding: '10px 14px' }}
+                    />
+                    <select
+                        value={filterCategory}
+                        onChange={e => setFilterCategory(e.target.value as PlantCategory | '')}
+                        style={{ padding: '10px 14px' }}
+                    >
+                        <option value="">All Categories</option>
+                        {Object.values(PlantCategory).map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <div className="checkbox-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 14px', height: '42px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#444' }}>
+                            <input type="checkbox" checked={filterIndoor} onChange={e => setFilterIndoor(e.target.checked)} />
+                            Indoor
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#444' }}>
+                            <input type="checkbox" checked={filterOutdoor} onChange={e => setFilterOutdoor(e.target.checked)} />
+                            Outdoor
+                        </label>
+                    </div>
+                    <select
+                        value={sortOrder}
+                        onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')}
+                        style={{ padding: '10px 14px' }}
+                    >
+                        <option value="asc">A-Z</option>
+                        <option value="desc">Z-A</option>
+                    </select>
                 </div>
-                <select
-                    value={sortOrder}
-                    onChange={e => setSortOrder(e.target.value as 'asc' | 'desc')}
-                    style={{ padding: '10px 14px' }}
-                >
-                    <option value="asc">A-Z</option>
-                    <option value="desc">Z-A</option>
-                </select>
-            </div>
+            )}
 
             {(isCreating || editingPlantId) && (
                 <form className="create-plant-form" onSubmit={handleSubmit}>
@@ -521,7 +531,7 @@ export const PlantManager = () => {
                         <button type="submit" className="btn" disabled={isUploading}>
                             {isUploading ? 'Uploading...' : editingPlantId ? 'Save Changes' : 'Create Plant'}
                         </button>
-                        {editingPlantId && (
+                        {(isCreating || editingPlantId) && (
                             <button type="button" className="btn" onClick={cancelEdit} style={{ background: '#f4f4f4', color: '#1a1a1a', borderColor: '#eaeaea' }}>
                                 Cancel
                             </button>
@@ -530,25 +540,128 @@ export const PlantManager = () => {
                 </form>
             )}
 
-            {plantsLoading ? <p>Loading plants...</p> : (
-                viewMode === 'card' ? (
-                    <div className="plant-list" style={{ position: 'relative' }}>
-                        {displayedPlants.map((plant: Plant) => {
-                            const isSelected = selectedPlantIds.includes(plant.id);
-                            return (
-                                <div
-                                    key={plant.id}
-                                    className={`plant-card ${isSelected ? 'selected-card' : ''}`}
-                                    onClick={(e) => handleRowClick(plant.id, e)}
-                                    style={{
-                                        cursor: 'pointer',
-                                        outline: isSelected ? '2px solid #0056b3' : 'none',
-                                        transition: 'outline 0.15s ease-in-out',
-                                        userSelect: 'none'
-                                    }}
-                                >
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {!isCreating && !editingPlantId && (
+                plantsLoading ? <p>Loading plants...</p> : (
+                    viewMode === 'card' ? (
+                        <div className="plant-list" style={{ position: 'relative' }}>
+                            {displayedPlants.map((plant: Plant) => {
+                                const isSelected = selectedPlantIds.includes(plant.id);
+                                return (
+                                    <div
+                                        key={plant.id}
+                                        className={`plant-card ${isSelected ? 'selected-card' : ''}`}
+                                        onClick={(e) => handleRowClick(plant.id, e)}
+                                        style={{
+                                            cursor: 'pointer',
+                                            outline: isSelected ? '2px solid #0056b3' : 'none',
+                                            transition: 'outline 0.15s ease-in-out',
+                                            userSelect: 'none'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedPlantIds(prev =>
+                                                            prev.includes(plant.id) ? prev.filter(p => p !== plant.id) : [...prev, plant.id]
+                                                        );
+                                                    }}
+                                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                                    onClick={e => e.stopPropagation()}
+                                                />
+                                                {plant.icon_url ? (
+                                                    <img
+                                                        src={plant.icon_url}
+                                                        alt=""
+                                                        style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px' }}
+                                                    />
+                                                ) : (
+                                                    <div style={{ width: '32px', height: '32px', background: '#eee', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <span style={{ fontSize: '10px', color: '#999' }}>No img</span>
+                                                    </div>
+                                                )}
+                                                <h3 style={{ margin: 0 }}>{plant.common_name}</h3>
+                                            </div>
+                                            <div className="actions-menu-container">
+                                                <button
+                                                    className="icon-btn"
+                                                    onClick={(e) => toggleDropdown(plant.id, e)}
+                                                >
+                                                    ⋮
+                                                </button>
+                                                {activeDropdown === plant.id && (
+                                                    <div className="dropdown-menu">
+                                                        <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); openSingleProjectModal(plant.id); }}>
+                                                            Add to Project
+                                                        </button>
+                                                        <button className="dropdown-item" onClick={() => handleEdit(plant)}>
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            className="dropdown-item danger"
+                                                            onClick={() => handleDelete(plant.id, plant.common_name)}
+                                                            disabled={selectedPlantIds.length > 0}
+                                                            style={selectedPlantIds.length > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="taxonomy-info">
+                                            <i>{plant.taxon?.name}</i>
+                                        </div>
+                                        <div className="plant-meta">
+                                            <span className="tag">{plant.category}</span>
+                                            <span className="tag">{plant.planting_place}</span>
+                                        </div>
+                                        <p>{plant.description}</p>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    ) : (
+                        <div className="plants-table-container">
+                            <div className="plant-table-header">
+                                <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={displayedPlants.length > 0 && selectedPlantIds.length === displayedPlants.length}
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                setSelectedPlantIds(displayedPlants.map((p: Plant) => p.id));
+                                            } else {
+                                                setSelectedPlantIds([]);
+                                            }
+                                        }}
+                                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                                    />
+                                </div>
+                                <div style={{ width: '48px' }}>Icon</div>
+                                <div style={{ flex: 2 }}>Common Name</div>
+                                <div style={{ flex: 2 }}>Species</div>
+                                <div style={{ flex: 1 }}>Category</div>
+                                <div style={{ flex: 1 }}>Place</div>
+                                <div style={{ width: '40px' }}></div>
+                            </div>
+                            {displayedPlants.map((plant: Plant) => {
+                                const isSelected = selectedPlantIds.includes(plant.id);
+                                return (
+                                    <div
+                                        key={plant.id}
+                                        className={`plant-table-row ${isSelected ? 'selected-row' : ''}`}
+                                        onClick={(e) => handleRowClick(plant.id, e)}
+                                        style={{
+                                            cursor: 'pointer',
+                                            backgroundColor: isSelected ? '#f0f8ff' : '',
+                                            userSelect: 'none'
+                                        }}
+                                    >
+                                        <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             <input
                                                 type="checkbox"
                                                 checked={isSelected}
@@ -558,151 +671,50 @@ export const PlantManager = () => {
                                                         prev.includes(plant.id) ? prev.filter(p => p !== plant.id) : [...prev, plant.id]
                                                     );
                                                 }}
-                                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                                style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                                                 onClick={e => e.stopPropagation()}
                                             />
+                                        </div>
+                                        <div style={{ width: '48px', display: 'flex', alignItems: 'center' }}>
                                             {plant.icon_url ? (
-                                                <img
-                                                    src={plant.icon_url}
-                                                    alt=""
-                                                    style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px' }}
-                                                />
+                                                <img src={plant.icon_url} alt="" style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px' }} />
                                             ) : (
                                                 <div style={{ width: '32px', height: '32px', background: '#eee', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <span style={{ fontSize: '10px', color: '#999' }}>No img</span>
-                                                </div>
-                                            )}
-                                            <h3 style={{ margin: 0 }}>{plant.common_name}</h3>
-                                        </div>
-                                        <div className="actions-menu-container">
-                                            <button
-                                                className="icon-btn"
-                                                onClick={(e) => toggleDropdown(plant.id, e)}
-                                            >
-                                                ⋮
-                                            </button>
-                                            {activeDropdown === plant.id && (
-                                                <div className="dropdown-menu">
-                                                    <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); openSingleProjectModal(plant.id); }}>
-                                                        Add to Project
-                                                    </button>
-                                                    <button className="dropdown-item" onClick={() => handleEdit(plant)}>
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        className="dropdown-item danger"
-                                                        onClick={() => handleDelete(plant.id, plant.common_name)}
-                                                        disabled={selectedPlantIds.length > 0}
-                                                        style={selectedPlantIds.length > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                                                    >
-                                                        Delete
-                                                    </button>
+                                                    <span style={{ fontSize: '10px', color: '#999' }}>-</span>
                                                 </div>
                                             )}
                                         </div>
-                                    </div>
-                                    <div className="taxonomy-info">
-                                        <i>{plant.taxon?.name}</i>
-                                    </div>
-                                    <div className="plant-meta">
-                                        <span className="tag">{plant.category}</span>
-                                        <span className="tag">{plant.planting_place}</span>
-                                    </div>
-                                    <p>{plant.description}</p>
-                                </div>
-                            )
-                        })}
-                    </div>
-                ) : (
-                    <div className="plants-table-container">
-                        <div className="plant-table-header">
-                            <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <input
-                                    type="checkbox"
-                                    checked={displayedPlants.length > 0 && selectedPlantIds.length === displayedPlants.length}
-                                    onChange={(e) => {
-                                        if (e.target.checked) {
-                                            setSelectedPlantIds(displayedPlants.map((p: Plant) => p.id));
-                                        } else {
-                                            setSelectedPlantIds([]);
-                                        }
-                                    }}
-                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                />
-                            </div>
-                            <div style={{ width: '48px' }}>Icon</div>
-                            <div style={{ flex: 2 }}>Common Name</div>
-                            <div style={{ flex: 2 }}>Species</div>
-                            <div style={{ flex: 1 }}>Category</div>
-                            <div style={{ flex: 1 }}>Place</div>
-                            <div style={{ width: '40px' }}></div>
-                        </div>
-                        {displayedPlants.map((plant: Plant) => {
-                            const isSelected = selectedPlantIds.includes(plant.id);
-                            return (
-                                <div
-                                    key={plant.id}
-                                    className={`plant-table-row ${isSelected ? 'selected-row' : ''}`}
-                                    onClick={(e) => handleRowClick(plant.id, e)}
-                                    style={{
-                                        cursor: 'pointer',
-                                        backgroundColor: isSelected ? '#f0f8ff' : '',
-                                        userSelect: 'none'
-                                    }}
-                                >
-                                    <div style={{ width: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <input
-                                            type="checkbox"
-                                            checked={isSelected}
-                                            onChange={(e) => {
-                                                e.stopPropagation();
-                                                setSelectedPlantIds(prev =>
-                                                    prev.includes(plant.id) ? prev.filter(p => p !== plant.id) : [...prev, plant.id]
-                                                );
-                                            }}
-                                            style={{ width: '16px', height: '16px', cursor: 'pointer' }}
-                                            onClick={e => e.stopPropagation()}
-                                        />
-                                    </div>
-                                    <div style={{ width: '48px', display: 'flex', alignItems: 'center' }}>
-                                        {plant.icon_url ? (
-                                            <img src={plant.icon_url} alt="" style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px' }} />
-                                        ) : (
-                                            <div style={{ width: '32px', height: '32px', background: '#eee', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <span style={{ fontSize: '10px', color: '#999' }}>-</span>
+                                        <div style={{ flex: 2, fontWeight: '500', color: '#1a1a1a' }}>{plant.common_name}</div>
+                                        <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.taxon?.name}</div>
+                                        <div style={{ flex: 1 }}><span className="tag">{plant.category}</span></div>
+                                        <div style={{ flex: 1 }}><span className="tag">{plant.planting_place}</span></div>
+                                        <div style={{ width: '40px', textAlign: 'right' }}>
+                                            <div className="actions-menu-container">
+                                                <button className="icon-btn" onClick={(e) => toggleDropdown(`table-${plant.id}`, e)}>⋮</button>
+                                                {activeDropdown === `table-${plant.id}` && (
+                                                    <div className="dropdown-menu">
+                                                        <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); openSingleProjectModal(plant.id); }}>Add to Project</button>
+                                                        <button className="dropdown-item" onClick={() => handleEdit(plant)}>Edit</button>
+                                                        <button
+                                                            className="dropdown-item danger"
+                                                            onClick={() => handleDelete(plant.id, plant.common_name)}
+                                                            disabled={selectedPlantIds.length > 0}
+                                                            style={selectedPlantIds.length > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
+                                                        >Delete</button>
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
-                                    <div style={{ flex: 2, fontWeight: '500', color: '#1a1a1a' }}>{plant.common_name}</div>
-                                    <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.taxon?.name}</div>
-                                    <div style={{ flex: 1 }}><span className="tag">{plant.category}</span></div>
-                                    <div style={{ flex: 1 }}><span className="tag">{plant.planting_place}</span></div>
-                                    <div style={{ width: '40px', textAlign: 'right' }}>
-                                        <div className="actions-menu-container">
-                                            <button className="icon-btn" onClick={(e) => toggleDropdown(`table-${plant.id}`, e)}>⋮</button>
-                                            {activeDropdown === `table-${plant.id}` && (
-                                                <div className="dropdown-menu">
-                                                    <button className="dropdown-item" onClick={(e) => { e.stopPropagation(); openSingleProjectModal(plant.id); }}>Add to Project</button>
-                                                    <button className="dropdown-item" onClick={() => handleEdit(plant)}>Edit</button>
-                                                    <button
-                                                        className="dropdown-item danger"
-                                                        onClick={() => handleDelete(plant.id, plant.common_name)}
-                                                        disabled={selectedPlantIds.length > 0}
-                                                        style={selectedPlantIds.length > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
-                                                    >Delete</button>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
-                                </div>
-                            )
-                        })}
-                    </div>
+                                )
+                            })}
+                        </div>
+                    )
                 )
             )}
 
             {/* Bulk Selection ToolBar */}
-            {selectedPlantIds.length > 0 && !showProjectModal && (
+            {!isCreating && !editingPlantId && selectedPlantIds.length > 0 && !showProjectModal && (
                 <div style={{
                     position: 'fixed', bottom: '2rem', left: '50%', transform: 'translateX(-50%)',
                     background: '#222', color: 'white', padding: '1rem 2rem', borderRadius: '8px',
@@ -716,7 +728,8 @@ export const PlantManager = () => {
                         Clear
                     </button>
                 </div>
-            )}
+            )
+            }
 
             {/* Project Selection Modal */}
             {showProjectModal && (
@@ -750,7 +763,8 @@ export const PlantManager = () => {
                         </div>
                     </div>
                 </div>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 };
