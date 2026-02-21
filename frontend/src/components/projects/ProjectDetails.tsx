@@ -125,7 +125,7 @@ export const ProjectDetails = () => {
             <div className="project-header" style={{ marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <h1>{project.name}</h1>
-                    <button className="btn" onClick={() => ioApi.exportProjectPdf(project.id)} style={{ height: 'fit-content' }}>
+                    <button className="btn" onClick={() => ioApi.exportProjectPdf(project.id, project.name)} style={{ height: 'fit-content' }}>
                         Download PDF
                     </button>
                 </div>

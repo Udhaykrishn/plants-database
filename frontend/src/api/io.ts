@@ -13,7 +13,7 @@ export const ioApi = {
         return response.data;
     },
 
-    exportProjectPdf: async (projectId: string): Promise<void> => {
+    exportProjectPdf: async (projectId: string, projectName?: string): Promise<void> => {
         const response = await client.get(`/export/pdf/project/${projectId}`, {
             responseType: 'blob'
         });
@@ -22,7 +22,19 @@ export const ioApi = {
         const url = window.URL.createObjectURL(new Blob([response.data]));
         const link = document.createElement('a');
         link.href = url;
-        link.setAttribute('download', `project_report_${projectId}.pdf`);
+
+        let filename = projectName ? `${projectName}.pdf` : `project_report_${projectId}.pdf`;
+
+        // try to get from headers
+        const contentDisposition = response.headers['content-disposition'];
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (filenameMatch && filenameMatch.length === 2) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
         link.parentNode?.removeChild(link);
