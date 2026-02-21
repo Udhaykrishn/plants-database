@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { taxonomyApi } from '../../api/taxonomy';
 import { Rank } from '../../types/taxon';
@@ -11,11 +11,27 @@ interface GreetingProps {
     node: TaxonTree;
     onSelect: (node: TaxonTree) => void;
     selectedId?: string;
+    searchTerm?: string;
 }
 
-const TreeNode = ({ node, onSelect, selectedId }: GreetingProps) => {
+const TreeNode = ({ node, onSelect, selectedId, searchTerm }: GreetingProps) => {
     const [expanded, setExpanded] = useState(false);
     const hasChildren = node.children && node.children.length > 0;
+
+    const lowerSearch = searchTerm?.toLowerCase() || '';
+    const isMatch = !!searchTerm && (node.name.toLowerCase().includes(lowerSearch) || node.rank.toLowerCase().includes(lowerSearch));
+
+    useEffect(() => {
+        if (searchTerm && searchTerm.length > 0) {
+            if (!isMatch) {
+                setExpanded(true); // Auto expand parents to reveal matches
+            } else {
+                setExpanded(false); // Do not auto expand matched nodes' children
+            }
+        } else {
+            setExpanded(false); // Reset expansion when search clears
+        }
+    }, [searchTerm, isMatch]);
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -26,12 +42,23 @@ const TreeNode = ({ node, onSelect, selectedId }: GreetingProps) => {
         <div className={`tree-node ${node.id === selectedId ? 'selected' : ''}`}>
             <div className="node-content" onClick={() => onSelect(node)}>
                 {hasChildren && (
-                    <span onClick={handleToggle} style={{ cursor: 'pointer', marginRight: '5px' }}>
+                    <span onClick={handleToggle} style={{
+                        cursor: 'pointer',
+                        marginRight: '5px',
+                        ...(isMatch ? {
+                            backgroundColor: '#fff3cd',
+                            color: '#856404',
+                            borderRadius: '4px',
+                            padding: '2px 6px',
+                            fontWeight: 'bold',
+                            border: '1px solid #ffeeba'
+                        } : {})
+                    }}>
                         {expanded ? '▼' : '▶'}
                     </span>
                 )}
                 <span className="rank-badge">{node.rank[0]}</span>
-                <span>{node.name}</span>
+                <span style={isMatch ? { backgroundColor: '#fff3cd', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', color: '#856404', border: '1px solid #ffeeba' } : {}}>{node.name}</span>
             </div>
             {expanded && hasChildren && (
                 <div className="children">
@@ -41,6 +68,7 @@ const TreeNode = ({ node, onSelect, selectedId }: GreetingProps) => {
                             node={child}
                             onSelect={onSelect}
                             selectedId={selectedId}
+                            searchTerm={searchTerm}
                         />
                     ))}
                 </div>
@@ -52,6 +80,7 @@ const TreeNode = ({ node, onSelect, selectedId }: GreetingProps) => {
 export const TaxonomyManager = () => {
     const queryClient = useQueryClient();
     const [selectedNode, setSelectedNode] = useState<TaxonTree | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const [isCreating, setIsCreating] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     // Form state
@@ -193,20 +222,64 @@ export const TaxonomyManager = () => {
         setIsCreating(false);
     };
 
+    const filterTree = (nodes: TaxonTree[], term: string): TaxonTree[] => {
+        if (!term) return nodes;
+        const lowerTerm = term.toLowerCase();
+
+        return nodes.reduce((acc: TaxonTree[], node) => {
+            const matchesTerm = node.name.toLowerCase().includes(lowerTerm) || node.rank.toLowerCase().includes(lowerTerm);
+
+            if (matchesTerm) {
+                // If the node itself matches, we include it and all its children untouched
+                acc.push({ ...node });
+            } else {
+                // If the node itself doesn't match, we check if any children match
+                const filteredChildren = filterTree(node.children, term);
+                if (filteredChildren.length > 0) {
+                    acc.push({ ...node, children: filteredChildren });
+                }
+            }
+            return acc;
+        }, []);
+    };
+
+    const filteredTree = useMemo(() => {
+        if (!tree) return [];
+        return filterTree(tree, searchTerm);
+    }, [tree, searchTerm]);
+
     if (isLoading) return <div>Loading taxonomy...</div>;
     if (error) return <div>Error loading taxonomy</div>;
 
     return (
         <div className="taxonomy-container">
             <div className="taxonomy-tree">
-                <h3>Taxonomy Tree</h3>
-                <button className="btn" onClick={() => { setSelectedNode(null); startCreateChild(); }}>+ Add Kingdom</button>
-                {tree?.map((node) => (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ margin: 0 }}>Taxonomy Tree</h3>
+                    <button className="btn" onClick={() => { setSelectedNode(null); startCreateChild(); }}>+ Add Kingdom</button>
+                </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <input
+                        type="search"
+                        placeholder="Search taxonomy..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            borderRadius: '4px',
+                            border: '1px solid #ccc',
+                            fontFamily: 'inherit'
+                        }}
+                    />
+                </div>
+                {filteredTree?.map((node) => (
                     <TreeNode
                         key={node.id}
                         node={node}
                         onSelect={handleNodeSelect}
                         selectedId={selectedNode?.id}
+                        searchTerm={searchTerm}
                     />
                 ))}
             </div>
