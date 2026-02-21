@@ -87,3 +87,69 @@ async def read_taxon(
             detail="Taxon not found",
         )
     return taxon
+
+@router.put("/{taxon_id}", response_model=TaxonResponse)
+async def update_taxon(
+    *,
+    db: AsyncSession = Depends(get_db),
+    taxon_id: uuid.UUID,
+    taxon_in: TaxonUpdate
+) -> Any:
+    """
+    Update taxon.
+    """
+    result = await db.execute(select(Taxon).filter(Taxon.id == taxon_id))
+    taxon = result.scalars().first()
+    if not taxon:
+        raise HTTPException(
+            status_code=404,
+            detail="Taxon not found",
+        )
+    
+    # Check parent loop or existence if parent_id is updated
+    if taxon_in.parent_id is not None and taxon_in.parent_id != taxon.parent_id:
+        if taxon_in.parent_id == taxon.id:
+            raise HTTPException(status_code=400, detail="Cannot set taxon as its own parent")
+        result = await db.execute(select(Taxon).filter(Taxon.id == taxon_in.parent_id))
+        parent = result.scalars().first()
+        if not parent:
+            raise HTTPException(status_code=404, detail="Parent taxon not found")
+            
+    update_data = taxon_in.model_dump(exclude_unset=True)
+    for field in update_data:
+        setattr(taxon, field, update_data[field])
+        
+    db.add(taxon)
+    await db.commit()
+    await db.refresh(taxon)
+    return taxon
+
+@router.delete("/{taxon_id}")
+async def delete_taxon(
+    *,
+    db: AsyncSession = Depends(get_db),
+    taxon_id: uuid.UUID
+) -> Any:
+    """
+    Delete taxon. Will cascade delete children if explicitly modeled or fail if children exist.
+    Currently, we'll try to delete or rely on DB constrainsts.
+    """
+    result = await db.execute(select(Taxon).filter(Taxon.id == taxon_id))
+    taxon = result.scalars().first()
+    if not taxon:
+        raise HTTPException(
+            status_code=404,
+            detail="Taxon not found",
+        )
+    
+    # Check if children exist before delete to provide better error optionally
+    children_result = await db.execute(select(Taxon).filter(Taxon.parent_id == taxon_id).limit(1))
+    if children_result.scalars().first():
+         raise HTTPException(
+            status_code=400,
+            detail="Cannot delete taxon with existing children. Delete children first.",
+         )
+
+    await db.delete(taxon)
+    await db.commit()
+    return {"success": True}
