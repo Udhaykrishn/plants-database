@@ -8,7 +8,7 @@ export const taxonomyApi = {
     },
 
     create: async (data: TaxonCreate): Promise<TaxonResponse> => {
-        const response = await client.post<TaxonResponse>("/taxonomy", data);
+        const response = await client.post<TaxonResponse>("/taxonomy/", data);
         return response.data;
     },
 

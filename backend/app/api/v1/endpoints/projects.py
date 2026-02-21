@@ -23,7 +23,7 @@ async def read_projects(
     Retrieve projects.
     """
     query = select(Project).options(
-        selectinload(Project.plants).selectinload(ProjectPlant.plant)
+        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
     ).offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
@@ -41,7 +41,13 @@ async def create_project(
     db.add(project)
     await db.commit()
     await db.refresh(project)
-    return project
+    
+    # Reload with relationships
+    query = select(Project).filter(Project.id == project.id).options(
+        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
+    )
+    result = await db.execute(query)
+    return result.scalars().first()
 
 @router.get("/{project_id}", response_model=ProjectResponse)
 async def read_project(
@@ -53,7 +59,7 @@ async def read_project(
     Get project by ID.
     """
     query = select(Project).filter(Project.id == project_id).options(
-        selectinload(Project.plants).selectinload(ProjectPlant.plant)
+        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
     )
     result = await db.execute(query)
     project = result.scalars().first()
@@ -113,7 +119,7 @@ async def add_plant_to_project(
     
     # Reload project with relationships
     query = select(Project).filter(Project.id == project_id).options(
-        selectinload(Project.plants).selectinload(ProjectPlant.plant)
+        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
     )
     result = await db.execute(query)
     return result.scalars().first()

@@ -3,7 +3,7 @@ import type { Project, ProjectCreate, ProjectPlantCreate } from "../types/projec
 
 export const projectsApi = {
     getAll: async (): Promise<Project[]> => {
-        const response = await client.get<Project[]>("/projects");
+        const response = await client.get<Project[]>("/projects/");
         return response.data;
     },
 
@@ -13,7 +13,7 @@ export const projectsApi = {
     },
 
     create: async (data: ProjectCreate): Promise<Project> => {
-        const response = await client.post<Project>("/projects", data);
+        const response = await client.post<Project>("/projects/", data);
         return response.data;
     },
 
