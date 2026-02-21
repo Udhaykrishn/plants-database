@@ -15,5 +15,15 @@ export const taxonomyApi = {
     getById: async (id: string): Promise<TaxonResponse> => {
         const response = await client.get<TaxonResponse>(`/taxonomy/${id}`);
         return response.data;
+    },
+
+    update: async (id: string, data: Partial<TaxonCreate>): Promise<TaxonResponse> => {
+        const response = await client.put<TaxonResponse>(`/taxonomy/${id}`, data);
+        return response.data;
+    },
+
+    delete: async (id: string): Promise<any> => {
+        const response = await client.delete(`/taxonomy/${id}`);
+        return response.data;
     }
 };

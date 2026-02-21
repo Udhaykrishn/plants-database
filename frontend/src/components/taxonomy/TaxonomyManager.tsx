@@ -1,20 +1,37 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { taxonomyApi } from '../../api/taxonomy';
 import { Rank } from '../../types/taxon';
 import type { TaxonTree } from '../../types/taxon';
 import { useAlert } from '../../contexts/AlertContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import './Taxonomy.css';
 
 interface GreetingProps {
     node: TaxonTree;
     onSelect: (node: TaxonTree) => void;
     selectedId?: string;
+    searchTerm?: string;
 }
 
-const TreeNode = ({ node, onSelect, selectedId }: GreetingProps) => {
+const TreeNode = ({ node, onSelect, selectedId, searchTerm }: GreetingProps) => {
     const [expanded, setExpanded] = useState(false);
     const hasChildren = node.children && node.children.length > 0;
+
+    const lowerSearch = searchTerm?.toLowerCase() || '';
+    const isMatch = !!searchTerm && (node.name.toLowerCase().includes(lowerSearch) || node.rank.toLowerCase().includes(lowerSearch));
+
+    useEffect(() => {
+        if (searchTerm && searchTerm.length > 0) {
+            if (!isMatch) {
+                setExpanded(true); // Auto expand parents to reveal matches
+            } else {
+                setExpanded(false); // Do not auto expand matched nodes' children
+            }
+        } else {
+            setExpanded(false); // Reset expansion when search clears
+        }
+    }, [searchTerm, isMatch]);
 
     const handleToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -25,12 +42,23 @@ const TreeNode = ({ node, onSelect, selectedId }: GreetingProps) => {
         <div className={`tree-node ${node.id === selectedId ? 'selected' : ''}`}>
             <div className="node-content" onClick={() => onSelect(node)}>
                 {hasChildren && (
-                    <span onClick={handleToggle} style={{ cursor: 'pointer', marginRight: '5px' }}>
+                    <span onClick={handleToggle} style={{
+                        cursor: 'pointer',
+                        marginRight: '5px',
+                        ...(isMatch ? {
+                            backgroundColor: '#fff3cd',
+                            color: '#856404',
+                            borderRadius: '4px',
+                            padding: '2px 6px',
+                            fontWeight: 'bold',
+                            border: '1px solid #ffeeba'
+                        } : {})
+                    }}>
                         {expanded ? '▼' : '▶'}
                     </span>
                 )}
                 <span className="rank-badge">{node.rank[0]}</span>
-                <span>{node.name}</span>
+                <span style={isMatch ? { backgroundColor: '#fff3cd', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold', color: '#856404', border: '1px solid #ffeeba' } : {}}>{node.name}</span>
             </div>
             {expanded && hasChildren && (
                 <div className="children">
@@ -40,6 +68,7 @@ const TreeNode = ({ node, onSelect, selectedId }: GreetingProps) => {
                             node={child}
                             onSelect={onSelect}
                             selectedId={selectedId}
+                            searchTerm={searchTerm}
                         />
                     ))}
                 </div>
@@ -51,13 +80,16 @@ const TreeNode = ({ node, onSelect, selectedId }: GreetingProps) => {
 export const TaxonomyManager = () => {
     const queryClient = useQueryClient();
     const [selectedNode, setSelectedNode] = useState<TaxonTree | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     const [isCreating, setIsCreating] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
     // Form state
     const [newName, setNewName] = useState('');
     const [newRank, setNewRank] = useState<Rank>(Rank.KINGDOM);
     const [description, setDescription] = useState('');
 
     const { showAlert } = useAlert();
+    const { confirm } = useConfirm();
 
     const { data: tree, isLoading, error } = useQuery({
         queryKey: ['taxonomy', 'tree'],
@@ -78,14 +110,80 @@ export const TaxonomyManager = () => {
         }
     });
 
-    const handleCreate = (e: React.FormEvent) => {
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }: { id: string, data: any }) => taxonomyApi.update(id, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['taxonomy'] });
+            showAlert('Taxon updated successfully', 'success');
+            setIsEditing(false);
+
+            // Update local selection description
+            if (selectedNode) {
+                setSelectedNode({ ...selectedNode, name: newName, description });
+            }
+        },
+        onError: (error: any) => {
+            showAlert("Failed to update taxon: " + (error.response?.data?.detail || error.message), 'error');
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: taxonomyApi.delete,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['taxonomy'] });
+            showAlert('Taxon deleted successfully', 'success');
+            setSelectedNode(null);
+        },
+        onError: (error: any) => {
+            showAlert("Failed to delete taxon: " + (error.response?.data?.detail || error.message), 'error');
+        }
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        createMutation.mutate({
-            name: newName,
-            rank: newRank,
-            description,
-            parent_id: selectedNode?.id // Logic to determine parent needs refinement based on rank
+        if (isEditing && selectedNode) {
+            updateMutation.mutate({
+                id: selectedNode.id,
+                data: {
+                    name: newName,
+                    description,
+                }
+            });
+        } else {
+            createMutation.mutate({
+                name: newName,
+                rank: newRank,
+                description,
+                parent_id: selectedNode?.id // Logic to determine parent needs refinement based on rank
+            });
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedNode) return;
+        if (selectedNode.children && selectedNode.children.length > 0) {
+            showAlert("Cannot delete taxon that has children.", 'warning');
+            return;
+        }
+
+        confirm({
+            title: 'Confirm Delete',
+            message: 'Are you sure you want to delete this taxon?',
+            confirmText: 'Delete',
+            onConfirm: () => {
+                deleteMutation.mutate(selectedNode.id);
+            }
         });
+    };
+
+    const startEdit = () => {
+        if (selectedNode) {
+            setNewName(selectedNode.name);
+            setNewRank(selectedNode.rank);
+            setDescription(selectedNode.description || '');
+            setIsEditing(true);
+            setIsCreating(false);
+        }
     };
 
     const getNextRank = (currentRank: Rank): Rank | null => {
@@ -103,14 +201,52 @@ export const TaxonomyManager = () => {
             if (next) {
                 setNewRank(next);
                 setIsCreating(true);
+                setIsEditing(false);
+                setNewName('');
+                setDescription('');
             } else {
                 showAlert("Cannot create child of Species", 'warning');
             }
         } else {
             setNewRank(Rank.KINGDOM);
             setIsCreating(true);
+            setIsEditing(false);
+            setNewName('');
+            setDescription('');
         }
     };
+
+    const handleNodeSelect = (node: TaxonTree) => {
+        setSelectedNode(node);
+        setIsEditing(false);
+        setIsCreating(false);
+    };
+
+    const filterTree = (nodes: TaxonTree[], term: string): TaxonTree[] => {
+        if (!term) return nodes;
+        const lowerTerm = term.toLowerCase();
+
+        return nodes.reduce((acc: TaxonTree[], node) => {
+            const matchesTerm = node.name.toLowerCase().includes(lowerTerm) || node.rank.toLowerCase().includes(lowerTerm);
+
+            if (matchesTerm) {
+                // If the node itself matches, we include it and all its children untouched
+                acc.push({ ...node });
+            } else {
+                // If the node itself doesn't match, we check if any children match
+                const filteredChildren = filterTree(node.children, term);
+                if (filteredChildren.length > 0) {
+                    acc.push({ ...node, children: filteredChildren });
+                }
+            }
+            return acc;
+        }, []);
+    };
+
+    const filteredTree = useMemo(() => {
+        if (!tree) return [];
+        return filterTree(tree, searchTerm);
+    }, [tree, searchTerm]);
 
     if (isLoading) return <div>Loading taxonomy...</div>;
     if (error) return <div>Error loading taxonomy</div>;
@@ -118,23 +254,41 @@ export const TaxonomyManager = () => {
     return (
         <div className="taxonomy-container">
             <div className="taxonomy-tree">
-                <h3>Taxonomy Tree</h3>
-                <button className="btn" onClick={() => { setSelectedNode(null); startCreateChild(); }}>+ Add Kingdom</button>
-                {tree?.map((node) => (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ margin: 0 }}>Taxonomy Tree</h3>
+                    <button className="btn" onClick={() => { setSelectedNode(null); startCreateChild(); }}>+ Add Kingdom</button>
+                </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                    <input
+                        type="search"
+                        placeholder="Search taxonomy..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            borderRadius: '4px',
+                            border: '1px solid #ccc',
+                            fontFamily: 'inherit'
+                        }}
+                    />
+                </div>
+                {filteredTree?.map((node) => (
                     <TreeNode
                         key={node.id}
                         node={node}
-                        onSelect={setSelectedNode}
+                        onSelect={handleNodeSelect}
                         selectedId={selectedNode?.id}
+                        searchTerm={searchTerm}
                     />
                 ))}
             </div>
 
             <div className="taxon-details">
-                {isCreating ? (
-                    <form onSubmit={handleCreate}>
-                        <h3>Add New {newRank}</h3>
-                        {selectedNode && <p>Parent: {selectedNode.name} ({selectedNode.rank})</p>}
+                {(isCreating || isEditing) ? (
+                    <form onSubmit={handleSubmit}>
+                        <h3>{isEditing ? `Edit ${selectedNode?.rank}` : `Add New ${newRank}`}</h3>
+                        {(isCreating && selectedNode) && <p>Parent: {selectedNode.name} ({selectedNode.rank})</p>}
 
                         <div className="form-group">
                             <label>Name</label>
@@ -162,7 +316,7 @@ export const TaxonomyManager = () => {
 
                         <div style={{ display: 'flex', gap: '1rem' }}>
                             <button type="submit" className="btn">Save</button>
-                            <button type="button" className="btn" onClick={() => setIsCreating(false)} style={{ background: '#ccc' }}>Cancel</button>
+                            <button type="button" className="btn" onClick={() => { setIsCreating(false); setIsEditing(false); }} style={{ background: '#ccc' }}>Cancel</button>
                         </div>
                     </form>
                 ) : selectedNode ? (
@@ -170,11 +324,16 @@ export const TaxonomyManager = () => {
                         <h2>{selectedNode.name}</h2>
                         <span className="rank-badge">{selectedNode.rank}</span>
                         <p>{selectedNode.description || "No description."}</p>
-                        <p>ID: {selectedNode.id}</p>
 
-                        <div style={{ marginTop: '2rem' }}>
+                        <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
                             <button className="btn" onClick={startCreateChild}>
                                 + Add {getNextRank(selectedNode.rank)}
+                            </button>
+                            <button className="btn" onClick={startEdit} style={{ background: '#6c757d', borderColor: '#6c757d' }}>
+                                Edit
+                            </button>
+                            <button className="btn" onClick={handleDelete} style={{ background: '#dc3545', borderColor: '#dc3545' }}>
+                                Delete
                             </button>
                         </div>
                     </div>
