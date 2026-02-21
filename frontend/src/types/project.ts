@@ -14,6 +14,7 @@ export interface Project {
     location?: string;
     description?: string;
     created_at: string;
+    updated_at: string;
     plants: ProjectPlant[];
 }
 

@@ -4,6 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
@@ -24,7 +25,7 @@ async def read_projects(
     """
     query = select(Project).options(
         selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
-    ).offset(skip).limit(limit)
+    ).order_by(Project.updated_at.desc()).offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
 
@@ -114,6 +115,8 @@ async def add_plant_to_project(
         )
         db.add(new_association)
         
+    project.updated_at = sa.func.now()
+
     await db.commit()
     await db.refresh(project)
     
@@ -142,6 +145,8 @@ async def update_project(
     update_data = project_in.model_dump(exclude_unset=True)
     for field in update_data:
         setattr(project, field, update_data[field])
+
+    project.updated_at = sa.func.now()
 
     await db.commit()
     await db.refresh(project)

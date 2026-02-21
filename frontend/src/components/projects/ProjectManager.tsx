@@ -133,6 +133,15 @@ export const ProjectManager = () => {
         setActiveDropdown(activeDropdown === id ? null : id);
     };
 
+    const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        }).format(date);
+    };
+
     if (isLoading) return <div>Loading projects...</div>;
 
     return (
@@ -229,9 +238,12 @@ export const ProjectManager = () => {
                                     {project.description && (
                                         <p style={{ marginTop: '1rem', fontSize: '0.9rem', color: '#444' }}>{project.description}</p>
                                     )}
-                                    <div style={{ marginTop: '1.5rem', display: 'flex' }}>
+                                    <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span className="badge" style={{ background: '#f4f4f4', padding: '0.25rem 0.5rem', borderRadius: '2px', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#1a1a1a' }}>
                                             {project.plants?.length || 0} Plants
+                                        </span>
+                                        <span style={{ fontSize: '0.8rem', color: '#aaa' }}>
+                                            Updated {formatDate(project.updated_at || project.created_at)}
                                         </span>
                                     </div>
                                 </div>
@@ -245,6 +257,7 @@ export const ProjectManager = () => {
                         <div style={{ flex: 3 }}>Name</div>
                         <div style={{ flex: 2 }}>Client</div>
                         <div style={{ flex: 2 }}>Location</div>
+                        <div style={{ flex: 1 }}>Last Updated</div>
                         <div style={{ flex: 1 }}>Plants</div>
                         <div style={{ width: '40px' }}></div>
                     </div>
@@ -254,6 +267,9 @@ export const ProjectManager = () => {
                                 <div style={{ flex: 3, fontWeight: '500', color: '#1a1a1a' }}>{project.name}</div>
                                 <div style={{ flex: 2, color: '#666' }}>{project.client_name || '—'}</div>
                                 <div style={{ flex: 2, color: '#666' }}>{project.location || '—'}</div>
+                                <div style={{ flex: 1, color: '#888', fontSize: '0.9rem' }}>
+                                    {formatDate(project.updated_at || project.created_at)}
+                                </div>
                                 <div style={{ flex: 1 }}>
                                     <span className="badge" style={{ background: '#f4f4f4', padding: '0.25rem 0.5rem', borderRadius: '2px', fontSize: '0.75rem', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.02em', color: '#1a1a1a' }}>
                                         {project.plants?.length || 0}

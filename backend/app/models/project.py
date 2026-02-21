@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy import ForeignKey, String, Text, Integer, DateTime
+import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
@@ -13,7 +14,8 @@ class Project(Base):
     client_name: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     location: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, server_default=sa.text('now()'))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, server_default=sa.text('now()'), onupdate=datetime.utcnow)
 
     # Relationships
     plants: Mapped[List["ProjectPlant"]] = relationship("ProjectPlant", back_populates="project", cascade="all, delete-orphan")

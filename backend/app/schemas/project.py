@@ -37,6 +37,7 @@ class ProjectUpdate(ProjectBase):
 class ProjectResponse(ProjectBase):
     id: uuid.UUID
     created_at: datetime
+    updated_at: datetime
     plants: List[ProjectPlantResponse] = []
     
     model_config = ConfigDict(from_attributes=True)
