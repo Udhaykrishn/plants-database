@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { projectsApi } from '../../api/projects';
@@ -16,6 +16,10 @@ export const ProjectManager = () => {
     const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
+
+    // Search and Sort
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name-asc' | 'name-desc'>('newest');
 
     // Form
     const [name, setName] = useState('');
@@ -142,6 +146,27 @@ export const ProjectManager = () => {
         }).format(date);
     };
 
+    const displayedProjects = useMemo(() => {
+        if (!projects) return [];
+        return [...projects].filter(project => {
+            const term = searchTerm.toLowerCase();
+            return project.name.toLowerCase().includes(term) ||
+                (project.client_name && project.client_name.toLowerCase().includes(term)) ||
+                (project.location && project.location.toLowerCase().includes(term));
+        }).sort((a, b) => {
+            if (sortBy === 'newest') {
+                return new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime();
+            } else if (sortBy === 'oldest') {
+                return new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime();
+            } else if (sortBy === 'name-asc') {
+                return a.name.localeCompare(b.name);
+            } else if (sortBy === 'name-desc') {
+                return b.name.localeCompare(a.name);
+            }
+            return 0;
+        });
+    }, [projects, searchTerm, sortBy]);
+
     if (isLoading) return <div>Loading projects...</div>;
 
     return (
@@ -177,6 +202,26 @@ export const ProjectManager = () => {
                 </button>
             </div>
 
+            <div className="toolbar" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+                <input
+                    type="text"
+                    placeholder="Search projects by name, client, or location..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    style={{ flex: 1, minWidth: '200px', padding: '10px 14px' }}
+                />
+                <select
+                    value={sortBy}
+                    onChange={e => setSortBy(e.target.value as any)}
+                    style={{ padding: '10px 14px' }}
+                >
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                </select>
+            </div>
+
             {isCreating && (
                 <form className="create-plant-form" onSubmit={handleSubmit}>
                     <h3 style={{ margin: 0, paddingBottom: '1.5rem', fontWeight: 500, fontSize: '1.25rem', color: '#1a1a1a' }}>
@@ -208,7 +253,7 @@ export const ProjectManager = () => {
 
             {viewMode === 'card' ? (
                 <div className="project-list" onClick={() => setActiveDropdown(null)}>
-                    {projects?.map(project => (
+                    {displayedProjects.map(project => (
                         <div key={project.id} style={{ position: 'relative' }}>
                             <Link to={`/projects/${project.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                                 <div className="project-card">
@@ -261,7 +306,7 @@ export const ProjectManager = () => {
                         <div style={{ flex: 1 }}>Plants</div>
                         <div style={{ width: '40px' }}></div>
                     </div>
-                    {projects?.map(project => (
+                    {displayedProjects.map(project => (
                         <div key={project.id} className="project-table-row">
                             <Link to={`/projects/${project.id}`} style={{ display: 'contents', textDecoration: 'none', color: 'inherit' }}>
                                 <div style={{ flex: 3, fontWeight: '500', color: '#1a1a1a' }}>{project.name}</div>
