@@ -32,6 +32,8 @@ export interface Plant {
     planting_place: PlantingPlace;
     description?: string;
     care_data?: Record<string, any>;
+    icon_url?: string;
+    image_url?: string;
     created_at: string;
     taxon?: Taxon;
 }
@@ -45,6 +47,8 @@ export interface PlantCreate {
     planting_place: PlantingPlace;
     description?: string;
     care_data?: Record<string, any>;
+    icon_url?: string;
+    image_url?: string;
 }
 
 export interface PlantUpdate {
@@ -54,4 +58,6 @@ export interface PlantUpdate {
     planting_place?: PlantingPlace;
     description?: string;
     care_data?: Record<string, any>;
+    icon_url?: string;
+    image_url?: string;
 }

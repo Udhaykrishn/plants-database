@@ -1,16 +1,18 @@
 from typing import Any, List, Optional
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 
 from app.db.session import get_db
 from app.models.plant import Plant
 from app.models.taxon import Taxon
 from app.models.enums import PlantCategory, PlantingPlace, Rank
 from app.schemas.plant import PlantCreate, PlantResponse, PlantUpdate
+from app.services.cloudinary_service import upload_image
 
 router = APIRouter()
 
@@ -38,6 +40,24 @@ async def read_plants(
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
     return result.scalars().all()
+
+@router.post("/upload-image")
+async def handle_upload_image(
+    file: UploadFile = File(...),
+    image_type: str = Form("image")  # 'icon' or 'image'
+) -> Any:
+    """
+    Upload an image for a plant to Cloudinary.
+    Returns the secure URL.
+    """
+    if image_type not in ["icon", "image"]:
+        raise HTTPException(status_code=400, detail="Invalid image type.")
+        
+    try:
+        url = await upload_image(file, folder="plants")
+        return {"url": url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/", response_model=PlantResponse)
 async def create_plant(
@@ -137,6 +157,13 @@ async def delete_plant(
     if not plant:
         raise HTTPException(status_code=404, detail="Plant not found")
     
-    await db.delete(plant)
-    await db.commit()
-    return {"success": True}
+    try:
+        await db.delete(plant)
+        await db.commit()
+        return {"success": True}
+    except IntegrityError:
+        await db.rollback()
+        raise HTTPException(
+            status_code=400, 
+            detail="Cannot delete this plant because it is currently part of one or more projects."
+        )

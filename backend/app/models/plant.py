@@ -19,6 +19,8 @@ class Plant(Base):
     
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     care_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    icon_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     

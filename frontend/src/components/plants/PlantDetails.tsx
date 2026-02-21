@@ -43,12 +43,26 @@ export const PlantDetails = () => {
 
     return (
         <div className="plant-details-container" style={{ padding: '2rem' }}>
-            <Link to="/plants" className="btn" style={{ background: '#6c757d', marginBottom: '1rem', display: 'inline-block' }}>
-                ← Back to Catalog
-            </Link>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <Link to="/plants" className="btn" style={{ background: '#6c757d', display: 'inline-block' }}>
+                    ← Back to Catalog
+                </Link>
+                <Link to="/plants" state={{ editPlant: plant }} className="btn" style={{ background: '#0056b3', display: 'inline-block' }}>
+                    ✎ Edit Plant
+                </Link>
+            </div>
 
             <div className="plant-header" style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{plant.common_name}</h1>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
+                    {plant.icon_url && (
+                        <img
+                            src={plant.icon_url}
+                            alt={`${plant.common_name} icon`}
+                            style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+                        />
+                    )}
+                    <h1 style={{ fontSize: '2.5rem', margin: 0 }}>{plant.common_name}</h1>
+                </div>
                 <p style={{ fontSize: '1.2rem', fontStyle: 'italic', color: '#666' }}>
                     {plant.taxon?.name || 'Unknown Species'}
                 </p>
@@ -60,6 +74,15 @@ export const PlantDetails = () => {
                         {plant.planting_place}
                     </span>
                 </div>
+                {plant.image_url && (
+                    <div style={{ marginTop: '1.5rem' }}>
+                        <img
+                            src={plant.image_url}
+                            alt={`${plant.common_name} main`}
+                            style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
+                        />
+                    </div>
+                )}
             </div>
 
             <div className="plant-body" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '2rem' }}>
@@ -108,6 +131,6 @@ export const PlantDetails = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };

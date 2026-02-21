@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { plantsApi } from '../../api/plants';
 import { taxonomyApi } from '../../api/taxonomy';
@@ -16,6 +16,7 @@ import { useConfirm } from '../../contexts/ConfirmContext';
 export const PlantManager = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const location = useLocation();
     const { showAlert } = useAlert();
     const { confirm } = useConfirm();
     const [isCreating, setIsCreating] = useState(false);
@@ -100,6 +101,11 @@ export const PlantManager = () => {
     const [isOutdoor, setIsOutdoor] = useState(true);
     const [description, setDescription] = useState('');
     const [taxonId, setTaxonId] = useState('');
+    const [iconFile, setIconFile] = useState<File | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [iconUrl, setIconUrl] = useState('');
+    const [imageUrl, setImageUrl] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
 
     // Queries
     const { data: plants, isLoading: plantsLoading } = useQuery({
@@ -111,6 +117,14 @@ export const PlantManager = () => {
         queryKey: ['taxonomy', 'tree'],
         queryFn: taxonomyApi.getTree,
     });
+
+    useEffect(() => {
+        if (location.state?.editPlant && plants && taxonomyTree) {
+            handleEdit(location.state.editPlant);
+            // Clear the state so it doesn't re-trigger on refresh
+            window.history.replaceState({}, document.title);
+        }
+    }, [location.state, plants, taxonomyTree]);
 
     const getSpecies = (nodes: any[]): any[] => {
         let species: any[] = [];
@@ -171,6 +185,10 @@ export const PlantManager = () => {
         setIsOutdoor(true);
         setDescription('');
         setTaxonId('');
+        setIconFile(null);
+        setImageFile(null);
+        setIconUrl('');
+        setImageUrl('');
     };
 
     const handleEdit = (plant: Plant) => {
@@ -183,6 +201,10 @@ export const PlantManager = () => {
         setIsOutdoor(plant.planting_place === PlantingPlace.OUTDOOR || plant.planting_place === PlantingPlace.BOTH);
         setDescription(plant.description || '');
         setTaxonId(plant.taxon_id);
+        setIconUrl(plant.icon_url || '');
+        setImageUrl(plant.image_url || '');
+        setIconFile(null);
+        setImageFile(null);
     };
 
     const handleDelete = (id: string, name: string) => {
@@ -231,7 +253,7 @@ export const PlantManager = () => {
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!taxonId) {
             showAlert("Please select a Species", 'warning');
@@ -241,6 +263,27 @@ export const PlantManager = () => {
             showAlert("Please select at least one Planting Place (Indoor or Outdoor)", 'warning');
             return;
         }
+
+        setIsUploading(true);
+        let finalIconUrl = iconUrl;
+        let finalImageUrl = imageUrl;
+
+        try {
+            if (iconFile) {
+                const res = await plantsApi.uploadImage(iconFile, 'icon');
+                finalIconUrl = res.url;
+            }
+            if (imageFile) {
+                const res = await plantsApi.uploadImage(imageFile, 'image');
+                finalImageUrl = res.url;
+            }
+        } catch (error: any) {
+            setIsUploading(false);
+            showAlert("Error uploading images: " + (error.response?.data?.detail || error.message), 'error');
+            return;
+        }
+
+        setIsUploading(false);
 
         let plantingPlace: PlantingPlace = PlantingPlace.BOTH;
         if (isIndoor && !isOutdoor) plantingPlace = PlantingPlace.INDOOR;
@@ -252,6 +295,8 @@ export const PlantManager = () => {
             planting_place: plantingPlace,
             description,
             taxon_id: taxonId,
+            icon_url: finalIconUrl || undefined,
+            image_url: finalImageUrl || undefined,
         };
 
         if (editingPlantId) {
@@ -433,9 +478,48 @@ export const PlantManager = () => {
                         />
                     </div>
 
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Icon Image</label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={e => setIconFile(e.target.files?.[0] || null)}
+                                style={{ padding: '0.5rem', background: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
+                            />
+                            {(iconFile || iconUrl) && (
+                                <div style={{ marginTop: '0.5rem' }}>
+                                    <img
+                                        src={iconFile ? URL.createObjectURL(iconFile) : iconUrl}
+                                        alt="Icon preview"
+                                        style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #eee' }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                        <div className="form-group">
+                            <label>Main Image</label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={e => setImageFile(e.target.files?.[0] || null)}
+                                style={{ padding: '0.5rem', background: '#fff', border: '1px solid #ccc', borderRadius: '4px' }}
+                            />
+                            {(imageFile || imageUrl) && (
+                                <div style={{ marginTop: '0.5rem' }}>
+                                    <img
+                                        src={imageFile ? URL.createObjectURL(imageFile) : imageUrl}
+                                        alt="Main image preview"
+                                        style={{ maxWidth: '100%', height: '120px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #eee' }}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     <div style={{ display: 'flex', gap: '1rem' }}>
-                        <button type="submit" className="btn">
-                            {editingPlantId ? 'Save Changes' : 'Create Plant'}
+                        <button type="submit" className="btn" disabled={isUploading}>
+                            {isUploading ? 'Uploading...' : editingPlantId ? 'Save Changes' : 'Create Plant'}
                         </button>
                         {editingPlantId && (
                             <button type="button" className="btn" onClick={cancelEdit} style={{ background: '#f4f4f4', color: '#1a1a1a', borderColor: '#eaeaea' }}>
@@ -477,6 +561,17 @@ export const PlantManager = () => {
                                                 style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                                                 onClick={e => e.stopPropagation()}
                                             />
+                                            {plant.icon_url ? (
+                                                <img
+                                                    src={plant.icon_url}
+                                                    alt=""
+                                                    style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px' }}
+                                                />
+                                            ) : (
+                                                <div style={{ width: '32px', height: '32px', background: '#eee', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <span style={{ fontSize: '10px', color: '#999' }}>No img</span>
+                                                </div>
+                                            )}
                                             <h3 style={{ margin: 0 }}>{plant.common_name}</h3>
                                         </div>
                                         <div className="actions-menu-container">
@@ -535,6 +630,7 @@ export const PlantManager = () => {
                                     style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                                 />
                             </div>
+                            <div style={{ width: '48px' }}>Icon</div>
                             <div style={{ flex: 2 }}>Common Name</div>
                             <div style={{ flex: 2 }}>Species</div>
                             <div style={{ flex: 1 }}>Category</div>
@@ -567,6 +663,15 @@ export const PlantManager = () => {
                                             style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                                             onClick={e => e.stopPropagation()}
                                         />
+                                    </div>
+                                    <div style={{ width: '48px', display: 'flex', alignItems: 'center' }}>
+                                        {plant.icon_url ? (
+                                            <img src={plant.icon_url} alt="" style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '4px' }} />
+                                        ) : (
+                                            <div style={{ width: '32px', height: '32px', background: '#eee', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <span style={{ fontSize: '10px', color: '#999' }}>-</span>
+                                            </div>
+                                        )}
                                     </div>
                                     <div style={{ flex: 2, fontWeight: '500', color: '#1a1a1a' }}>{plant.common_name}</div>
                                     <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.taxon?.name}</div>
