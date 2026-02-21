@@ -10,7 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from app.db.session import get_db
 from app.models.plant import Plant
 from app.models.taxon import Taxon
-from app.models.enums import PlantCategory, PlantingPlace, Rank
+from app.models.enums import PlantingPlace, Rank
 from app.schemas.plant import PlantCreate, PlantResponse, PlantUpdate
 from app.services.cloudinary_service import upload_image
 
@@ -21,7 +21,7 @@ async def read_plants(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
     limit: int = 100,
-    category: Optional[PlantCategory] = None,
+    category: Optional[str] = None,
     planting_place: Optional[PlantingPlace] = None,
     search: Optional[str] = None
 ) -> Any:

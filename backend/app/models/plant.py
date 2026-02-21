@@ -6,7 +6,7 @@ from sqlalchemy import ForeignKey, String, Text, Enum as SAEnum, JSON, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base_class import Base
-from app.models.enums import PlantCategory, PlantingPlace, Rank
+from app.models.enums import PlantingPlace, Rank
 from app.models.taxon import Taxon
 
 class Plant(Base):
@@ -14,7 +14,7 @@ class Plant(Base):
     taxon_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("taxons.id"), nullable=False, index=True)
     
     common_name: Mapped[str] = mapped_column(String, index=True, nullable=False)
-    category: Mapped[PlantCategory] = mapped_column(SAEnum(PlantCategory), nullable=False, index=True)
+    category: Mapped[str] = mapped_column(String, nullable=False, index=True)
     planting_place: Mapped[PlantingPlace] = mapped_column(SAEnum(PlantingPlace), nullable=False, index=True)
     
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

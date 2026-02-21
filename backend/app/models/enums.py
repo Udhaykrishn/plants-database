@@ -14,15 +14,3 @@ class PlantingPlace(str, Enum):
     OUTDOOR = "Outdoor"
     BOTH = "Indoor & Outdoor"
 
-class PlantCategory(str, Enum):
-    TREE = "Tree"
-    SHRUB = "Shrub"
-    PALM = "Palm"
-    CREEPER = "Creeper"
-    GROUNDCOVER = "Groundcover"
-    CLIMBER = "Climber"
-    FERN = "Fern"
-    GRASS = "Grass"
-    SUCCULENT = "Succulent"
-    AQUATIC = "Aquatic"
-    OTHER = "Other"

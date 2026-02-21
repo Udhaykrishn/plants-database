@@ -4,3 +4,4 @@ from app.db.base_class import Base  # noqa
 from app.models.taxon import Taxon  # noqa
 from app.models.plant import Plant  # noqa
 from app.models.project import Project, ProjectPlant  # noqa
+from app.models.category import Category  # noqa

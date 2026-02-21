@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { plantsApi } from '../../api/plants';
 import { taxonomyApi } from '../../api/taxonomy';
 import { projectsApi } from '../../api/projects';
-import { PlantCategory, PlantingPlace } from '../../types/plant';
+import { PlantingPlace } from '../../types/plant';
 import type { PlantCreate, Plant } from '../../types/plant';
 import { Rank } from '../../types/taxon';
 import './PlantManager.css';
@@ -12,6 +12,7 @@ import './PlantManager.css';
 import { ioApi } from '../../api/io';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
+import { categoriesApi } from '../../api/categories';
 import { SearchableSelect } from '../common/SearchableSelect';
 import { TaxonomyFormTable } from './TaxonomyFormTable';
 
@@ -76,7 +77,7 @@ export const PlantManager = () => {
 
     // Filters & Sort
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterCategory, setFilterCategory] = useState<PlantCategory | ''>('');
+    const [filterCategory, setFilterCategory] = useState<string>('');
     const [filterIndoor, setFilterIndoor] = useState(false);
     const [filterOutdoor, setFilterOutdoor] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
@@ -98,7 +99,7 @@ export const PlantManager = () => {
 
     // Form State
     const [commonName, setCommonName] = useState('');
-    const [category, setCategory] = useState<PlantCategory>(PlantCategory.OTHER);
+    const [category, setCategory] = useState<string>('');
     const [isIndoor, setIsIndoor] = useState(true);
     const [isOutdoor, setIsOutdoor] = useState(true);
     const [description, setDescription] = useState('');
@@ -118,6 +119,11 @@ export const PlantManager = () => {
     const { data: taxonomyTree } = useQuery({
         queryKey: ['taxonomy', 'tree'],
         queryFn: taxonomyApi.getTree,
+    });
+
+    const { data: categoriesOptions } = useQuery({
+        queryKey: ['categories'],
+        queryFn: categoriesApi.getAll,
     });
 
     useEffect(() => {
@@ -170,7 +176,7 @@ export const PlantManager = () => {
 
     const resetForm = () => {
         setCommonName('');
-        setCategory(PlantCategory.OTHER);
+        setCategory('');
         setIsIndoor(true);
         setIsOutdoor(true);
         setDescription('');
@@ -380,11 +386,11 @@ export const PlantManager = () => {
                     />
                     <select
                         value={filterCategory}
-                        onChange={e => setFilterCategory(e.target.value as PlantCategory | '')}
+                        onChange={e => setFilterCategory(e.target.value)}
                         style={{ padding: '10px 14px' }}
                     >
                         <option value="">All Categories</option>
-                        {Object.values(PlantCategory).map(c => <option key={c} value={c}>{c}</option>)}
+                        {categoriesOptions?.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
                     </select>
                     <div className="checkbox-group" style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0 14px', height: '42px' }}>
                         <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 500, color: '#444' }}>
@@ -435,10 +441,12 @@ export const PlantManager = () => {
                             <label>Category</label>
                             <select
                                 value={category}
-                                onChange={e => setCategory(e.target.value as PlantCategory)}
+                                onChange={e => setCategory(e.target.value)}
+                                required
                             >
-                                {Object.values(PlantCategory).map(c => (
-                                    <option key={c} value={c}>{c}</option>
+                                <option value="" disabled>Select category...</option>
+                                {categoriesOptions?.map(c => (
+                                    <option key={c.id} value={c.name}>{c.name}</option>
                                 ))}
                             </select>
                         </div>
