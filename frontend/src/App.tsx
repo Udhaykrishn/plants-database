@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import { TaxonomyManager } from './components/taxonomy/TaxonomyManager';
 import { PlantManager } from './components/plants/PlantManager';
 import { PlantDetails } from './components/plants/PlantDetails';
+import { CategoryManager } from './components/categories/CategoryManager';
 import { ProjectManager } from './components/projects/ProjectManager';
 import { ProjectDetails } from './components/projects/ProjectDetails';
 import './App.css';
@@ -19,6 +20,7 @@ function Layout() {
         <ul>
           <li><NavLink to="/" end>Dashboard</NavLink></li>
           <li><NavLink to="/taxonomy">Taxonomy</NavLink></li>
+          <li><NavLink to="/categories">Categories</NavLink></li>
           <li><NavLink to="/plants">Plants</NavLink></li>
           <li><NavLink to="/projects">Projects</NavLink></li>
         </ul>
@@ -27,6 +29,7 @@ function Layout() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/taxonomy" element={<TaxonomyManager />} />
+          <Route path="/categories" element={<CategoryManager />} />
           <Route path="/plants" element={<PlantManager />} />
           <Route path="/plants/:id" element={<PlantDetails />} />
           <Route path="/projects" element={<ProjectManager />} />

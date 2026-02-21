@@ -1,20 +1,6 @@
 import type { Taxon } from "./taxon";
 
-export const PlantCategory = {
-    TREE: "Tree",
-    SHRUB: "Shrub",
-    PALM: "Palm",
-    CREEPER: "Creeper",
-    GROUNDCOVER: "Groundcover",
-    CLIMBER: "Climber",
-    FERN: "Fern",
-    GRASS: "Grass",
-    SUCCULENT: "Succulent",
-    AQUATIC: "Aquatic",
-    OTHER: "Other",
-} as const;
 
-export type PlantCategory = typeof PlantCategory[keyof typeof PlantCategory];
 
 export const PlantingPlace = {
     INDOOR: "Indoor",
@@ -28,7 +14,7 @@ export interface Plant {
     id: string;
     taxon_id: string;
     common_name: string;
-    category: PlantCategory;
+    category: string;
     planting_place: PlantingPlace;
     description?: string;
     care_data?: Record<string, any>;
@@ -43,7 +29,7 @@ export type PlantResponse = Plant;
 export interface PlantCreate {
     taxon_id: string;
     common_name: string;
-    category: PlantCategory;
+    category: string;
     planting_place: PlantingPlace;
     description?: string;
     care_data?: Record<string, any>;
@@ -54,7 +40,7 @@ export interface PlantCreate {
 export interface PlantUpdate {
     taxon_id?: string;
     common_name?: string;
-    category?: PlantCategory;
+    category?: string;
     planting_place?: PlantingPlace;
     description?: string;
     care_data?: Record<string, any>;
