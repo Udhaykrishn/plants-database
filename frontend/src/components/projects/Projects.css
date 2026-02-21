@@ -108,6 +108,42 @@
     color: #e03131;
 }
 
+/* Table View Classes */
+.projects-table-container {
+    background: #fff;
+    border: 1px solid #eaeaea;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.project-table-header {
+    display: flex;
+    padding: 1rem 1.5rem;
+    background: #fafafa;
+    border-bottom: 1px solid #eaeaea;
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.project-table-row {
+    display: flex;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #eaeaea;
+    align-items: center;
+    transition: background-color 0.2s ease;
+}
+
+.project-table-row:last-child {
+    border-bottom: none;
+}
+
+.project-table-row:hover {
+    background-color: #fafafa;
+}
+
 .dropdown-item.danger:hover {
     background-color: #fff5f5;
 }
