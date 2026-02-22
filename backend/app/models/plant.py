@@ -11,7 +11,8 @@ from app.models.taxon import Taxon
 
 class Plant(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    taxon_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("taxons.id"), nullable=False, index=True)
+    taxon_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("taxons.id"), nullable=True, index=True)
+    scientific_name: Mapped[Optional[str]] = mapped_column(String, index=True, nullable=True)
     
     common_name: Mapped[str] = mapped_column(String, index=True, nullable=False)
     category: Mapped[str] = mapped_column(String, nullable=False, index=True)

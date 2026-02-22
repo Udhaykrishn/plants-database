@@ -12,7 +12,8 @@ export type PlantingPlace = typeof PlantingPlace[keyof typeof PlantingPlace];
 
 export interface Plant {
     id: string;
-    taxon_id: string;
+    taxon_id?: string;
+    scientific_name?: string;
     common_name: string;
     category: string;
     planting_place: PlantingPlace;
@@ -27,7 +28,8 @@ export interface Plant {
 export type PlantResponse = Plant;
 
 export interface PlantCreate {
-    taxon_id: string;
+    taxon_id?: string;
+    scientific_name?: string;
     common_name: string;
     category: string;
     planting_place: PlantingPlace;

@@ -104,7 +104,8 @@ export const PlantManager = () => {
     const [isIndoor, setIsIndoor] = useState(true);
     const [isOutdoor, setIsOutdoor] = useState(true);
     const [description, setDescription] = useState('');
-    const [taxonId, setTaxonId] = useState('');
+    const [scientificName, setScientificName] = useState('');
+    const [taxonId, setTaxonId] = useState<string | undefined>(undefined);
     const [iconFile, setIconFile] = useState<File | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [iconUrl, setIconUrl] = useState('');
@@ -212,6 +213,13 @@ export const PlantManager = () => {
                         queryClient.invalidateQueries({ queryKey: ['taxonomy', 'tree'] });
                     }).catch(console.error);
                 }
+
+                // Fallback scientific_name using genus+species if available
+                if (data.taxonomy.genus && data.taxonomy.species) {
+                    setScientificName(`${data.taxonomy.genus} ${data.taxonomy.species}`);
+                } else if (data.taxonomy.species) {
+                    setScientificName(data.taxonomy.species);
+                }
             }
 
             showAlert("Auto-filled details using AI!", 'success');
@@ -238,7 +246,8 @@ export const PlantManager = () => {
         setIsIndoor(true);
         setIsOutdoor(true);
         setDescription('');
-        setTaxonId('');
+        setScientificName('');
+        setTaxonId(undefined);
         setIconFile(null);
         setImageFile(null);
         setIconUrl('');
@@ -258,6 +267,7 @@ export const PlantManager = () => {
         setIsIndoor(plant.planting_place === PlantingPlace.INDOOR || plant.planting_place === PlantingPlace.BOTH);
         setIsOutdoor(plant.planting_place === PlantingPlace.OUTDOOR || plant.planting_place === PlantingPlace.BOTH);
         setDescription(plant.description || '');
+        setScientificName(plant.scientific_name || '');
         setTaxonId(plant.taxon_id);
         setIconUrl(plant.icon_url || '');
         setImageUrl(plant.image_url || '');
@@ -318,10 +328,6 @@ export const PlantManager = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!taxonId) {
-            showAlert("Please select a Species", 'warning');
-            return;
-        }
         if (!isIndoor && !isOutdoor) {
             showAlert("Please select at least one Planting Place (Indoor or Outdoor)", 'warning');
             return;
@@ -364,6 +370,7 @@ export const PlantManager = () => {
 
         const plantData: Partial<PlantCreate> = {
             common_name: commonName,
+            scientific_name: scientificName,
             category,
             planting_place: plantingPlace,
             description,
@@ -522,6 +529,14 @@ export const PlantManager = () => {
                                     {aiMutation.isPending ? '⏳ loading...' : '✨ AI Auto-Fill'}
                                 </button>
                             </div>
+                        </div>
+                        <div className="form-group">
+                            <label>Scientific Name</label>
+                            <input
+                                value={scientificName}
+                                onChange={e => setScientificName(e.target.value)}
+                                style={{ width: '100%' }}
+                            />
                         </div>
                     </div>
 
@@ -746,7 +761,7 @@ export const PlantManager = () => {
                                             </div>
                                         </div>
                                         <div className="taxonomy-info">
-                                            <i>{plant.taxon?.name}</i>
+                                            <i>{plant.scientific_name}</i>
                                         </div>
                                         <div className="plant-meta">
                                             <span className="tag">{plant.category}</span>
@@ -776,7 +791,7 @@ export const PlantManager = () => {
                                 </div>
                                 <div style={{ width: '48px' }}>Icon</div>
                                 <div style={{ flex: 2 }}>Common Name</div>
-                                <div style={{ flex: 2 }}>Species</div>
+                                <div style={{ flex: 2 }}>Scientific Name</div>
                                 <div style={{ flex: 1 }}>Category</div>
                                 <div style={{ flex: 1 }}>Place</div>
                                 <div style={{ width: '40px' }}></div>
@@ -818,7 +833,7 @@ export const PlantManager = () => {
                                             )}
                                         </div>
                                         <div style={{ flex: 2, fontWeight: '500', color: '#1a1a1a' }}>{plant.common_name}</div>
-                                        <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.taxon?.name}</div>
+                                        <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.scientific_name}</div>
                                         <div style={{ flex: 1 }}><span className="tag">{plant.category}</span></div>
                                         <div style={{ flex: 1 }}><span className="tag">{plant.planting_place}</span></div>
                                         <div style={{ width: '40px', textAlign: 'right' }}>
