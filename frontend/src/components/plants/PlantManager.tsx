@@ -104,6 +104,7 @@ export const PlantManager = () => {
     const [isIndoor, setIsIndoor] = useState(true);
     const [isOutdoor, setIsOutdoor] = useState(true);
     const [description, setDescription] = useState('');
+    const [commonDiseases, setCommonDiseases] = useState('');
     const [scientificName, setScientificName] = useState('');
     const [taxonId, setTaxonId] = useState<string | undefined>(undefined);
     const [iconFile, setIconFile] = useState<File | null>(null);
@@ -182,6 +183,7 @@ export const PlantManager = () => {
         onSuccess: (data) => {
             if (data.common_name && !commonName.trim()) setCommonName(data.common_name);
             if (data.description) setDescription(data.description);
+            if (data.common_diseases) setCommonDiseases(data.common_diseases);
             if (data.category) setCategory(data.category);
 
             if (data.planting_place === 'Indoor') {
@@ -250,6 +252,7 @@ export const PlantManager = () => {
         setIsIndoor(true);
         setIsOutdoor(true);
         setDescription('');
+        setCommonDiseases('');
         setScientificName('');
         setTaxonId(undefined);
         setIconFile(null);
@@ -271,6 +274,7 @@ export const PlantManager = () => {
         setIsIndoor(plant.planting_place === PlantingPlace.INDOOR || plant.planting_place === PlantingPlace.BOTH);
         setIsOutdoor(plant.planting_place === PlantingPlace.OUTDOOR || plant.planting_place === PlantingPlace.BOTH);
         setDescription(plant.description || '');
+        setCommonDiseases(plant.common_diseases || '');
         setScientificName(plant.scientific_name || '');
         setTaxonId(plant.taxon_id);
         setIconUrl(plant.icon_url || '');
@@ -378,6 +382,7 @@ export const PlantManager = () => {
             category,
             planting_place: plantingPlace,
             description,
+            common_diseases: commonDiseases,
             taxon_id: taxonId,
             icon_url: finalIconUrl || undefined,
             image_url: finalImageUrl || undefined,
@@ -595,6 +600,16 @@ export const PlantManager = () => {
                         <textarea
                             value={description}
                             onChange={e => setDescription(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                        <label>Common Diseases & Pests</label>
+                        <textarea
+                            value={commonDiseases}
+                            onChange={e => setCommonDiseases(e.target.value)}
+                            placeholder="Known diseases and pest susceptibility..."
+                            style={{ minHeight: '80px' }}
                         />
                     </div>
 

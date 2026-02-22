@@ -113,6 +113,15 @@ export const PlantDetails = () => {
                     </div>
                 </div>
 
+                {plant.common_diseases && (
+                    <div className="plant-section">
+                        <h3>Common Diseases & Pests</h3>
+                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', border: '1px solid #eaeaea', lineHeight: '1.6' }}>
+                            <p style={{ whiteSpace: 'pre-line', margin: 0 }}>{plant.common_diseases}</p>
+                        </div>
+                    </div>
+                )}
+
                 {plant.care_data && Object.keys(plant.care_data).length > 0 && (
                     <div className="plant-section">
                         <h3>Care Data</h3>

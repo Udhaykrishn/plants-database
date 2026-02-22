@@ -18,6 +18,7 @@ export interface Plant {
     category: string;
     planting_place: PlantingPlace;
     description?: string;
+    common_diseases?: string;
     care_data?: Record<string, any>;
     icon_url?: string;
     image_url?: string;
@@ -34,6 +35,7 @@ export interface PlantCreate {
     category: string;
     planting_place: PlantingPlace;
     description?: string;
+    common_diseases?: string;
     care_data?: Record<string, any>;
     icon_url?: string;
     image_url?: string;
@@ -45,6 +47,7 @@ export interface PlantUpdate {
     category?: string;
     planting_place?: PlantingPlace;
     description?: string;
+    common_diseases?: string;
     care_data?: Record<string, any>;
     icon_url?: string;
     image_url?: string;

@@ -19,5 +19,6 @@ class PlantAIDetailsResponse(BaseModel):
     category: Optional[str] = None
     planting_place: Optional[str] = None  # Indoor, Outdoor, or "Indoor & Outdoor"
     description: Optional[str] = None
+    common_diseases: Optional[str] = None
     care_data: Optional[Dict[str, Any]] = None
     taxonomy: Optional[TaxonomyDetails] = None

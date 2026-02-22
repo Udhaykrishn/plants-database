@@ -19,6 +19,7 @@ class Plant(Base):
     planting_place: Mapped[PlantingPlace] = mapped_column(SAEnum(PlantingPlace), nullable=False, index=True)
     
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    common_diseases: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     care_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     icon_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)

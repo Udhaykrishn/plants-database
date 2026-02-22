@@ -15,6 +15,7 @@ export interface PlantAIDetailsResponse {
     category?: string;
     planting_place?: "Indoor" | "Outdoor" | "Indoor & Outdoor";
     description?: string;
+    common_diseases?: string;
     care_data?: Record<string, string>;
     taxonomy?: TaxonomyDetails;
 }

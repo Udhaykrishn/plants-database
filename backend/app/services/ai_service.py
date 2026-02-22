@@ -43,6 +43,7 @@ async def generate_plant_details(common_name: Optional[str] = None, scientific_n
       "category": "String (best matching one of: Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, or Other)",
       "planting_place": "String (must be exactly one of: 'Indoor', 'Outdoor', 'Indoor & Outdoor')",
       "description": "String (a short, simple, and very concise description using plain language)",
+      "common_diseases": "String (a short, simple bulleted list of common diseases and pests, using '•')",
       "care_data": {{
         "water": "String (concise instructions in simple language, formatted as short bullet points using '•')",
         "sunlight": "String (concise instructions in simple language, formatted as short bullet points using '•')",
@@ -90,6 +91,7 @@ async def generate_plant_details(common_name: Optional[str] = None, scientific_n
             category=data.get("category"),
             planting_place=data.get("planting_place"),
             description=data.get("description"),
+            common_diseases=data.get("common_diseases"),
             care_data=data.get("care_data"),
             taxonomy=taxonomy
         )
