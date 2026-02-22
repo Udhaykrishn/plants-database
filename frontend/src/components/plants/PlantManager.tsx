@@ -333,8 +333,31 @@ export const PlantManager = () => {
         let finalIconUrl = iconUrl;
         let finalImageUrl = imageUrl;
         try {
+            // Upload local file selections first
             if (iconFile) { const res = await plantsApi.uploadImage(iconFile, 'icon'); finalIconUrl = res.url; }
             if (imageFile) { const res = await plantsApi.uploadImage(imageFile, 'image'); finalImageUrl = res.url; }
+
+            // Upload AI-fetched URLs (non-Cloudinary) to Cloudinary
+            const isCloudinaryUrl = (url: string) => url.includes('res.cloudinary.com');
+
+            if (!iconFile && finalIconUrl && !isCloudinaryUrl(finalIconUrl)) {
+                try {
+                    const res = await plantsApi.uploadImageFromUrl(finalIconUrl, 'icon');
+                    finalIconUrl = res.url;
+                } catch {
+                    showAlert("Could not upload icon image to Cloudinary — the AI-suggested image may not exist. It will be skipped.", 'warning');
+                    finalIconUrl = '';
+                }
+            }
+            if (!imageFile && finalImageUrl && !isCloudinaryUrl(finalImageUrl)) {
+                try {
+                    const res = await plantsApi.uploadImageFromUrl(finalImageUrl, 'image');
+                    finalImageUrl = res.url;
+                } catch {
+                    showAlert("Could not upload main image to Cloudinary — the AI-suggested image may not exist. It will be skipped.", 'warning');
+                    finalImageUrl = '';
+                }
+            }
         } catch (error: any) {
             setIsUploading(false);
             showAlert("Error uploading images: " + (error.response?.data?.detail || error.message), 'error');

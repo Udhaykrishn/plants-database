@@ -1,15 +1,18 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-/**
- * Render a single DOM element to a canvas.
- */
+const PAGE_W_MM = 210;
+const PAGE_H_MM = 297;
+const SCALE = 2.5;
+
+/** Make a hidden element visible temporarily, render to canvas at fixed A4 width. */
 async function elementToCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
     const prev = {
         position: el.style.position,
         left: el.style.left,
         top: el.style.top,
         width: el.style.width,
+        height: el.style.height,
         visibility: el.style.visibility,
         zIndex: el.style.zIndex,
     };
@@ -17,13 +20,14 @@ async function elementToCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
     el.style.position = 'fixed';
     el.style.left = '0';
     el.style.top = '0';
-    el.style.width = '794px';   // A4 at 96 dpi
+    el.style.width = '794px';
+    el.style.height = prev.height || '';   // keep explicit height if set
     el.style.visibility = 'visible';
-    el.style.zIndex = '-9999';
+    el.style.zIndex = '9999';
 
     try {
         return await html2canvas(el, {
-            scale: 2.5,
+            scale: SCALE,
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#f4f0ea',
@@ -35,116 +39,123 @@ async function elementToCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
         el.style.left = prev.left;
         el.style.top = prev.top;
         el.style.width = prev.width;
+        el.style.height = prev.height;
         el.style.visibility = prev.visibility;
         el.style.zIndex = prev.zIndex;
     }
 }
 
 /**
- * Add canvas image to current PDF page, splitting across multiple pages if the canvas is tall.
- * Returns the number of pages added (always ≥ 1).
+ * Add a canvas to the PDF as a SINGLE page.
+ * - Canvas is placed at full A4 width.
+ * - If canvas aspect ratio matches A4 exactly (plant pages with fixed height) → fills page perfectly.
+ * - If canvas is shorter → placed at top; page background fills the rest.
+ * - If canvas is taller → scaled DOWN proportionally to fit A4 height.
+ * No stretching, no distortion.
  */
-function addCanvasToPdf(
+function addAsSinglePage(
     pdf: jsPDF,
     canvas: HTMLCanvasElement,
-    addNewPageFirst: boolean
-): number {
-    const PAGE_W_MM = 210;
-    const PAGE_H_MM = 297;
+    addNewPage: boolean,
+): void {
+    if (addNewPage) pdf.addPage();
 
-    const imgW_px = canvas.width;
-    const imgH_px = canvas.height;
+    const naturalH_mm = (canvas.height / canvas.width) * PAGE_W_MM;
 
-    const imgW_mm = PAGE_W_MM;
-    const imgH_mm = (imgH_px / imgW_px) * imgW_mm;
-
-    const pagesNeeded = Math.ceil(imgH_mm / PAGE_H_MM);
-
-    for (let i = 0; i < pagesNeeded; i++) {
-        if (addNewPageFirst || i > 0) {
-            pdf.addPage();
-        }
-
-        // Slice the canvas vertically for this page
-        const sliceStart_px = Math.round((i * PAGE_H_MM) / imgH_mm * imgH_px);
-        const sliceH_px = Math.round(Math.min(PAGE_H_MM / imgH_mm * imgH_px, imgH_px - sliceStart_px));
-
-        const slice = document.createElement('canvas');
-        slice.width = imgW_px;
-        slice.height = sliceH_px;
-        slice.getContext('2d')!.drawImage(
-            canvas,
-            0, sliceStart_px, imgW_px, sliceH_px,
-            0, 0, imgW_px, sliceH_px
-        );
-
-        const sliceH_mm = (sliceH_px / imgW_px) * imgW_mm;
-        pdf.addImage(slice.toDataURL('image/png'), 'PNG', 0, 0, PAGE_W_MM, sliceH_mm);
+    if (naturalH_mm <= PAGE_H_MM + 1) {
+        // Fits in one page — place at top, proportional
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG',
+            0, 0, PAGE_W_MM, naturalH_mm);
+    } else {
+        // Too tall — scale DOWN so height = PAGE_H_MM, maintain aspect
+        const scaledW_mm = PAGE_W_MM * (PAGE_H_MM / naturalH_mm);
+        const xOffset = (PAGE_W_MM - scaledW_mm) / 2;
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG',
+            xOffset, 0, scaledW_mm, PAGE_H_MM);
     }
-
-    return pagesNeeded;
 }
 
 /**
- * Export the project to a PDF.
- *
- * @param coverElementId   ID of the cover/inventory page element
- * @param plantElementIds  Array of {elementId, plantId} for each plant detail page (in order)
- * @param plantRowMeta     Array of {plantId, rowIndex, totalRows} for link placement on cover page
- * @param filename         Filename without .pdf
+ * Add a (potentially tall) cover canvas, slicing into multiple A4 pages.
+ */
+function addAsMultiPage(
+    pdf: jsPDF,
+    canvas: HTMLCanvasElement,
+    addNewPageFirst: boolean,
+): number {
+    const imgH_mm = (canvas.height / canvas.width) * PAGE_W_MM;
+    const pages = Math.ceil(imgH_mm / PAGE_H_MM);
+
+    for (let i = 0; i < pages; i++) {
+        if (addNewPageFirst || i > 0) pdf.addPage();
+
+        const sliceStart_px = Math.round((i * PAGE_H_MM / imgH_mm) * canvas.height);
+        const sliceH_px = Math.round(
+            Math.min((PAGE_H_MM / imgH_mm) * canvas.height, canvas.height - sliceStart_px)
+        );
+
+        const slice = document.createElement('canvas');
+        slice.width = canvas.width;
+        slice.height = sliceH_px;
+        slice.getContext('2d')!.drawImage(
+            canvas, 0, sliceStart_px, canvas.width, sliceH_px,
+            0, 0, canvas.width, sliceH_px
+        );
+
+        pdf.addImage(slice.toDataURL('image/jpeg', 0.93), 'JPEG',
+            0, 0, PAGE_W_MM, (sliceH_px / canvas.width) * PAGE_W_MM);
+    }
+    return pages;
+}
+
+/**
+ * Main export entry point.
  */
 export async function exportProjectPdf(
     coverElementId: string,
     plantElementIds: Array<{ elementId: string; plantId: string }>,
-    filename: string
-) {
+    filename: string,
+): Promise<void> {
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    // ── Render cover page ────────────────────────────────────────────────────
+    // ── Cover (multi-page) ───────────────────────────────────────────────────
     const coverEl = document.getElementById(coverElementId);
     if (!coverEl) throw new Error(`#${coverElementId} not found`);
-    const coverCanvas = await elementToCanvas(coverEl);
-    const coverPages = addCanvasToPdf(pdf, coverCanvas, false);
 
-    // Page number where each plant detail starts (1-indexed)
-    const plantPageNumbers: Record<string, number> = {};
+    const coverCanvas = await elementToCanvas(coverEl);
+    const coverPages = addAsMultiPage(pdf, coverCanvas, false);
+
+    // ── Plant detail pages (each exactly one A4 page) ────────────────────────
+    const plantPageMap: Record<string, number> = {};
     let currentPage = coverPages + 1;
 
-    // ── Render each plant page ───────────────────────────────────────────────
     for (const { elementId, plantId } of plantElementIds) {
         const el = document.getElementById(elementId);
         if (!el) continue;
 
-        plantPageNumbers[plantId] = currentPage;
+        plantPageMap[plantId] = currentPage;
         const canvas = await elementToCanvas(el);
-        const pagesAdded = addCanvasToPdf(pdf, canvas, true);
-        currentPage += pagesAdded;
+        addAsSinglePage(pdf, canvas, true);
+        currentPage += 1;
     }
 
-    // ── Add internal PDF links on the cover page ─────────────────────────────
-    // Each plant row link is stored as a data attribute in the DOM
-    // We read them and add jsPDF annotations.
-    const linkEls = coverEl.querySelectorAll<HTMLElement>('[data-plant-id]');
-    linkEls.forEach((linkEl) => {
-        const plantId = linkEl.getAttribute('data-plant-id');
-        const targetPage = plantId ? plantPageNumbers[plantId] : undefined;
+    // ── Internal PDF links on cover page ─────────────────────────────────────
+    const coverRect = coverEl.getBoundingClientRect();
+    const mmPerPx = PAGE_W_MM / coverEl.offsetWidth;
+
+    coverEl.querySelectorAll<HTMLElement>('[data-plant-id]').forEach((linkEl) => {
+        const targetPage = plantPageMap[linkEl.getAttribute('data-plant-id') ?? ''];
         if (!targetPage) return;
 
-        // Get approximate bounding box of the row relative to the cover element
-        const coverRect = coverEl.getBoundingClientRect();
-        const rowRect = linkEl.getBoundingClientRect();
-
-        // Convert pixel offsets to mm (cover element is 794px wide = 210mm)
-        const scale = 210 / coverEl.offsetWidth;
-
-        const x_mm = (rowRect.left - coverRect.left) * scale;
-        const y_mm = (rowRect.top - coverRect.top) * scale;
-        const w_mm = rowRect.width * scale;
-        const h_mm = rowRect.height * scale;
-
-        // Add on cover page(s) — only page 1 typically
+        const r = linkEl.getBoundingClientRect();
         pdf.setPage(1);
-        pdf.link(x_mm, y_mm, w_mm, h_mm, { pageNumber: targetPage });
+        pdf.link(
+            (r.left - coverRect.left) * mmPerPx,
+            (r.top - coverRect.top) * mmPerPx,
+            r.width * mmPerPx,
+            r.height * mmPerPx,
+            { pageNumber: targetPage },
+        );
     });
 
     pdf.save(`${filename}.pdf`);

@@ -63,8 +63,24 @@ async def import_plants_csv(file: UploadFile = File(...),
         raise HTTPException(500, f'Import failed: {e}')
 
 
+# ── Image Proxy (for frontend PDF rendering, bypasses external CORS) ─────────
+@router.get('/proxy/image')
+async def proxy_image(url: str) -> Any:
+    """Fetch an external image and return it. Used by the frontend PDF generator."""
+    try:
+        async with httpx.AsyncClient(follow_redirects=True, timeout=10) as client:
+            r = await client.get(url)
+            if r.status_code != 200:
+                raise HTTPException(502, 'Could not fetch image')
+            ct = r.headers.get('content-type', 'image/jpeg')
+            return Response(content=r.content, media_type=ct)
+    except Exception as e:
+        raise HTTPException(502, f'Image proxy error: {e}')
+
+
 # ── PDF Export ──────────────────────────────────────────────────────────────
 @router.get('/export/pdf/project/{project_id}')
+
 async def export_project_pdf(project_id: str,
                              db: AsyncSession = Depends(get_db)) -> Any:
 
