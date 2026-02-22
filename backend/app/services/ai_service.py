@@ -30,12 +30,12 @@ async def generate_plant_details(common_name: str) -> PlantAIDetailsResponse:
     {{
       "category": "String (best matching one of: Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, or Other)",
       "planting_place": "String (must be exactly one of: 'Indoor', 'Outdoor', 'Indoor & Outdoor')",
-      "description": "String (a beautiful, concise 2-3 sentence description involving its traits and aesthetic value)",
+      "description": "String (a short, simple, and very concise description using plain language)",
       "care_data": {{
-        "water": "String",
-        "sunlight": "String",
-        "soil": "String",
-        "maintenance": "String"
+        "water": "String (concise instructions in simple language, formatted as short bullet points using '•')",
+        "sunlight": "String (concise instructions in simple language, formatted as short bullet points using '•')",
+        "soil": "String (concise instructions in simple language, formatted as short bullet points using '•')",
+        "maintenance": "String (concise instructions in simple language, formatted as short bullet points using '•')"
       }},
       "taxonomy": {{
         "kingdom": "String",
