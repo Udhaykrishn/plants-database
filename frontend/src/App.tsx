@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import {
-  LayoutDashboard, ListTree, Tags, Leaf, FolderKanban, Menu, X, Sprout
+  LayoutDashboard, ListTree, Tags, Leaf, FolderKanban, Menu, X
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
 import { Separator } from './components/ui/separator';
@@ -34,10 +34,13 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
   return (
     <div className="flex flex-col h-full" style={{ background: 'hsl(var(--sidebar))' }}>
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-6">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/15">
-          <Sprout className="w-4 h-4 text-white" />
-        </div>
+      <div className="flex items-center gap-3 px-5 py-5">
+        <img
+          src="/logo.svg"
+          alt="Landschaft"
+          className="w-9 h-9 shrink-0"
+          style={{ filter: 'brightness(0) invert(1) opacity(0.90)' }}
+        />
         <span className="text-white font-semibold text-base tracking-wide uppercase">
           Landschaft
         </span>
@@ -110,7 +113,7 @@ function Layout() {
             </SheetContent>
           </Sheet>
           <div className="flex items-center gap-2">
-            <Sprout className="w-4 h-4 text-primary" />
+            <img src="/logo.svg" alt="Landschaft" className="w-7 h-7" />
             <span className="font-semibold text-sm uppercase tracking-wide text-foreground">
               Landschaft
             </span>
