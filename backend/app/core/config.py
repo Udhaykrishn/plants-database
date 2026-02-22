@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     CLOUDINARY_CLOUD_NAME: str = ""
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
+    
+    # Gemini AI
+    GEMINI_API_KEY: str = ""
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: Union[str, None], values: dict[str, any]) -> any:

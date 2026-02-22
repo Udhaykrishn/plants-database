@@ -17,6 +17,13 @@ class TaxonBase(BaseModel):
 class TaxonCreate(TaxonBase):
     pass
 
+class TaxonPathItem(BaseModel):
+    rank: Rank
+    name: str
+    
+class TaxonEnsurePathRequest(BaseModel):
+    path: List[TaxonPathItem]
+
 class TaxonUpdate(TaxonBase):
     name: Optional[str] = None
     rank: Optional[Rank] = None

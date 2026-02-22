@@ -25,5 +25,10 @@ export const taxonomyApi = {
     delete: async (id: string): Promise<any> => {
         const response = await client.delete(`/taxonomy/${id}`);
         return response.data;
+    },
+
+    ensurePath: async (path: { rank: string; name: string }[]): Promise<TaxonResponse> => {
+        const response = await client.post<TaxonResponse>("/taxonomy/ensure-path", { path });
+        return response.data;
     }
 };

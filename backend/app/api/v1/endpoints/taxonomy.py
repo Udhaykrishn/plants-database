@@ -7,7 +7,8 @@ from sqlalchemy import select
 
 from app.db.session import get_db
 from app.models.taxon import Taxon
-from app.schemas.taxon import TaxonResponse, TaxonCreate, TaxonUpdate, TaxonTree
+from app.schemas.taxon import TaxonResponse, TaxonCreate, TaxonUpdate, TaxonTree, TaxonEnsurePathRequest
+from sqlalchemy import func
 
 router = APIRouter()
 
@@ -69,6 +70,53 @@ async def create_taxon(
     await db.commit()
     await db.refresh(taxon)
     return taxon
+
+@router.post("/ensure-path", response_model=TaxonResponse)
+async def ensure_taxonomy_path(
+    *,
+    db: AsyncSession = Depends(get_db),
+    request: TaxonEnsurePathRequest
+) -> Any:
+    """
+    Ensure a full taxonomy path exists, creating any missing nodes.
+    Returns the leaf node.
+    """
+    if not request.path:
+        raise HTTPException(status_code=400, detail="Path cannot be empty")
+        
+    current_parent_id = None
+    last_taxon = None
+    
+    for item in request.path:
+        # Check if it exists at this level with this parent
+        stmt = select(Taxon).filter(
+            func.lower(Taxon.name) == item.name.lower(),
+            Taxon.rank == item.rank,
+        )
+        if current_parent_id:
+            stmt = stmt.filter(Taxon.parent_id == current_parent_id)
+        else:
+            stmt = stmt.filter(Taxon.parent_id.is_(None))
+            
+        result = await db.execute(stmt)
+        taxon = result.scalars().first()
+        
+        if not taxon:
+            # Create it
+            taxon = Taxon(
+                name=item.name,
+                rank=item.rank,
+                parent_id=current_parent_id,
+                description=f"Auto-generated via AI autofill."
+            )
+            db.add(taxon)
+            await db.commit()
+            await db.refresh(taxon)
+            
+        current_parent_id = taxon.id
+        last_taxon = taxon
+        
+    return last_taxon
 
 @router.get("/{taxon_id}", response_model=TaxonResponse)
 async def read_taxon(
