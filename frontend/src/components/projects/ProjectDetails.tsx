@@ -9,10 +9,12 @@ import {
 
 import { projectsApi } from '../../api/projects';
 import { plantsApi } from '../../api/plants';
-import { ioApi } from '../../api/io';
+import { taxonomyApi } from '../../api/taxonomy';
 import type { ProjectPlantCreate } from '../../types/project';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
+import { ProjectPdfContainer } from './ProjectPdfDocument';
+import { exportProjectPdf } from '../../utils/exportPdf';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,6 +94,9 @@ export const ProjectDetails = () => {
     const [page, setPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
+    const [pdfLoading, setPdfLoading] = useState(false);
+    const [pdfReady, setPdfReady] = useState(false);
+
     /* ── Queries ── */
     const { data: project, isLoading } = useQuery({
         queryKey: ['project', id],
@@ -103,6 +108,28 @@ export const ProjectDetails = () => {
         queryKey: ['plants'],
         queryFn: plantsApi.getAll,
     });
+
+    const { data: taxTree } = useQuery({
+        queryKey: ['taxonomy', 'tree'],
+        queryFn: taxonomyApi.getTree,
+    });
+
+    const handleDownloadPdf = async () => {
+        if (!project) return;
+        setPdfLoading(true);
+        try {
+            const coverElementId = `pdf-cover-${id}`;
+            const plantElementIds = project.plants
+                .filter(pp => !!pp.plant)
+                .map(pp => ({ elementId: `pdf-plant-${pp.plant_id}`, plantId: pp.plant_id }));
+            await exportProjectPdf(coverElementId, plantElementIds, project.name);
+        } catch (e) {
+            console.error(e);
+            showAlert('PDF export failed', 'error');
+        } finally {
+            setPdfLoading(false);
+        }
+    };
 
     /* ── Mutations ── */
     const addPlantMutation = useMutation({
@@ -224,8 +251,14 @@ export const ProjectDetails = () => {
                             <p className="text-sm text-muted-foreground leading-relaxed mt-3">{project.description}</p>
                         )}
                     </div>
-                    <Button variant="outline" size="sm" className="shrink-0 w-full sm:w-auto" onClick={() => ioApi.exportProjectPdf(project.id, project.name)}>
-                        <Download className="w-4 h-4 mr-2" />Download PDF
+                    <Button
+                        variant="outline" size="sm"
+                        className="shrink-0 w-full sm:w-auto"
+                        onClick={handleDownloadPdf}
+                        disabled={pdfLoading || !pdfReady}
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        {pdfLoading ? 'Generating PDF…' : !pdfReady ? 'Preparing…' : 'Download PDF'}
                     </Button>
                 </div>
             </div>
@@ -525,6 +558,16 @@ export const ProjectDetails = () => {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            {/* Hidden PDF render targets — one cover + one per plant */}
+            {project && (
+                <ProjectPdfContainer
+                    project={project}
+                    taxTree={taxTree}
+                    projectId={id!}
+                    onReady={() => setPdfReady(true)}
+                />
+            )}
         </div>
     );
 };
