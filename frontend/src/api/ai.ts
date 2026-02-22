@@ -18,6 +18,8 @@ export interface PlantAIDetailsResponse {
     common_diseases?: string;
     care_data?: Record<string, string>;
     taxonomy?: TaxonomyDetails;
+    icon_url?: string;
+    image_url?: string;
 }
 
 export const aiApi = {

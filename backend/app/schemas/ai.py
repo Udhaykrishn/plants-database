@@ -22,3 +22,5 @@ class PlantAIDetailsResponse(BaseModel):
     common_diseases: Optional[str] = None
     care_data: Optional[Dict[str, Any]] = None
     taxonomy: Optional[TaxonomyDetails] = None
+    icon_url: Optional[str] = None
+    image_url: Optional[str] = None

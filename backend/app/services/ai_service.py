@@ -20,7 +20,7 @@ async def generate_plant_details(common_name: Optional[str] = None, scientific_n
     }
 
     model = genai.GenerativeModel(
-      model_name="gemini-2.5-flash", 
+      model_name="models/gemini-2.5-flash", 
       generation_config=generation_config,
     )
 
@@ -58,8 +58,11 @@ async def generate_plant_details(common_name: Optional[str] = None, scientific_n
         "family": "String",
         "genus": "String",
         "species": "String (Just the species epithet if possible, e.g. 'monstera' in Monstera deliciosa, or the full binomial name)"
-      }}
+      }},
+      "icon_url": "String (Direct Special:FilePath URL to a Wikimedia Commons image. CRITICAL: Use ONLY the most likely standard filename, usually exactly 'Scientific_Name.jpg' (with underscores). Format: https://commons.wikimedia.org/wiki/Special:FilePath/<Scientific_Name>.jpg?width=400. DO NOT add descriptive words like 'fruit' or 'leaves' to the filename unless you are 100% sure it exists. If the scientific name is 'Mangifera indica', use 'Mangifera_indica.jpg'. Return null if uncertain.)",
+      "image_url": "String (Same as above with width=1000. Prefer the exact scientific name filename 'Scientific_Name.jpg'. Only use variant filenames if you are certain they are the primary image for this plant on Commons. Return null if uncertain.)"
     }}
+    ONLY return the JSON object, do not include any other text or explanation. Ensure all strings are properly escaped.
     """
     
     try:
@@ -93,7 +96,9 @@ async def generate_plant_details(common_name: Optional[str] = None, scientific_n
             description=data.get("description"),
             common_diseases=data.get("common_diseases"),
             care_data=data.get("care_data"),
-            taxonomy=taxonomy
+            taxonomy=taxonomy,
+            icon_url=data.get("icon_url"),
+            image_url=data.get("image_url")
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate AI details: {str(e)}")

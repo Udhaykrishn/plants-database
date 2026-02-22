@@ -185,6 +185,8 @@ export const PlantManager = () => {
             if (data.description) setDescription(data.description);
             if (data.common_diseases) setCommonDiseases(data.common_diseases);
             if (data.category) setCategory(data.category);
+            if (data.icon_url) setIconUrl(data.icon_url);
+            if (data.image_url) setImageUrl(data.image_url);
 
             if (data.planting_place === 'Indoor') {
                 setIsIndoor(true); setIsOutdoor(false);
