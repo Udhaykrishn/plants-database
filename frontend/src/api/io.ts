@@ -15,28 +15,42 @@ export const ioApi = {
 
     exportProjectPdf: async (projectId: string, projectName?: string): Promise<void> => {
         const response = await client.get(`/export/pdf/project/${projectId}`, {
-            responseType: 'blob'
+            responseType: 'blob',
         });
 
-        // Create download link
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
+        // Build a proper PDF blob with explicit MIME type
+        const blob = new Blob([response.data], { type: 'application/pdf' });
+        const url = window.URL.createObjectURL(blob);
 
-        let filename = projectName ? `${projectName}.pdf` : `project_report_${projectId}.pdf`;
+        // Determine filename — prefer the passed project name, fall back to header
+        let filename = projectName
+            ? `${projectName.replace(/[\\/*?:"<>|]/g, '')}.pdf`
+            : `project_report_${projectId}.pdf`;
 
-        // try to get from headers
+        // Try reading Content-Disposition header as secondary fallback
         const contentDisposition = response.headers['content-disposition'];
         if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-            if (filenameMatch && filenameMatch.length === 2) {
-                filename = filenameMatch[1];
+            // Handle both filename="foo" and filename=foo (with or without quotes)
+            const match = contentDisposition.match(/filename\*?=(?:UTF-8''|"?)([^";]+)/i);
+            if (match?.[1]) {
+                try {
+                    // decode URI-encoded filenames (RFC 5987)
+                    filename = decodeURIComponent(match[1].trim().replace(/"/g, ''));
+                } catch {
+                    filename = match[1].trim().replace(/"/g, '');
+                }
             }
         }
 
+        // Trigger download
+        const link = document.createElement('a');
+        link.href = url;
         link.setAttribute('download', filename);
         document.body.appendChild(link);
         link.click();
+
+        // Cleanup
         link.parentNode?.removeChild(link);
-    }
+        window.URL.revokeObjectURL(url);
+    },
 };
