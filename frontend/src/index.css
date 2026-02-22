@@ -1,67 +1,171 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
+@layer base {
+  :root {
+    /* Forest Green / Sage / Beige palette */
+    --background: 40 30% 95%;
+    /* warm cream #f4f0ea */
+    --foreground: 120 20% 14%;
+    /* near-black forest #1c2a1a */
 
-  /* Sleek Light Mode Defaults */
-  color-scheme: light;
-  color: #1a1a1a;
-  background-color: #fafafa;
+    --card: 0 0% 100%;
+    --card-foreground: 120 20% 14%;
 
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+    --popover: 0 0% 100%;
+    --popover-foreground: 120 20% 14%;
+
+    --primary: 116 37% 26%;
+    /* dark forest green #2d5a27 */
+    --primary-foreground: 40 30% 95%;
+
+    --secondary: 110 20% 57%;
+    /* sage green #8aa87f */
+    --secondary-foreground: 120 20% 14%;
+
+    --muted: 38 22% 88%;
+    /* warm beige #e4ddd1 */
+    --muted-foreground: 120 10% 42%;
+
+    --accent: 35 30% 67%;
+    /* warm tan #c4a97a */
+    --accent-foreground: 120 20% 14%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 38 22% 84%;
+    --input: 38 22% 84%;
+    --ring: 116 37% 26%;
+
+    --radius: 0.625rem;
+
+    /* Sidebar tokens */
+    --sidebar: 116 37% 22%;
+    /* deep forest #24491e */
+    --sidebar-foreground: 110 20% 80%;
+    --sidebar-hover: 116 37% 28%;
+    --sidebar-active: 40 30% 95%;
+    --sidebar-active-foreground: 116 37% 22%;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 500;
+    letter-spacing: -0.02em;
+  }
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
 }
 
-body {
-  margin: 0;
-  display: flex;
-  min-width: 320px;
-  min-height: 100vh;
-}
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium bg-primary text-primary-foreground transition-all duration-150 hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
 
-a {
-  font-weight: 500;
-  color: #1a1a1a;
-  text-decoration: none;
-  transition: color 0.2s;
-}
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-4 py-2 text-sm font-medium border border-border bg-transparent text-foreground transition-all duration-150 hover:bg-muted active:scale-95 disabled:opacity-50;
+  }
 
-a:hover {
-  color: #666;
-}
+  .tag {
+    @apply inline-flex items-center gap-1 rounded-full bg-muted text-muted-foreground px-3 py-0.5 text-xs font-semibold uppercase tracking-wide;
+  }
 
-h1,
-h2,
-h3,
-h4 {
-  font-weight: 500;
-  letter-spacing: -0.02em;
-}
+  /* Legacy form group compat */
+  .form-group {
+    @apply flex flex-col gap-1.5 w-full;
+  }
 
-button {
-  border-radius: 4px;
-  border: 1px solid #1a1a1a;
-  padding: 0.6em 1.2em;
-  font-size: 0.9em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: transparent;
-  color: #1a1a1a;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
+  .form-group label {
+    @apply text-xs font-semibold uppercase tracking-wide text-muted-foreground;
+  }
 
-button:hover {
-  background-color: #1a1a1a;
-  color: #fff;
-}
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    @apply w-full rounded-md border border-input bg-white px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 transition-shadow;
+  }
 
-button:focus,
-button:focus-visible {
-  outline: 2px solid #aaa;
-  outline-offset: 2px;
+  .form-group textarea {
+    @apply resize-y min-h-[80px];
+  }
+
+  .form-row {
+    @apply grid grid-cols-1 sm:grid-cols-2 gap-4;
+  }
+
+  /* ===== plant-card ===== */
+  .plant-card {
+    @apply bg-white rounded-xl border border-border p-4 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-pointer;
+  }
+
+  .plant-card.selected-card {
+    @apply ring-2 ring-primary;
+  }
+
+  /* ===== create-plant-form ===== */
+  .create-plant-form {
+    @apply bg-white rounded-xl border border-border p-6 mb-6;
+  }
+
+  .create-plant-form h3 {
+    @apply text-lg font-semibold text-foreground mb-5;
+  }
+
+  /* ===== confirmation overlay ===== */
+  .confirm-overlay {
+    @apply fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center;
+  }
+
+  .confirm-dialog {
+    @apply bg-white rounded-xl border border-border shadow-xl p-6 w-full max-w-md mx-4;
+  }
+
+  .confirm-actions {
+    @apply flex items-center justify-end gap-3 mt-6;
+  }
+
+  /* ===== alert ===== */
+  .alert-container {
+    @apply fixed top-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none;
+  }
+
+  .alert-item {
+    @apply pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg text-sm font-medium border max-w-sm animate-in slide-in-from-right;
+  }
+
+  .alert-item.success {
+    @apply bg-primary/10 border-primary/30 text-primary;
+  }
+
+  .alert-item.error {
+    @apply bg-destructive/10 border-destructive/30 text-destructive;
+  }
+
+  .alert-item.warning {
+    @apply bg-amber-50 border-amber-200 text-amber-800;
+  }
 }

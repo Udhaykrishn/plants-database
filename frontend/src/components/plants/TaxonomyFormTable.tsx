@@ -1,10 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Plus } from 'lucide-react';
+
 import { taxonomyApi } from '../../api/taxonomy';
 import { Rank } from '../../types/taxon';
 import type { TaxonTree } from '../../types/taxon';
 import { SearchableSelect } from '../common/SearchableSelect';
 import { useAlert } from '../../contexts/AlertContext';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
 
 const RANKS = [
     Rank.KINGDOM,
@@ -59,18 +72,18 @@ export const TaxonomyFormTable: React.FC<TaxonomyFormTableProps> = ({ taxonomyTr
     const [newDescription, setNewDescription] = useState('');
     const [pendingSelection, setPendingSelection] = useState<{ rank: Rank; id: string } | null>(null);
 
+    /* ── flatten tree ── */
     const flatNodes = useMemo(() => {
         const nodes: Record<string, FlatNode> = {};
         const traverse = (node: TaxonTree) => {
             nodes[node.id] = { id: node.id, name: node.name, rank: node.rank, parent_id: node.parent_id, created_at: node.created_at };
-            if (node.children) {
-                node.children.forEach(traverse);
-            }
+            if (node.children) node.children.forEach(traverse);
         };
         taxonomyTree.forEach(traverse);
         return nodes;
     }, [taxonomyTree]);
 
+    /* ── auto-select pending after tree refreshes ── */
     useEffect(() => {
         if (pendingSelection && flatNodes[pendingSelection.id]) {
             handleSelectionChange(pendingSelection.rank, pendingSelection.id);
@@ -79,62 +92,39 @@ export const TaxonomyFormTable: React.FC<TaxonomyFormTableProps> = ({ taxonomyTr
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pendingSelection, flatNodes]);
 
+    /* ── sync selections when editing a plant ── */
     useEffect(() => {
         if (selectedTaxonId && flatNodes[selectedTaxonId]) {
             let currentId: string | undefined = selectedTaxonId;
             const newSelections: Record<Rank, string | null> = {
-                [Rank.KINGDOM]: null,
-                [Rank.DIVISION]: null,
-                [Rank.CLASS]: null,
-                [Rank.ORDER]: null,
-                [Rank.FAMILY]: null,
-                [Rank.GENUS]: null,
-                [Rank.SPECIES]: null,
+                [Rank.KINGDOM]: null, [Rank.DIVISION]: null, [Rank.CLASS]: null,
+                [Rank.ORDER]: null, [Rank.FAMILY]: null, [Rank.GENUS]: null, [Rank.SPECIES]: null,
             };
-
             while (currentId && flatNodes[currentId]) {
                 const node: FlatNode = flatNodes[currentId];
                 newSelections[node.rank] = node.id;
                 currentId = node.parent_id;
             }
-
-            // check if state changed before setting to avoid loop
-            const hasChanged = RANKS.some(r => newSelections[r] !== selections[r]);
-            if (hasChanged) {
-                setSelections(newSelections);
-            }
+            if (RANKS.some(r => newSelections[r] !== selections[r])) setSelections(newSelections);
         } else if (!selectedTaxonId) {
             setSelections({
-                [Rank.KINGDOM]: null,
-                [Rank.DIVISION]: null,
-                [Rank.CLASS]: null,
-                [Rank.ORDER]: null,
-                [Rank.FAMILY]: null,
-                [Rank.GENUS]: null,
-                [Rank.SPECIES]: null,
+                [Rank.KINGDOM]: null, [Rank.DIVISION]: null, [Rank.CLASS]: null,
+                [Rank.ORDER]: null, [Rank.FAMILY]: null, [Rank.GENUS]: null, [Rank.SPECIES]: null,
             });
         }
-        // intentionally omitting selections to prevent feedback loop
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTaxonId, flatNodes]);
 
     const getOptionsForRank = (rank: Rank) => {
         const rankNodes = Object.values(flatNodes).filter(n => n.rank === rank);
-
         let closestAncestorRankIndex = RANKS.indexOf(rank) - 1;
         let requiredParentId: string | null = null;
-
         while (closestAncestorRankIndex >= 0) {
             const ancRank = RANKS[closestAncestorRankIndex];
-            if (selections[ancRank]) {
-                requiredParentId = selections[ancRank];
-                break;
-            }
+            if (selections[ancRank]) { requiredParentId = selections[ancRank]; break; }
             closestAncestorRankIndex--;
         }
-
         if (!requiredParentId) return rankNodes;
-
         return rankNodes.filter(n => {
             let curr = n.parent_id;
             while (curr) {
@@ -148,32 +138,17 @@ export const TaxonomyFormTable: React.FC<TaxonomyFormTableProps> = ({ taxonomyTr
     const handleSelectionChange = (rank: Rank, val: string) => {
         const node = flatNodes[val];
         if (!node) return;
-
         const rankIndex = RANKS.indexOf(rank);
         let currentId: string | undefined = val;
         const newSel = { ...selections };
-
-        // Auto-fill ancestors
         while (currentId && flatNodes[currentId]) {
             const n: FlatNode = flatNodes[currentId];
             newSel[n.rank] = n.id;
             currentId = n.parent_id;
         }
-
-        // Clear descendants
-        for (let i = rankIndex + 1; i < RANKS.length; i++) {
-            newSel[RANKS[i]] = null;
-        }
-
+        for (let i = rankIndex + 1; i < RANKS.length; i++) newSel[RANKS[i]] = null;
         setSelections(newSel);
-
-        // Always push the deepest selected node ID upstream
-        // In our case, `val` is the new deepest because we just cleared its descendants
         onChange(val);
-    };
-
-    const handleSortChange = (rank: Rank, val: 'alpha' | 'recent') => {
-        setSortOptions({ ...sortOptions, [rank]: val });
     };
 
     const handleAddClick = (rank: Rank) => {
@@ -197,123 +172,108 @@ export const TaxonomyFormTable: React.FC<TaxonomyFormTableProps> = ({ taxonomyTr
         onSuccess: (data) => {
             queryClient.invalidateQueries({ queryKey: ['taxonomy', 'tree'] });
             showAlert(`${data.rank} created successfully`, 'success');
-
-            // Set pending selection to automatically select once tree refreshes
             setPendingSelection({ rank: data.rank, id: data.id });
             setShowAddModal(null);
         },
         onError: (error: any) => {
-            showAlert("Error creating taxon: " + (error.response?.data?.detail || error.message), 'error');
-        }
+            showAlert('Error creating taxon: ' + (error.response?.data?.detail || error.message), 'error');
+        },
     });
 
-    const submitNewTaxon = (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
-        if (e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
+    const submitNewTaxon = (e?: React.FormEvent) => {
+        e?.preventDefault();
         if (!showAddModal || !newName.trim()) return;
-
         createMutation.mutate({
             name: newName,
             rank: showAddModal.rank,
             parent_id: showAddModal.parentId || undefined,
-            description: newDescription
+            description: newDescription,
         });
     };
 
     return (
-        <div style={{ background: '#fafafa', padding: '1rem', borderRadius: '8px', border: '1px solid #eaeaea' }}>
-            {RANKS.map((rank) => {
-                const options = getOptionsForRank(rank);
-                return (
-                    <div key={rank} style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.75rem' }}>
-                        <div style={{ width: '80px', fontSize: '0.85rem', fontWeight: 600, color: '#666', textTransform: 'uppercase' }}>
-                            {rank}
+        <>
+            {/* ── Taxonomy rows ── */}
+            <div className="rounded-lg border border-border bg-muted/30 divide-y divide-border">
+                {RANKS.map((rank) => {
+                    const options = getOptionsForRank(rank);
+                    const isSelected = !!selections[rank];
+                    return (
+                        <div
+                            key={rank}
+                            className="flex items-center gap-2 px-3 py-2"
+                        >
+                            {/* Rank label */}
+                            <span className={`w-20 shrink-0 text-[10px] font-bold uppercase tracking-wider ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
+                                {rank}
+                            </span>
+
+                            {/* Select */}
+                            <div className="flex-1 min-w-0">
+                                <SearchableSelect
+                                    options={options.map(o => ({ value: o.id, label: o.name, createdAt: o.created_at }))}
+                                    value={selections[rank] || ''}
+                                    onChange={(val) => handleSelectionChange(rank, val)}
+                                    placeholder={`Select ${rank}…`}
+                                    sortOption={sortOptions[rank]}
+                                    onSortChange={(val) => setSortOptions({ ...sortOptions, [rank]: val })}
+                                />
+                            </div>
+
+                            {/* Add button */}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="shrink-0 h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={() => handleAddClick(rank)}
+                                title={`Add new ${rank}`}
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                            </Button>
                         </div>
-                        <div style={{ flex: 1 }}>
-                            <SearchableSelect
-                                options={options.map(o => ({ value: o.id, label: o.name, createdAt: o.created_at }))}
-                                value={selections[rank] || ''}
-                                onChange={(val) => handleSelectionChange(rank, val)}
-                                placeholder={`Select ${rank}...`}
-                                sortOption={sortOptions[rank]}
-                                onSortChange={(val) => handleSortChange(rank, val)}
+                    );
+                })}
+            </div>
+
+            {/* ── Add taxon dialog ── */}
+            <Dialog open={!!showAddModal} onOpenChange={(o) => !o && setShowAddModal(null)}>
+                <DialogContent className="sm:max-w-sm">
+                    <DialogHeader>
+                        <DialogTitle>Add New {showAddModal?.rank}</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={submitNewTaxon} className="space-y-4 pt-1">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="taxon-name">Name <span className="text-destructive">*</span></Label>
+                            <Input
+                                id="taxon-name"
+                                value={newName}
+                                onChange={e => setNewName(e.target.value)}
+                                required
+                                autoFocus
+                                placeholder={`e.g. ${showAddModal?.rank === Rank.SPECIES ? 'robur' : 'Plantae'}`}
                             />
                         </div>
-                        <button
-                            type="button"
-                            onClick={() => handleAddClick(rank)}
-                            style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: '#fff', border: '1px solid #ddd', borderRadius: '4px',
-                                width: '42px', height: '42px', cursor: 'pointer', flexShrink: 0,
-                                color: '#1a1a1a', transition: 'background 0.2s'
-                            }}
-                            title={`Add new ${rank}`}
-                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f4f4f4'}
-                            onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fff'}
-                        >
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="5" x2="12" y2="19"></line>
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                            </svg>
-                        </button>
-                    </div>
-                );
-            })}
-
-            {showAddModal && (
-                <div className="confirm-overlay" style={{ zIndex: 1100 }}>
-                    <div className="confirm-dialog" style={{ maxWidth: '500px' }}>
-                        <h3>Add New {showAddModal.rank}</h3>
-                        <div className="modal-form-content">
-                            <div className="form-group" style={{ marginTop: '1.5rem', marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
-                                    Name
-                                </label>
-                                <input
-                                    type="text"
-                                    value={newName}
-                                    onChange={e => setNewName(e.target.value)}
-                                    required
-                                    onKeyDown={e => {
-                                        if (e.key === 'Enter') {
-                                            submitNewTaxon(e);
-                                        }
-                                    }}
-                                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '4px' }}
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', fontWeight: 600, color: '#666' }}>
-                                    Description (Optional)
-                                </label>
-                                <textarea
-                                    value={newDescription}
-                                    onChange={e => setNewDescription(e.target.value)}
-                                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '4px', minHeight: '80px', resize: 'vertical' }}
-                                />
-                            </div>
-                            <div className="confirm-actions">
-                                <button type="button" className="btn btn-cancel" onClick={() => setShowAddModal(null)}>
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={submitNewTaxon}
-                                    className="btn"
-                                    style={{ background: '#0056b3', color: '#fff' }}
-                                    disabled={!newName.trim() || createMutation.isPending}
-                                >
-                                    {createMutation.isPending ? 'Saving...' : 'Add Member'}
-                                </button>
-                            </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="taxon-desc">Description <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                            <Input
+                                id="taxon-desc"
+                                value={newDescription}
+                                onChange={e => setNewDescription(e.target.value)}
+                                placeholder="Brief notes…"
+                            />
                         </div>
-                    </div>
-                </div>
-            )}
-        </div>
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button type="button" variant="outline" onClick={() => setShowAddModal(null)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={!newName.trim() || createMutation.isPending}>
+                                {createMutation.isPending ? 'Saving…' : 'Add'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 };
