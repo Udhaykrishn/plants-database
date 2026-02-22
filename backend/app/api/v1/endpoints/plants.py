@@ -70,16 +70,17 @@ async def create_plant(
     Validates that the linked taxon is of rank 'Species'.
     """
     # 1. Validate Taxon
-    result = await db.execute(select(Taxon).filter(Taxon.id == plant_in.taxon_id))
-    taxon = result.scalars().first()
-    if not taxon:
-        raise HTTPException(status_code=404, detail="Taxon not found")
-    
-    if taxon.rank != Rank.SPECIES:
-        raise HTTPException(
-            status_code=400, 
-            detail=f"Plant can only be linked to a Taxon of rank 'Species'. Current rank: {taxon.rank}"
-        )
+    if plant_in.taxon_id:
+        result = await db.execute(select(Taxon).filter(Taxon.id == plant_in.taxon_id))
+        taxon = result.scalars().first()
+        if not taxon:
+            raise HTTPException(status_code=404, detail="Taxon not found")
+        
+        if taxon.rank != Rank.SPECIES:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Plant can only be linked to a Taxon of rank 'Species'. Current rank: {taxon.rank}"
+            )
 
     # 2. Create Plant
     plant = Plant(**plant_in.model_dump())

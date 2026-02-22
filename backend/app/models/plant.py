@@ -11,13 +11,15 @@ from app.models.taxon import Taxon
 
 class Plant(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    taxon_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("taxons.id"), nullable=False, index=True)
+    taxon_id: Mapped[Optional[uuid.UUID]] = mapped_column(ForeignKey("taxons.id"), nullable=True, index=True)
+    scientific_name: Mapped[Optional[str]] = mapped_column(String, index=True, nullable=True)
     
     common_name: Mapped[str] = mapped_column(String, index=True, nullable=False)
     category: Mapped[str] = mapped_column(String, nullable=False, index=True)
     planting_place: Mapped[PlantingPlace] = mapped_column(SAEnum(PlantingPlace), nullable=False, index=True)
     
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    common_diseases: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     care_data: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     icon_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)

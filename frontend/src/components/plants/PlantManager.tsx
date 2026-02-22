@@ -13,6 +13,7 @@ import { ioApi } from '../../api/io';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { categoriesApi } from '../../api/categories';
+import { aiApi } from '../../api/ai';
 import { SearchableSelect } from '../common/SearchableSelect';
 import { TaxonomyFormTable } from './TaxonomyFormTable';
 
@@ -103,12 +104,20 @@ export const PlantManager = () => {
     const [isIndoor, setIsIndoor] = useState(true);
     const [isOutdoor, setIsOutdoor] = useState(true);
     const [description, setDescription] = useState('');
-    const [taxonId, setTaxonId] = useState('');
+    const [commonDiseases, setCommonDiseases] = useState('');
+    const [scientificName, setScientificName] = useState('');
+    const [taxonId, setTaxonId] = useState<string | undefined>(undefined);
     const [iconFile, setIconFile] = useState<File | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [iconUrl, setIconUrl] = useState('');
     const [imageUrl, setImageUrl] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+
+    // Care Form State
+    const [careWater, setCareWater] = useState('');
+    const [careSunlight, setCareSunlight] = useState('');
+    const [careSoil, setCareSoil] = useState('');
+    const [careMaintenance, setCareMaintenance] = useState('');
 
     // Queries
     const { data: plants, isLoading: plantsLoading } = useQuery({
@@ -163,6 +172,71 @@ export const PlantManager = () => {
         }
     });
 
+    const aiMutation = useMutation({
+        mutationFn: () => {
+            if (!commonName.trim() && !scientificName.trim()) throw new Error("Please enter a common name or scientific name first");
+            return aiApi.generatePlantDetails({
+                commonName: commonName.trim() || undefined,
+                scientificName: scientificName.trim() || undefined
+            });
+        },
+        onSuccess: (data) => {
+            if (data.common_name && !commonName.trim()) setCommonName(data.common_name);
+            if (data.description) setDescription(data.description);
+            if (data.common_diseases) setCommonDiseases(data.common_diseases);
+            if (data.category) setCategory(data.category);
+            if (data.icon_url) setIconUrl(data.icon_url);
+            if (data.image_url) setImageUrl(data.image_url);
+
+            if (data.planting_place === 'Indoor') {
+                setIsIndoor(true); setIsOutdoor(false);
+            } else if (data.planting_place === 'Outdoor') {
+                setIsIndoor(false); setIsOutdoor(true);
+            } else if (data.planting_place === 'Indoor & Outdoor') {
+                setIsIndoor(true); setIsOutdoor(true);
+            }
+
+            // Handle proper separation
+            if (data.care_data) {
+                setCareWater(data.care_data.water || '');
+                setCareSunlight(data.care_data.sunlight || '');
+                setCareSoil(data.care_data.soil || '');
+                setCareMaintenance(data.care_data.maintenance || '');
+            }
+
+            // Automate taxonomy mapping
+            if (data.taxonomy) {
+                const path: { rank: string, name: string }[] = [];
+                if (data.taxonomy.kingdom) path.push({ rank: 'Kingdom', name: data.taxonomy.kingdom });
+                if (data.taxonomy.division) path.push({ rank: 'Division', name: data.taxonomy.division });
+                if (data.taxonomy.class_name) path.push({ rank: 'Class', name: data.taxonomy.class_name });
+                if (data.taxonomy.order) path.push({ rank: 'Order', name: data.taxonomy.order });
+                if (data.taxonomy.family) path.push({ rank: 'Family', name: data.taxonomy.family });
+                if (data.taxonomy.genus) path.push({ rank: 'Genus', name: data.taxonomy.genus });
+                if (data.taxonomy.species) path.push({ rank: 'Species', name: data.taxonomy.species });
+
+                if (path.length > 0) {
+                    taxonomyApi.ensurePath(path).then((res) => {
+                        setTaxonId(res.id);
+                        queryClient.invalidateQueries({ queryKey: ['taxonomy', 'tree'] });
+                    }).catch(console.error);
+                }
+
+                // Fallback scientific_name using genus+species if available
+                if (data.taxonomy.genus && data.taxonomy.species) {
+                    setScientificName(`${data.taxonomy.genus} ${data.taxonomy.species}`);
+                } else if (data.taxonomy.species) {
+                    setScientificName(data.taxonomy.species);
+                }
+            }
+
+            showAlert("Auto-filled details using AI!", 'success');
+        },
+        onError: (error: any) => {
+            showAlert("AI Autofill failed: " + (error.response?.data?.detail || error.message), 'error');
+        }
+    });
+
     const deleteMutation = useMutation({
         mutationFn: plantsApi.delete,
         onSuccess: () => {
@@ -180,11 +254,17 @@ export const PlantManager = () => {
         setIsIndoor(true);
         setIsOutdoor(true);
         setDescription('');
-        setTaxonId('');
+        setCommonDiseases('');
+        setScientificName('');
+        setTaxonId(undefined);
         setIconFile(null);
         setImageFile(null);
         setIconUrl('');
         setImageUrl('');
+        setCareWater('');
+        setCareSunlight('');
+        setCareSoil('');
+        setCareMaintenance('');
     };
 
     const handleEdit = (plant: Plant) => {
@@ -196,11 +276,17 @@ export const PlantManager = () => {
         setIsIndoor(plant.planting_place === PlantingPlace.INDOOR || plant.planting_place === PlantingPlace.BOTH);
         setIsOutdoor(plant.planting_place === PlantingPlace.OUTDOOR || plant.planting_place === PlantingPlace.BOTH);
         setDescription(plant.description || '');
+        setCommonDiseases(plant.common_diseases || '');
+        setScientificName(plant.scientific_name || '');
         setTaxonId(plant.taxon_id);
         setIconUrl(plant.icon_url || '');
         setImageUrl(plant.image_url || '');
         setIconFile(null);
         setImageFile(null);
+        setCareWater(plant.care_data?.water || '');
+        setCareSunlight(plant.care_data?.sunlight || '');
+        setCareSoil(plant.care_data?.soil || '');
+        setCareMaintenance(plant.care_data?.maintenance || '');
     };
 
     const handleDelete = (id: string, name: string) => {
@@ -252,10 +338,6 @@ export const PlantManager = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!taxonId) {
-            showAlert("Please select a Species", 'warning');
-            return;
-        }
         if (!isIndoor && !isOutdoor) {
             showAlert("Please select at least one Planting Place (Indoor or Outdoor)", 'warning');
             return;
@@ -286,14 +368,27 @@ export const PlantManager = () => {
         if (isIndoor && !isOutdoor) plantingPlace = PlantingPlace.INDOOR;
         if (!isIndoor && isOutdoor) plantingPlace = PlantingPlace.OUTDOOR;
 
+        let parsedCareData = undefined;
+        if (careWater.trim() || careSunlight.trim() || careSoil.trim() || careMaintenance.trim()) {
+            parsedCareData = {
+                water: careWater.trim() || undefined,
+                sunlight: careSunlight.trim() || undefined,
+                soil: careSoil.trim() || undefined,
+                maintenance: careMaintenance.trim() || undefined
+            };
+        }
+
         const plantData: Partial<PlantCreate> = {
             common_name: commonName,
+            scientific_name: scientificName,
             category,
             planting_place: plantingPlace,
             description,
+            common_diseases: commonDiseases,
             taxon_id: taxonId,
             icon_url: finalIconUrl || undefined,
             image_url: finalImageUrl || undefined,
+            care_data: parsedCareData
         };
 
         if (editingPlantId) {
@@ -419,10 +514,39 @@ export const PlantManager = () => {
                     <div className="form-row">
                         <div className="form-group">
                             <label>Common Name</label>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <input
+                                    value={commonName}
+                                    onChange={e => setCommonName(e.target.value)}
+                                    required
+                                    style={{ flex: 1 }}
+                                />
+                                <button
+                                    type="button"
+                                    title="Auto-fill details using AI"
+                                    className="btn"
+                                    onClick={() => aiMutation.mutate()}
+                                    disabled={aiMutation.isPending || (!commonName.trim() && !scientificName.trim())}
+                                    style={{
+                                        background: aiMutation.isPending ? '#e0e0e0' : 'linear-gradient(135deg, #a8ff78 0%, #78ffd6 100%)',
+                                        color: '#000',
+                                        border: 'none',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px'
+                                    }}
+                                >
+                                    {aiMutation.isPending ? '⏳ loading...' : '✨ AI Auto-Fill'}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="form-group">
+                            <label>Scientific Name</label>
                             <input
-                                value={commonName}
-                                onChange={e => setCommonName(e.target.value)}
-                                required
+                                value={scientificName}
+                                onChange={e => setScientificName(e.target.value)}
+                                style={{ width: '100%' }}
                             />
                         </div>
                     </div>
@@ -479,6 +603,58 @@ export const PlantManager = () => {
                             value={description}
                             onChange={e => setDescription(e.target.value)}
                         />
+                    </div>
+
+                    <div className="form-group" style={{ marginTop: '1.5rem' }}>
+                        <label>Common Diseases & Pests</label>
+                        <textarea
+                            value={commonDiseases}
+                            onChange={e => setCommonDiseases(e.target.value)}
+                            placeholder="Known diseases and pest susceptibility..."
+                            style={{ minHeight: '80px' }}
+                        />
+                    </div>
+
+                    <h4 style={{ marginTop: '1.5rem', marginBottom: '1rem', color: '#333', fontSize: '1.2rem' }}>Care Information</h4>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Water Needs</label>
+                            <textarea
+                                value={careWater}
+                                onChange={e => setCareWater(e.target.value)}
+                                placeholder="Watering schedule & amount..."
+                                style={{ minHeight: '60px' }}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Sunlight Guidelines</label>
+                            <textarea
+                                value={careSunlight}
+                                onChange={e => setCareSunlight(e.target.value)}
+                                placeholder="Prefers direct, indirect, shade..."
+                                style={{ minHeight: '60px' }}
+                            />
+                        </div>
+                    </div>
+                    <div className="form-row">
+                        <div className="form-group">
+                            <label>Soil Type</label>
+                            <textarea
+                                value={careSoil}
+                                onChange={e => setCareSoil(e.target.value)}
+                                placeholder="Soil drainage, pH, compost..."
+                                style={{ minHeight: '60px' }}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>General Maintenance</label>
+                            <textarea
+                                value={careMaintenance}
+                                onChange={e => setCareMaintenance(e.target.value)}
+                                placeholder="Pruning, fertilizer, repotting..."
+                                style={{ minHeight: '60px' }}
+                            />
+                        </div>
                     </div>
 
                     <div className="form-row">
@@ -606,7 +782,7 @@ export const PlantManager = () => {
                                             </div>
                                         </div>
                                         <div className="taxonomy-info">
-                                            <i>{plant.taxon?.name}</i>
+                                            <i>{plant.scientific_name}</i>
                                         </div>
                                         <div className="plant-meta">
                                             <span className="tag">{plant.category}</span>
@@ -636,7 +812,7 @@ export const PlantManager = () => {
                                 </div>
                                 <div style={{ width: '48px' }}>Icon</div>
                                 <div style={{ flex: 2 }}>Common Name</div>
-                                <div style={{ flex: 2 }}>Species</div>
+                                <div style={{ flex: 2 }}>Scientific Name</div>
                                 <div style={{ flex: 1 }}>Category</div>
                                 <div style={{ flex: 1 }}>Place</div>
                                 <div style={{ width: '40px' }}></div>
@@ -678,7 +854,7 @@ export const PlantManager = () => {
                                             )}
                                         </div>
                                         <div style={{ flex: 2, fontWeight: '500', color: '#1a1a1a' }}>{plant.common_name}</div>
-                                        <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.taxon?.name}</div>
+                                        <div style={{ flex: 2, fontStyle: 'italic', color: '#888', fontFamily: 'serif' }}>{plant.scientific_name}</div>
                                         <div style={{ flex: 1 }}><span className="tag">{plant.category}</span></div>
                                         <div style={{ flex: 1 }}><span className="tag">{plant.planting_place}</span></div>
                                         <div style={{ width: '40px', textAlign: 'right' }}>

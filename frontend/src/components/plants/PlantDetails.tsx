@@ -1,9 +1,14 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { plantsApi } from '../../api/plants';
 import { taxonomyApi } from '../../api/taxonomy';
 import type { TaxonTree } from '../../types/taxon';
+import {
+    ArrowLeft, Edit3, Bug, ListTree, Info, Sprout,
+    Droplets, Sun, Wind, ScanText, MapPin, Tag
+} from 'lucide-react';
+import './PlantDetails.css';
 
 export const PlantDetails = () => {
     const { id } = useParams<{ id: string }>();
@@ -42,95 +47,100 @@ export const PlantDetails = () => {
     if (plantError || !plant) return <div>Error loading plant details. Plant may not exist.</div>;
 
     return (
-        <div className="plant-details-container" style={{ padding: '2rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <Link to="/plants" className="btn" style={{ background: '#6c757d', display: 'inline-block' }}>
-                    ← Back to Catalog
+        <div className="pd-container">
+            <div className="pd-nav">
+                <Link to="/plants" className="pd-back-btn">
+                    <ArrowLeft size={18} /> Back to Catalog
                 </Link>
-                <Link to="/plants" state={{ editPlant: plant }} className="btn" style={{ background: '#0056b3', display: 'inline-block' }}>
-                    ✎ Edit Plant
+                <Link to="/plants" state={{ editPlant: plant }} className="pd-edit-btn">
+                    <Edit3 size={18} /> Edit Plant
                 </Link>
             </div>
 
-            <div className="plant-header" style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-                    {plant.icon_url && (
-                        <img
-                            src={plant.icon_url}
-                            alt={`${plant.common_name} icon`}
-                            style={{ width: '64px', height: '64px', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                        />
-                    )}
-                    <h1 style={{ fontSize: '2.5rem', margin: 0 }}>{plant.common_name}</h1>
-                </div>
-                <p style={{ fontSize: '1.2rem', fontStyle: 'italic', color: '#666' }}>
-                    {plant.taxon?.name || 'Unknown Species'}
-                </p>
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-                    <span className="tag" style={{ background: '#e9ecef', padding: '0.3rem 0.8rem', borderRadius: '4px', fontSize: '0.9rem' }}>
-                        {plant.category}
-                    </span>
-                    <span className="tag" style={{ background: '#e9ecef', padding: '0.3rem 0.8rem', borderRadius: '4px', fontSize: '0.9rem' }}>
-                        {plant.planting_place}
-                    </span>
+            <div className="pd-header">
+                <div className="pd-header-content">
+                    <div className="pd-title-wrapper">
+                        {plant.icon_url && (
+                            <img src={plant.icon_url} alt={`${plant.common_name} icon`} className="pd-icon" />
+                        )}
+                        <div>
+                            <h1 className="pd-title">{plant.common_name}</h1>
+                            <p className="pd-scientific">{plant.scientific_name || 'Scientific Name Unknown'}</p>
+                        </div>
+                    </div>
+                    <div className="pd-tags">
+                        <span className="pd-tag">
+                            <Tag size={14} /> {plant.category}
+                        </span>
+                        <span className="pd-tag">
+                            <MapPin size={14} /> {plant.planting_place}
+                        </span>
+                    </div>
                 </div>
                 {plant.image_url && (
-                    <div style={{ marginTop: '1.5rem' }}>
-                        <img
-                            src={plant.image_url}
-                            alt={`${plant.common_name} main`}
-                            style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'cover', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}
-                        />
-                    </div>
+                    <img src={plant.image_url} alt={`${plant.common_name} full view`} className="pd-hero-image" />
                 )}
             </div>
 
-            <div className="plant-body" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '2rem' }}>
+            <div className="pd-grid">
+                <div className="pd-main-col">
+                    <div className="pd-section">
+                        <h3 className="pd-section-title"><ScanText size={22} /> Description</h3>
+                        {plant.description ? (
+                            <p className="pd-text">{plant.description}</p>
+                        ) : (
+                            <p className="pd-text" style={{ color: '#888' }}>No description provided.</p>
+                        )}
+                    </div>
 
-                {taxonomyPath && taxonomyPath.length > 0 && (
-                    <div className="plant-section">
-                        <h3 style={{ marginBottom: '1rem', borderBottom: '1px solid #eaeaea', paddingBottom: '0.5rem', fontSize: '1.25rem' }}>Taxonomy Lineage</h3>
-                        <div style={{ background: '#fafafa', padding: '1.25rem', borderRadius: '8px', border: '1px solid #eaeaea', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            {taxonomyPath.map((t, index) => (
-                                <React.Fragment key={t.id}>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.25rem 0.5rem', background: '#fff', borderRadius: '6px', border: '1px solid #e0e0e0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                        <span style={{ fontSize: '0.65rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 'bold' }}>{t.rank}</span>
-                                        <span style={{ fontWeight: '500', color: '#2b2b2b' }}>{t.name}</span>
-                                    </div>
-                                    {index < taxonomyPath.length - 1 && (
-                                        <span style={{ color: '#ccc', margin: '0 0.25rem', fontSize: '1.2rem' }}>→</span>
-                                    )}
-                                </React.Fragment>
-                            ))}
+                    {plant.care_data && Object.keys(plant.care_data).length > 0 && (
+                        <div className="pd-section">
+                            <h3 className="pd-section-title"><Sprout size={22} /> Care Data</h3>
+                            <div className="pd-care-grid">
+                                {Object.entries(plant.care_data).map(([key, value]) => {
+                                    let Icon = Info;
+                                    if (key.toLowerCase().includes('water')) Icon = Droplets;
+                                    if (key.toLowerCase().includes('sun')) Icon = Sun;
+                                    if (key.toLowerCase().includes('soil')) Icon = ListTree;
+                                    if (key.toLowerCase().includes('maintenance')) Icon = Wind;
+
+                                    return (
+                                        <div key={key} className="pd-care-item">
+                                            <div className="pd-care-label">
+                                                <Icon size={16} /> {key.replace(/_/g, ' ')}
+                                            </div>
+                                            <p className="pd-care-value">{String(value)}</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </div>
-                    </div>
-                )}
-
-                <div className="plant-section">
-                    <h3>Description</h3>
-                    <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', border: '1px solid #eaeaea', lineHeight: '1.6' }}>
-                        {plant.description ? <p>{plant.description}</p> : <p style={{ color: '#888' }}>No description provided.</p>}
-                    </div>
+                    )}
                 </div>
 
-                {plant.care_data && Object.keys(plant.care_data).length > 0 && (
-                    <div className="plant-section">
-                        <h3>Care Data</h3>
-                        <div style={{ background: '#fff', padding: '1.5rem', borderRadius: '8px', border: '1px solid #eaeaea' }}>
-                            <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-                                {Object.entries(plant.care_data).map(([key, value]) => (
-                                    <li key={key} style={{ display: 'flex', borderBottom: '1px solid #f0f0f0', padding: '0.8rem 0' }}>
-                                        <span style={{ fontWeight: '600', width: '150px', textTransform: 'capitalize' }}>
-                                            {key.replace(/_/g, ' ')}
-                                        </span>
-                                        <span style={{ flex: 1 }}>{String(value)}</span>
-                                    </li>
-                                ))}
-                            </ul>
+                <div className="pd-side-col">
+                    {plant.common_diseases && (
+                        <div className="pd-section pd-disease-card">
+                            <h3 className="pd-section-title"><Bug size={22} /> Common Diseases & Pests</h3>
+                            <p className="pd-text">{plant.common_diseases}</p>
                         </div>
-                    </div>
-                )}
+                    )}
+
+                    {taxonomyPath && taxonomyPath.length > 0 && (
+                        <div className="pd-section">
+                            <h3 className="pd-section-title"><ListTree size={22} /> Taxonomy Lineage</h3>
+                            <div className="pd-taxonomy">
+                                {taxonomyPath.map((t) => (
+                                    <div key={t.id} className="pd-tax-node">
+                                        <span className="pd-tax-rank">{t.rank}</span>
+                                        <span className="pd-tax-name">{t.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
-        </div >
+        </div>
     );
 };
