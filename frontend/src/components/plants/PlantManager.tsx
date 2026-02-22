@@ -6,7 +6,6 @@ import { taxonomyApi } from '../../api/taxonomy';
 import { projectsApi } from '../../api/projects';
 import { PlantingPlace } from '../../types/plant';
 import type { PlantCreate, Plant } from '../../types/plant';
-import { Rank } from '../../types/taxon';
 import './PlantManager.css';
 
 import { ioApi } from '../../api/io';
@@ -14,7 +13,6 @@ import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { categoriesApi } from '../../api/categories';
 import { aiApi } from '../../api/ai';
-import { SearchableSelect } from '../common/SearchableSelect';
 import { TaxonomyFormTable } from './TaxonomyFormTable';
 
 export const PlantManager = () => {
@@ -106,7 +104,7 @@ export const PlantManager = () => {
     const [description, setDescription] = useState('');
     const [commonDiseases, setCommonDiseases] = useState('');
     const [scientificName, setScientificName] = useState('');
-    const [taxonId, setTaxonId] = useState<string | undefined>(undefined);
+    const [taxonId, setTaxonId] = useState<string | null>(null);
     const [iconFile, setIconFile] = useState<File | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [iconUrl, setIconUrl] = useState('');
@@ -256,7 +254,7 @@ export const PlantManager = () => {
         setDescription('');
         setCommonDiseases('');
         setScientificName('');
-        setTaxonId(undefined);
+        setTaxonId(null);
         setIconFile(null);
         setImageFile(null);
         setIconUrl('');
@@ -278,7 +276,7 @@ export const PlantManager = () => {
         setDescription(plant.description || '');
         setCommonDiseases(plant.common_diseases || '');
         setScientificName(plant.scientific_name || '');
-        setTaxonId(plant.taxon_id);
+        setTaxonId(plant.taxon_id || null);
         setIconUrl(plant.icon_url || '');
         setImageUrl(plant.image_url || '');
         setIconFile(null);
@@ -385,7 +383,7 @@ export const PlantManager = () => {
             planting_place: plantingPlace,
             description,
             common_diseases: commonDiseases,
-            taxon_id: taxonId,
+            taxon_id: taxonId || undefined,
             icon_url: finalIconUrl || undefined,
             image_url: finalImageUrl || undefined,
             care_data: parsedCareData
