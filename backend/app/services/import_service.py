@@ -1,13 +1,14 @@
 import csv
 import io
 import uuid
-from typing import IO, List, Dict, Tuple
+from typing import IO, List, Dict, Tuple, Any
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 
 from app.models.taxon import Taxon
 from app.models.plant import Plant
-from app.models.enums import Rank, PlantCategory, PlantingPlace
+from app.models.enums import Rank, PlantingPlace
+from app.models.category import Category
 from app.schemas.taxon import TaxonCreate
 
 async def process_csv_import(db: AsyncSession, file_content: bytes) -> Dict[str, Any]:
@@ -119,12 +120,17 @@ async def process_csv_import(db: AsyncSession, file_content: bytes) -> Dict[str,
                 
             # Helper for enums
             category_str = row.get("category", "Other").title()
-            try:
-                category = PlantCategory(category_str)
-            except ValueError:
-                category = PlantCategory.OTHER
+            
+            # Ensure category exists in DB (creates it if not)
+            cat_result = await db.execute(select(Category).filter(func.lower(Category.name) == category_str.lower()))
+            cat_obj = cat_result.scalars().first()
+            if not cat_obj:
+                cat_obj = Category(name=category_str)
+                db.add(cat_obj)
+                await db.flush()
                 
-            place_str = row.get("planting_place", "Both").title()
+            category = cat_obj.name
+            place_str = row.get("planting_place", "Indoor & Outdoor").title()
             try:
                 planting_place = PlantingPlace(place_str)
             except ValueError:

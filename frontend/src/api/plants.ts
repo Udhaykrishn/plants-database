@@ -3,12 +3,12 @@ import type { PlantCreate, PlantResponse } from "../types/plant";
 
 export const plantsApi = {
     getAll: async (): Promise<PlantResponse[]> => {
-        const response = await client.get<PlantResponse[]>("/plants");
+        const response = await client.get<PlantResponse[]>("/plants/");
         return response.data;
     },
 
     create: async (data: PlantCreate): Promise<PlantResponse> => {
-        const response = await client.post<PlantResponse>("/plants", data);
+        const response = await client.post<PlantResponse>("/plants/", data);
         return response.data;
     },
 
@@ -19,5 +19,22 @@ export const plantsApi = {
 
     delete: async (id: string): Promise<void> => {
         await client.delete(`/plants/${id}`);
+    },
+
+    update: async (id: string, data: Partial<PlantCreate>): Promise<PlantResponse> => {
+        const response = await client.put<PlantResponse>(`/plants/${id}`, data);
+        return response.data;
+    },
+
+    uploadImage: async (file: File, type: 'icon' | 'image'): Promise<{ url: string }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('image_type', type);
+        const response = await client.post<{ url: string }>("/plants/upload-image", formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            }
+        });
+        return response.data;
     }
 };

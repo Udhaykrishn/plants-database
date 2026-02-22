@@ -5,16 +5,21 @@ import { projectsApi } from '../../api/projects';
 import { plantsApi } from '../../api/plants';
 import { ioApi } from '../../api/io';
 import type { ProjectPlantCreate } from '../../types/project';
+import { useAlert } from '../../contexts/AlertContext';
+import { useConfirm } from '../../contexts/ConfirmContext';
 import './Projects.css';
 
 export const ProjectDetails = () => {
     const { id } = useParams<{ id: string }>();
     const queryClient = useQueryClient();
-    const [isAdding, setIsAdding] = useState(false);
+    const { showAlert } = useAlert();
+    const { confirm } = useConfirm();
 
-    // Add Plant Form
+    const [isAdding, setIsAdding] = useState(false);
+    const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
+
+    // Form
     const [selectedPlantId, setSelectedPlantId] = useState('');
-    const [quantity, setQuantity] = useState(1);
     const [notes, setNotes] = useState('');
 
     const { data: project, isLoading } = useQuery({
@@ -32,24 +37,80 @@ export const ProjectDetails = () => {
         mutationFn: (data: ProjectPlantCreate) => projectsApi.addPlant(id!, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['project', id] });
-            setIsAdding(false);
-            setQuantity(1);
-            setNotes('');
-            setSelectedPlantId('');
+            showAlert('Plant added to project successfully', 'success');
+            cancelEdit();
         },
+        onError: (error: any) => {
+            showAlert("Failed to add plant: " + (error.response?.data?.detail || error.message), 'error');
+        }
     });
 
-    const handleAddPlant = (e: React.FormEvent) => {
+    const updatePlantMutation = useMutation({
+        mutationFn: (data: ProjectPlantCreate) => projectsApi.updatePlant(id!, editingPlantId!, data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['project', id] });
+            showAlert('Plant updated successfully', 'success');
+            cancelEdit();
+        },
+        onError: (error: any) => {
+            showAlert("Failed to update plant: " + (error.response?.data?.detail || error.message), 'error');
+        }
+    });
+
+    const deletePlantMutation = useMutation({
+        mutationFn: (plantId: string) => projectsApi.removePlant(id!, plantId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['project', id] });
+            showAlert('Plant removed successfully', 'success');
+        },
+        onError: (error: any) => {
+            showAlert("Failed to remove plant: " + (error.response?.data?.detail || error.message), 'error');
+        }
+    });
+
+    const handleEditClick = (plantId: string, currentNotes: string) => {
+        setEditingPlantId(plantId);
+        setSelectedPlantId(plantId);
+        setNotes(currentNotes || '');
+        setIsAdding(true);
+    };
+
+    const cancelEdit = () => {
+        setEditingPlantId(null);
+        setSelectedPlantId('');
+        setNotes('');
+        setIsAdding(false);
+    };
+
+    const handleDeleteClick = (plantId: string, plantName: string) => {
+        confirm({
+            title: 'Remove Plant',
+            message: `Are you sure you want to remove ${plantName} from this project?`,
+            confirmText: 'Remove',
+            cancelText: 'Cancel',
+            onConfirm: () => {
+                deletePlantMutation.mutate(plantId);
+            }
+        });
+    };
+
+    const handleSubmitPlant = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedPlantId) {
-            alert("Select a plant");
+            showAlert("Please select a plant", 'warning');
             return;
         }
-        addPlantMutation.mutate({
+
+        const payload = {
             plant_id: selectedPlantId,
-            quantity,
             notes
-        });
+        };
+
+        if (editingPlantId) {
+            updatePlantMutation.mutate(payload);
+        } else {
+            addPlantMutation.mutate(payload);
+        }
     };
 
     if (isLoading) return <div>Loading project...</div>;
@@ -64,7 +125,7 @@ export const ProjectDetails = () => {
             <div className="project-header" style={{ marginBottom: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <h1>{project.name}</h1>
-                    <button className="btn" onClick={() => ioApi.exportProjectPdf(project.id)} style={{ height: 'fit-content' }}>
+                    <button className="btn" onClick={() => ioApi.exportProjectPdf(project.id, project.name)} style={{ height: 'fit-content' }}>
                         Download PDF
                     </button>
                 </div>
@@ -75,14 +136,14 @@ export const ProjectDetails = () => {
             <div className="project-plants-section">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3>Plants List</h3>
-                    <button className="btn" onClick={() => setIsAdding(!isAdding)}>
+                    <button className="btn" onClick={() => isAdding ? cancelEdit() : setIsAdding(true)}>
                         {isAdding ? 'Cancel' : '+ Add Plant to Project'}
                     </button>
                 </div>
 
                 {isAdding && (
-                    <form className="create-plant-form" onSubmit={handleAddPlant} style={{ marginTop: '1rem' }}>
-                        <h4>Add Plant</h4>
+                    <form className="create-plant-form" onSubmit={handleSubmitPlant} style={{ marginTop: '1rem' }}>
+                        <h4>{editingPlantId ? 'Edit Plant' : 'Add Plant'}</h4>
                         <div className="form-row">
                             <div className="form-group">
                                 <label>Plant</label>
@@ -90,6 +151,7 @@ export const ProjectDetails = () => {
                                     value={selectedPlantId}
                                     onChange={e => setSelectedPlantId(e.target.value)}
                                     required
+                                    disabled={!!editingPlantId}
                                 >
                                     <option value="">Select Plant...</option>
                                     {allPlants?.map(p => (
@@ -97,22 +159,12 @@ export const ProjectDetails = () => {
                                     ))}
                                 </select>
                             </div>
-                            <div className="form-group">
-                                <label>Quantity</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={quantity}
-                                    onChange={e => setQuantity(parseInt(e.target.value))}
-                                    required
-                                />
-                            </div>
                         </div>
                         <div className="form-group">
                             <label>Notes</label>
                             <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Location notes, sizes, etc." />
                         </div>
-                        <button type="submit" className="btn">Add to Project</button>
+                        <button type="submit" className="btn">{editingPlantId ? 'Save Changes' : 'Add to Project'}</button>
                     </form>
                 )}
 
@@ -120,8 +172,8 @@ export const ProjectDetails = () => {
                     <div className="plant-row" style={{ background: '#f8f9fa', fontWeight: 'bold' }}>
                         <div style={{ flex: 2 }}>Plant Name</div>
                         <div style={{ flex: 1 }}>Category</div>
-                        <div style={{ flex: 1 }}>Quantity</div>
                         <div style={{ flex: 2 }}>Notes</div>
+                        <div style={{ width: '120px', textAlign: 'right' }}>Actions</div>
                     </div>
                     {project.plants.map((pp) => (
                         <div key={pp.plant_id} className="plant-row">
@@ -132,17 +184,22 @@ export const ProjectDetails = () => {
                             <div style={{ flex: 1 }}>
                                 <span className="tag">{pp.plant?.category}</span>
                             </div>
-                            <div style={{ flex: 1 }}>{pp.quantity}</div>
                             <div style={{ flex: 2 }}>{pp.notes || '-'}</div>
+                            <div style={{ width: '120px', textAlign: 'right', display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                <button className="btn-small" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => handleEditClick(pp.plant_id, pp.notes || '')}>Edit</button>
+                                <button className="btn-small danger" style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }} onClick={() => handleDeleteClick(pp.plant_id, pp.plant?.common_name || 'Plant')}>Remove</button>
+                            </div>
                         </div>
                     ))}
-                    {project.plants.length === 0 && (
-                        <div className="plant-row" style={{ justifyContent: 'center', padding: '2rem' }}>
-                            No plants added yet.
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
+                    {
+                        project.plants.length === 0 && (
+                            <div className="plant-row" style={{ justifyContent: 'center', padding: '2rem' }}>
+                                No plants added yet.
+                            </div>
+                        )
+                    }
+                </div >
+            </div >
+        </div >
     );
 };

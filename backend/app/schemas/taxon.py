@@ -1,5 +1,6 @@
 from typing import List, Optional, ForwardRef
 import uuid
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from app.models.enums import Rank
@@ -16,12 +17,21 @@ class TaxonBase(BaseModel):
 class TaxonCreate(TaxonBase):
     pass
 
+class TaxonPathItem(BaseModel):
+    rank: Rank
+    name: str
+    
+class TaxonEnsurePathRequest(BaseModel):
+    path: List[TaxonPathItem]
+
 class TaxonUpdate(TaxonBase):
     name: Optional[str] = None
     rank: Optional[Rank] = None
 
 class TaxonResponse(TaxonBase):
     id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
     model_config = ConfigDict(from_attributes=True)
 
 class TaxonTree(TaxonResponse):
