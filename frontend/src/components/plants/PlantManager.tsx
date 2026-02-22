@@ -173,10 +173,14 @@ export const PlantManager = () => {
 
     const aiMutation = useMutation({
         mutationFn: () => {
-            if (!commonName.trim()) throw new Error("Please enter a common name first");
-            return aiApi.generatePlantDetails(commonName);
+            if (!commonName.trim() && !scientificName.trim()) throw new Error("Please enter a common name or scientific name first");
+            return aiApi.generatePlantDetails({
+                commonName: commonName.trim() || undefined,
+                scientificName: scientificName.trim() || undefined
+            });
         },
         onSuccess: (data) => {
+            if (data.common_name && !commonName.trim()) setCommonName(data.common_name);
             if (data.description) setDescription(data.description);
             if (data.category) setCategory(data.category);
 
@@ -515,7 +519,7 @@ export const PlantManager = () => {
                                     title="Auto-fill details using AI"
                                     className="btn"
                                     onClick={() => aiMutation.mutate()}
-                                    disabled={aiMutation.isPending || !commonName.trim()}
+                                    disabled={aiMutation.isPending || (!commonName.trim() && !scientificName.trim())}
                                     style={{
                                         background: aiMutation.isPending ? '#e0e0e0' : 'linear-gradient(135deg, #a8ff78 0%, #78ffd6 100%)',
                                         color: '#000',

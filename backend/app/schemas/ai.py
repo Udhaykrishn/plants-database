@@ -2,7 +2,8 @@ from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 
 class PlantAIDetailsRequest(BaseModel):
-    common_name: str
+    common_name: Optional[str] = None
+    scientific_name: Optional[str] = None
 
 class TaxonomyDetails(BaseModel):
     kingdom: Optional[str] = None
@@ -14,6 +15,7 @@ class TaxonomyDetails(BaseModel):
     species: Optional[str] = None
 
 class PlantAIDetailsResponse(BaseModel):
+    common_name: Optional[str] = None
     category: Optional[str] = None
     planting_place: Optional[str] = None  # Indoor, Outdoor, or "Indoor & Outdoor"
     description: Optional[str] = None

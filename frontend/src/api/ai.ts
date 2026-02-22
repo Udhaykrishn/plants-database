@@ -11,6 +11,7 @@ export interface TaxonomyDetails {
 }
 
 export interface PlantAIDetailsResponse {
+    common_name?: string;
     category?: string;
     planting_place?: "Indoor" | "Outdoor" | "Indoor & Outdoor";
     description?: string;
@@ -19,9 +20,10 @@ export interface PlantAIDetailsResponse {
 }
 
 export const aiApi = {
-    generatePlantDetails: async (commonName: string): Promise<PlantAIDetailsResponse> => {
+    generatePlantDetails: async ({ commonName, scientificName }: { commonName?: string, scientificName?: string }): Promise<PlantAIDetailsResponse> => {
         const response = await client.post<PlantAIDetailsResponse>("/ai/generate-plant-details", {
-            common_name: commonName
+            common_name: commonName,
+            scientific_name: scientificName
         });
         return response.data;
     }

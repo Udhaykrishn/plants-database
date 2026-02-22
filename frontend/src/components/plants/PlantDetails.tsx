@@ -64,7 +64,7 @@ export const PlantDetails = () => {
                     <h1 style={{ fontSize: '2.5rem', margin: 0 }}>{plant.common_name}</h1>
                 </div>
                 <p style={{ fontSize: '1.2rem', fontStyle: 'italic', color: '#666' }}>
-                    {plant.taxon?.name || 'Unknown Species'}
+                    {plant.scientific_name || 'Unknown Scientific Name'}
                 </p>
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
                     <span className="tag" style={{ background: '#e9ecef', padding: '0.3rem 0.8rem', borderRadius: '4px', fontSize: '0.9rem' }}>
