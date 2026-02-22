@@ -23,6 +23,7 @@ const C = {
     mutedFg: '#6b7a6a',   // muted foreground
     border: '#d9d2c5',   // border
     white: '#ffffff',
+    rowAlt: '#faf8f5',   // near-cream for alternating rows (not harsh white)
     redBg: '#fff1f2',
     redBorder: '#fecdd3',
     redTitle: '#b91c1c',
@@ -232,8 +233,8 @@ function ProjectPdfCover({ project, elementId, imgCache }: CoverProps) {
                                 const p = pp.plant;
                                 if (!p) return null;
                                 serial += 1;
-                                // Alternate per-category so first row of every group is always cream
-                                const rowBg = rowIdx % 2 === 0 ? C.bg : C.white;
+                                // Alternate per-category: first row = cream, second = near-cream
+                                const rowBg = rowIdx % 2 === 0 ? C.bg : C.rowAlt;
                                 const iconSrc = imgCache[p.id];
                                 const placement = cleanVal(p.planting_place);
 

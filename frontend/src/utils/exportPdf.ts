@@ -3,7 +3,7 @@ import html2canvas from 'html2canvas';
 
 const PAGE_W_MM = 210;
 const PAGE_H_MM = 297;
-const SCALE = 2.5;
+const SCALE = 3.5;    // ← higher DPI for sharper text + images
 
 /** Make a hidden element visible temporarily, render to canvas at fixed A4 width. */
 async function elementToCanvas(el: HTMLElement): Promise<HTMLCanvasElement> {
@@ -64,13 +64,13 @@ function addAsSinglePage(
 
     if (naturalH_mm <= PAGE_H_MM + 1) {
         // Fits in one page — place at top, proportional
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG',
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG',
             0, 0, PAGE_W_MM, naturalH_mm);
     } else {
         // Too tall — scale DOWN so height = PAGE_H_MM, maintain aspect
         const scaledW_mm = PAGE_W_MM * (PAGE_H_MM / naturalH_mm);
         const xOffset = (PAGE_W_MM - scaledW_mm) / 2;
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.93), 'JPEG',
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG',
             xOffset, 0, scaledW_mm, PAGE_H_MM);
     }
 }
@@ -102,7 +102,7 @@ function addAsMultiPage(
             0, 0, canvas.width, sliceH_px
         );
 
-        pdf.addImage(slice.toDataURL('image/jpeg', 0.93), 'JPEG',
+        pdf.addImage(slice.toDataURL('image/png'), 'PNG',
             0, 0, PAGE_W_MM, (sliceH_px / canvas.width) * PAGE_W_MM);
     }
     return pages;
