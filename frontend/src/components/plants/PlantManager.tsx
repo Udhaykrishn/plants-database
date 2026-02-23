@@ -262,7 +262,6 @@ export const PlantManager = () => {
     const handleEdit = (plant: Plant) => {
         setEditingPlantId(plant.id);
         setIsCreating(false);
-        setActiveDropdown(null);
         setCommonName(plant.common_name);
         setCategory(plant.category);
         setIsIndoor(plant.planting_place === PlantingPlace.INDOOR || plant.planting_place === PlantingPlace.BOTH);
