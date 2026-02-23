@@ -3,10 +3,16 @@ from sqlalchemy.orm import sessionmaker
 
 from app.core.config import settings
 
+# Check if we are using Neon (usually has neon.tech in host)
+connect_args = {}
+if "neon.tech" in str(settings.SQLALCHEMY_DATABASE_URI):
+    connect_args["ssl"] = True
+
 engine = create_async_engine(
     str(settings.SQLALCHEMY_DATABASE_URI),
     echo=True,
     future=True,
+    connect_args=connect_args
 )
 
 AsyncSessionLocal = sessionmaker(
