@@ -1,6 +1,7 @@
 import csv
 import io
 import logging
+import re
 from typing import Dict, Any, Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -40,16 +41,53 @@ async def _get_or_create_taxon(
     return taxon
 
 
+def _clean_url(raw: Optional[str]) -> Optional[str]:
+    """Extract the first valid https URL from a cell value.
+    Handles AI-generated Markdown links like [url](url), bare URLs,
+    and cells where two URLs were accidentally merged together."""
+    if not raw:
+        return None
+    # Pull every https:// URL out of the cell (ignores surrounding markdown / text)
+    urls = re.findall(r'https://[^\s\)\]\,\'"]+', raw)
+    return urls[0] if urls else None
+
+
 async def _cloudinary_url(raw_url: Optional[str]) -> Optional[str]:
     """Upload a remote URL to Cloudinary and return the CDN URL.
     Returns None silently if upload fails so a missing image never breaks the import."""
-    if not raw_url:
+    clean = _clean_url(raw_url)
+    if not clean:
         return None
     try:
-        return await upload_image_from_url(raw_url, folder="plants")
+        return await upload_image_from_url(clean, folder="plants")
     except Exception as exc:
-        logger.warning("Cloudinary upload failed for %s: %s", raw_url, exc)
+        logger.warning("Cloudinary upload failed for %s: %s", clean, exc)
         return None
+
+
+# ---------------------------------------------------------------------------
+# Pre-processing
+# ---------------------------------------------------------------------------
+
+def _sanitize_csv_text(text: str) -> str:
+    """Fix common AI formatting mistakes in raw CSV text *before* parsing.
+
+    The most frequent problem: AI outputs image URLs as a Markdown hyperlink
+    with both URLs merged into one unquoted cell, e.g.
+        [https://...?width=400,https://...?width=1000](https://...?width=400,...)
+
+    The unquoted commas inside [...] and (...) make the CSV parser produce
+    extra phantom columns and misalign every subsequent field.  We replace
+    the whole construct with just the first plain URL found inside it.
+    """
+    # Pattern: [anything](anything) where 'anything' contains https URLs.
+    # Replace with only the first https URL found in the whole match.
+    def _pick_first_url(m: re.Match) -> str:
+        urls = re.findall(r'https://[^\s\)\]\,\'"]+', m.group(0))
+        return urls[0] if urls else ""
+
+    sanitized = re.sub(r'\[https?://[^\]]*\]\(https?://[^\)]*\)', _pick_first_url, text)
+    return sanitized
 
 
 # ---------------------------------------------------------------------------
@@ -79,16 +117,16 @@ async def process_csv_import(db: AsyncSession, file_content: bytes) -> Dict[str,
     """
     decoded_file = file_content.decode("utf-8")
 
+    # ── Step 0: sanitize raw text before the CSV parser ever sees it ────────
+    decoded_file = _sanitize_csv_text(decoded_file)
+
     # ── Auto-detect missing header ──────────────────────────────────────────
-    # Peek at the first row. If it doesn't contain our required column names
-    # we assume it is a data row and inject the standard header.
     peek_reader = csv.reader(io.StringIO(decoded_file))
     first_row = next(peek_reader, [])
     first_row_lower = [c.strip().lower() for c in first_row]
     required = ["kingdom", "species", "common_name"]
 
     if not all(r in first_row_lower for r in required):
-        # No header — prepend it
         logger.info("CSV header not detected; injecting standard header automatically.")
         decoded_file = STANDARD_HEADER + "\n" + decoded_file
 

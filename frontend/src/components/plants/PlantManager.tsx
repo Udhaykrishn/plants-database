@@ -45,6 +45,12 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 // Lucide icons
 import {
@@ -71,7 +77,6 @@ export const PlantManager = () => {
 
     const [isCreating, setIsCreating] = useState(false);
     const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
-    const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
 
     const [selectedPlantIds, setSelectedPlantIds] = useState<string[]>(() => {
@@ -111,14 +116,6 @@ export const PlantManager = () => {
         }
     });
 
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as Element;
-            if (!target.closest('.actions-menu-container')) setActiveDropdown(null);
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
 
     // Filters & Sort
     const [searchTerm, setSearchTerm] = useState('');
@@ -290,13 +287,8 @@ export const PlantManager = () => {
             confirmText: 'Delete',
             onConfirm: () => deleteMutation.mutate(id),
         });
-        setActiveDropdown(null);
     };
 
-    const toggleDropdown = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        setActiveDropdown(activeDropdown === id ? null : id);
-    };
 
     const handleRowClick = (id: string, e: React.MouseEvent) => {
         if ((e.target as Element).closest('.actions-menu-container') ||
@@ -308,7 +300,6 @@ export const PlantManager = () => {
     const openSingleProjectModal = (plantId: string) => {
         setSelectedPlantIds([plantId]);
         setShowProjectModal(true);
-        setActiveDropdown(null);
     };
 
     const cancelEdit = () => {
@@ -410,7 +401,7 @@ export const PlantManager = () => {
 
     return (
         <TooltipProvider>
-            <div>
+            <div className="pb-32">
                 {/* ── Page Header ───────────────────────────────────────────── */}
                 <div className="mb-6">
                     {/* Row 1: Title */}
@@ -786,28 +777,36 @@ export const PlantManager = () => {
                                                     <h3 className="font-medium text-foreground text-sm leading-tight">{plant.common_name}</h3>
                                                 </div>
                                                 {/* Actions dropdown */}
-                                                <div className="actions-menu-container relative" onClick={e => e.stopPropagation()}>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-7 w-7 text-muted-foreground"
-                                                        onClick={(e) => toggleDropdown(plant.id, e)}
-                                                    >
-                                                        <MoreVertical size={14} />
-                                                    </Button>
-                                                    {activeDropdown === plant.id && (
-                                                        <div className="dropdown-menu absolute right-0 top-full mt-1 bg-background border border-border rounded-lg shadow-lg z-10 w-40 overflow-hidden">
-                                                            <button className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2" onClick={(e) => { e.stopPropagation(); openSingleProjectModal(plant.id); }}>
-                                                                <FolderOpen size={13} /> Add to Project
-                                                            </button>
-                                                            <button className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2" onClick={() => handleEdit(plant)}>
-                                                                <Pencil size={13} /> Edit
-                                                            </button>
-                                                            <button className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/10 flex items-center gap-2 disabled:opacity-40" onClick={() => handleDelete(plant.id, plant.common_name)} disabled={selectedPlantIds.length > 0}>
-                                                                <Trash2 size={13} /> Delete
-                                                            </button>
-                                                        </div>
-                                                    )}
+                                                <div className="actions-menu-container" onClick={e => e.stopPropagation()}>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-7 w-7 text-muted-foreground"
+                                                            >
+                                                                <MoreVertical size={14} />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-40">
+                                                            <DropdownMenuItem onClick={() => openSingleProjectModal(plant.id)}>
+                                                                <FolderOpen className="mr-2 h-4 w-4" />
+                                                                <span>Add to Project</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem onClick={() => handleEdit(plant)}>
+                                                                <Pencil className="mr-2 h-4 w-4" />
+                                                                <span>Edit</span>
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem
+                                                                className="text-destructive focus:text-destructive"
+                                                                onClick={() => handleDelete(plant.id, plant.common_name)}
+                                                                disabled={selectedPlantIds.length > 0}
+                                                            >
+                                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                                <span>Delete</span>
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
                                                 </div>
                                             </div>
                                             <p className="text-xs italic text-muted-foreground mb-2">{plant.scientific_name}</p>
@@ -876,29 +875,35 @@ export const PlantManager = () => {
                                             <Badge variant="outline" className="text-[10px] uppercase tracking-wide font-bold">{plant.planting_place}</Badge>
                                         </div>
                                         <div className="w-10 flex justify-end actions-menu-container" onClick={e => e.stopPropagation()}>
-                                            <div className="relative">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-7 w-7 text-muted-foreground"
-                                                    onClick={(e) => toggleDropdown(`table-${plant.id}`, e)}
-                                                >
-                                                    <MoreVertical size={14} />
-                                                </Button>
-                                                {activeDropdown === `table-${plant.id}` && (
-                                                    <div className="dropdown-menu absolute right-0 top-full mt-1 bg-background border border-border rounded-lg shadow-lg z-10 w-40 overflow-hidden">
-                                                        <button className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2" onClick={(e) => { e.stopPropagation(); openSingleProjectModal(plant.id); }}>
-                                                            <FolderOpen size={13} /> Add to Project
-                                                        </button>
-                                                        <button className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2" onClick={() => handleEdit(plant)}>
-                                                            <Pencil size={13} /> Edit
-                                                        </button>
-                                                        <button className="w-full text-left px-3 py-2 text-sm text-destructive hover:bg-destructive/10 flex items-center gap-2 disabled:opacity-40" onClick={() => handleDelete(plant.id, plant.common_name)} disabled={selectedPlantIds.length > 0}>
-                                                            <Trash2 size={13} /> Delete
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7 text-muted-foreground"
+                                                    >
+                                                        <MoreVertical size={14} />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-40">
+                                                    <DropdownMenuItem onClick={() => openSingleProjectModal(plant.id)}>
+                                                        <FolderOpen className="mr-2 h-4 w-4" />
+                                                        <span>Add to Project</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem onClick={() => handleEdit(plant)}>
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        <span>Edit</span>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                        className="text-destructive focus:text-destructive"
+                                                        onClick={() => handleDelete(plant.id, plant.common_name)}
+                                                        disabled={selectedPlantIds.length > 0}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        <span>Delete</span>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </div>
                                     </div>
                                 );
