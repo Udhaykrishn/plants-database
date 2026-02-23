@@ -1,5 +1,6 @@
 import cloudinary
 import cloudinary.uploader
+import httpx
 from fastapi import UploadFile
 from app.core.config import settings
 
@@ -39,3 +40,35 @@ async def upload_image(file: UploadFile, folder: str = "plants") -> str:
         return upload_result.get("secure_url")
     except Exception as e:
         raise Exception(f"Failed to upload image: {str(e)}")
+
+async def upload_image_from_url(url: str, folder: str = "plants") -> str:
+    """
+    Fetches an image from a remote URL and uploads it to Cloudinary.
+    Returns the Cloudinary secure URL.
+    """
+    if not settings.CLOUDINARY_API_KEY:
+        raise ValueError("Cloudinary is not configured.")
+
+    try:
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (X11; Linux x86_64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/122.0.0.0 Safari/537.36"
+            ),
+            "Referer": "https://commons.wikimedia.org/",
+            "Accept": "image/webp,image/apng,image/*,*/*;q=0.8",
+        }
+        async with httpx.AsyncClient(follow_redirects=True, timeout=20.0) as http:
+            response = await http.get(url, headers=headers)
+            response.raise_for_status()
+            image_bytes = response.content
+
+        upload_result = cloudinary.uploader.upload(
+            image_bytes,
+            folder=folder,
+            resource_type="image"
+        )
+        return upload_result.get("secure_url")
+    except Exception as e:
+        raise Exception(f"Failed to upload image from URL: {str(e)}")

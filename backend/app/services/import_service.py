@@ -1,165 +1,328 @@
 import csv
 import io
-import uuid
-from typing import IO, List, Dict, Tuple, Any
+import logging
+import re
+from typing import Dict, Any, Optional
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, func
 
 from app.models.taxon import Taxon
 from app.models.plant import Plant
 from app.models.enums import Rank, PlantingPlace
 from app.models.category import Category
-from app.schemas.taxon import TaxonCreate
+from app.services.ai_service import generate_plant_details
+from app.services.cloudinary_service import upload_image_from_url
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+async def _get_or_create_taxon(
+    db: AsyncSession,
+    name: str,
+    rank: Rank,
+    parent_id: Optional[str],
+) -> Taxon:
+    stmt = select(Taxon).where(
+        Taxon.name == name,
+        Taxon.rank == rank,
+        Taxon.parent_id == parent_id,
+    )
+    result = await db.execute(stmt)
+    taxon = result.scalars().first()
+    if not taxon:
+        taxon = Taxon(name=name, rank=rank, parent_id=parent_id)
+        db.add(taxon)
+        await db.flush()
+    return taxon
+
+
+def _clean_url(raw: Optional[str]) -> Optional[str]:
+    """Extract the first valid https URL from a cell value.
+    Handles AI-generated Markdown links like [url](url), bare URLs,
+    and cells where two URLs were accidentally merged together."""
+    if not raw:
+        return None
+    # Pull every https:// URL out of the cell (ignores surrounding markdown / text)
+    urls = re.findall(r'https://[^\s\)\]\,\'"]+', raw)
+    return urls[0] if urls else None
+
+
+async def _cloudinary_url(raw_url: Optional[str]) -> Optional[str]:
+    """Upload a remote URL to Cloudinary and return the CDN URL.
+    Returns None silently if upload fails so a missing image never breaks the import."""
+    clean = _clean_url(raw_url)
+    if not clean:
+        return None
+    try:
+        return await upload_image_from_url(clean, folder="plants")
+    except Exception as exc:
+        logger.warning("Cloudinary upload failed for %s: %s", clean, exc)
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Pre-processing
+# ---------------------------------------------------------------------------
+
+def _sanitize_csv_text(text: str) -> str:
+    """Fix common AI formatting mistakes in raw CSV text *before* parsing.
+
+    The most frequent problem: AI outputs image URLs as a Markdown hyperlink
+    with both URLs merged into one unquoted cell, e.g.
+        [https://...?width=400,https://...?width=1000](https://...?width=400,...)
+
+    The unquoted commas inside [...] and (...) make the CSV parser produce
+    extra phantom columns and misalign every subsequent field.  We replace
+    the whole construct with just the first plain URL found inside it.
+    """
+    # Pattern: [anything](anything) where 'anything' contains https URLs.
+    # Replace with only the first https URL found in the whole match.
+    def _pick_first_url(m: re.Match) -> str:
+        urls = re.findall(r'https://[^\s\)\]\,\'"]+', m.group(0))
+        return urls[0] if urls else ""
+
+    sanitized = re.sub(r'\[https?://[^\]]*\]\(https?://[^\)]*\)', _pick_first_url, text)
+    return sanitized
+
+
+# ---------------------------------------------------------------------------
+# Main entry point
+# ---------------------------------------------------------------------------
+
+STANDARD_HEADER = (
+    "kingdom,division,class,order,family,genus,species,common_name,"
+    "scientific_name,category,planting_place,description,common_diseases,"
+    "care_water,care_sunlight,care_soil,care_maintenance,icon_url,image_url"
+)
 
 async def process_csv_import(db: AsyncSession, file_content: bytes) -> Dict[str, Any]:
     """
-    Process CSV content to import plants and creating taxonomy hierarchy.
+    Process CSV content to import plants and build the taxonomy hierarchy.
+
+    For every row the service:
+      1. Builds / reuses the full taxonomy chain from the CSV columns.
+      2. Calls the same AI autofill used by the normal form to fill in any
+         fields that are blank in the CSV (description, diseases, care, images).
+      3. Uploads icon_url / image_url to Cloudinary (whether they came from
+         the CSV or the AI) — exactly like the normal plant-creation flow.
+      4. Creates the Plant record.  Duplicate species rows are skipped.
+
+    If the CSV has no header row (i.e. the first row contains data, not column
+    names), the standard header is automatically prepended.
     """
     decoded_file = file_content.decode("utf-8")
-    csv_reader = csv.DictReader(io.StringIO(decoded_file))
-    
-    # Normalize headers
-    headers = [h.strip().lower() for h in csv_reader.fieldnames or []]
+
+    # ── Step 0: sanitize raw text before the CSV parser ever sees it ────────
+    decoded_file = _sanitize_csv_text(decoded_file)
+
+    # ── Auto-detect missing header ──────────────────────────────────────────
+    peek_reader = csv.reader(io.StringIO(decoded_file))
+    first_row = next(peek_reader, [])
+    first_row_lower = [c.strip().lower() for c in first_row]
     required = ["kingdom", "species", "common_name"]
-    missing = [req for req in required if req not in headers]
-    
+
+    if not all(r in first_row_lower for r in required):
+        logger.info("CSV header not detected; injecting standard header automatically.")
+        decoded_file = STANDARD_HEADER + "\n" + decoded_file
+
+    csv_reader = csv.DictReader(io.StringIO(decoded_file))
+
+    # Normalise headers (after potential injection)
+    headers = [h.strip().lower() for h in csv_reader.fieldnames or []]
+    missing = [r for r in required if r not in headers]
     if missing:
         raise ValueError(f"Missing required columns: {', '.join(missing)}")
-    
-    # Store results
-    results = {
-        "success": 0,
-        "failed": 0,
-        "errors": []
-    }
-    
-    # Rank order for iteration (excluding Species which is handled last)
+
+    results: Dict[str, Any] = {"success": 0, "failed": 0, "errors": []}
+
     hierarchy_ranks = [
         Rank.KINGDOM,
         Rank.DIVISION,
         Rank.CLASS,
         Rank.ORDER,
         Rank.FAMILY,
-        Rank.GENUS
+        Rank.GENUS,
     ]
 
     row_idx = 0
     for row in csv_reader:
         row_idx += 1
-        row = {k.strip().lower(): v.strip() for k, v in row.items()}
-        
+        row = {k.strip().lower(): (v.strip() if v else "") for k, v in row.items()}
+
         try:
-            # 1. Build Taxonomy Hierarchy
+            # ------------------------------------------------------------------
+            # 1. Build taxonomy hierarchy
+            # ------------------------------------------------------------------
             parent_id = None
-            
             for rank in hierarchy_ranks:
-                rank_str = rank.value.lower()
-                name = row.get(rank_str)
-                
+                name = row.get(rank.value.lower(), "")
                 if not name:
-                    # Specific logic: If a rank is missing in CSV, we might skip it or error.
-                    # For a robust botanical system, usually ALL levels are required, 
-                    # but sometimes data is missing.
-                    # Here we assume if missing, we just skip creating this node and attach to previous parent?
-                    # No, taxonomy is strict. Let's assume mandatory for simple logic or fail.
                     if rank == Rank.KINGDOM:
-                         raise ValueError("Kingdom is mandatory")
-                    else:
-                         # Try to find 'unspecified' or continue? 
-                         # Let's enforce strictness for this implementation or allow missing logic
-                         # For now: Skip if empty, but next rank will point to previous parent
-                         continue
-                
-                # Check existance
-                stmt = select(Taxon).where(
-                    Taxon.name == name,
-                    Taxon.rank == rank,
-                    Taxon.parent_id == parent_id
-                )
-                result = await db.execute(stmt)
-                taxon = result.scalars().first()
-                
-                if not taxon:
-                    # Create new Taxon
-                    taxon = Taxon(
-                        name=name,
-                        rank=rank,
-                        parent_id=parent_id
-                    )
-                    db.add(taxon)
-                    await db.flush() # Flush to get ID
-                
+                        raise ValueError("Kingdom is mandatory")
+                    continue
+                taxon = await _get_or_create_taxon(db, name, rank, parent_id)
                 parent_id = taxon.id
-                
-            # 2. Handle Species (Taxon)
-            species_name = row.get("species")
+
+            # Species taxon
+            species_name = row.get("species", "")
             if not species_name:
                 raise ValueError("Species name mandatory")
-                
-            stmt = select(Taxon).where(
-                Taxon.name == species_name,
-                Taxon.rank == Rank.SPECIES,
-                Taxon.parent_id == parent_id
+            species_taxon = await _get_or_create_taxon(
+                db, species_name, Rank.SPECIES, parent_id
             )
-            result = await db.execute(stmt)
-            species_taxon = result.scalars().first()
-            
-            if not species_taxon:
-                species_taxon = Taxon(
-                    name=species_name,
-                    rank=Rank.SPECIES,
-                    parent_id=parent_id
-                )
-                db.add(species_taxon)
-                await db.flush()
-            
-            # 3. Create/Update Plant
-            common_name = row.get("common_name")
+
+            # ------------------------------------------------------------------
+            # 2. Check for duplicate
+            # ------------------------------------------------------------------
+            existing = (
+                await db.execute(select(Plant).where(Plant.taxon_id == species_taxon.id))
+            ).scalars().first()
+            if existing:
+                # Skip silently — same behaviour as before
+                continue
+
+            # ------------------------------------------------------------------
+            # 3. Read all text fields from CSV
+            # ------------------------------------------------------------------
+            common_name = row.get("common_name", "")
             if not common_name:
-                raise ValueError("Common name Mandatory")
-                
-            # Helper for enums
-            category_str = row.get("category", "Other").title()
-            
-            # Ensure category exists in DB (creates it if not)
-            cat_result = await db.execute(select(Category).filter(func.lower(Category.name) == category_str.lower()))
+                raise ValueError("Common name mandatory")
+
+            scientific_name = row.get("scientific_name", "") or None
+            description    = row.get("description", "")    or None
+            common_diseases = row.get("common_diseases", "") or None
+
+            care_water       = row.get("care_water", "")       or None
+            care_sunlight    = row.get("care_sunlight", "")    or None
+            care_soil        = row.get("care_soil", "")        or None
+            care_maintenance = row.get("care_maintenance", "") or None
+
+            csv_icon_url  = row.get("icon_url", "")  or None
+            csv_image_url = row.get("image_url", "") or None
+
+            # ------------------------------------------------------------------
+            # 4. AI autofill — runs only when fields are missing from CSV,
+            #    exactly as the normal form does.
+            # ------------------------------------------------------------------
+            ai_icon_url  = None
+            ai_image_url = None
+
+            needs_ai = not all([
+                description, common_diseases,
+                care_water, care_sunlight, care_soil, care_maintenance,
+                csv_icon_url, csv_image_url,
+            ])
+
+            if needs_ai:
+                try:
+                    ai = await generate_plant_details(
+                        common_name=common_name,
+                        scientific_name=scientific_name or species_name,
+                    )
+
+                    # Fill in only what the CSV left blank
+                    if not description and ai.description:
+                        description = ai.description
+                    if not common_diseases and ai.common_diseases:
+                        common_diseases = ai.common_diseases
+
+                    ai_care = ai.care_data or {}
+                    if not care_water and ai_care.get("water"):
+                        care_water = ai_care["water"]
+                    if not care_sunlight and ai_care.get("sunlight"):
+                        care_sunlight = ai_care["sunlight"]
+                    if not care_soil and ai_care.get("soil"):
+                        care_soil = ai_care["soil"]
+                    if not care_maintenance and ai_care.get("maintenance"):
+                        care_maintenance = ai_care["maintenance"]
+
+                    # Collect AI image URLs to upload later
+                    ai_icon_url  = ai.icon_url  or None
+                    ai_image_url = ai.image_url or None
+
+                except Exception as ai_err:
+                    # AI failure should not block the import — log and continue
+                    logger.warning(
+                        "Row %d: AI autofill failed for '%s': %s",
+                        row_idx, common_name, ai_err,
+                    )
+
+            # ------------------------------------------------------------------
+            # 5. Upload images to Cloudinary
+            #    Priority: CSV URL > AI URL (same as normal form)
+            # ------------------------------------------------------------------
+            raw_icon  = csv_icon_url  or ai_icon_url
+            raw_image = csv_image_url or ai_image_url
+
+            icon_url  = await _cloudinary_url(raw_icon)
+            image_url = await _cloudinary_url(raw_image)
+
+            # ------------------------------------------------------------------
+            # 6. Resolve category
+            # ------------------------------------------------------------------
+            category_str = (row.get("category", "") or "Other").title()
+            cat_result = await db.execute(
+                select(Category).filter(
+                    func.lower(Category.name) == category_str.lower()
+                )
+            )
             cat_obj = cat_result.scalars().first()
             if not cat_obj:
                 cat_obj = Category(name=category_str)
                 db.add(cat_obj)
                 await db.flush()
-                
             category = cat_obj.name
-            place_str = row.get("planting_place", "Indoor & Outdoor").title()
+
+            # ------------------------------------------------------------------
+            # 7. Resolve planting place
+            # ------------------------------------------------------------------
+            place_str = (row.get("planting_place", "") or "Indoor & Outdoor").strip()
+            # Normalise "Indoor & Outdoor" vs "Indoor And Outdoor"
+            if "&" not in place_str:
+                place_str = place_str.title()
             try:
                 planting_place = PlantingPlace(place_str)
             except ValueError:
                 planting_place = PlantingPlace.BOTH
 
-            # Check if plant exists
-            stmt = select(Plant).where(Plant.taxon_id == species_taxon.id)
-            result = await db.execute(stmt)
-            plant = result.scalars().first()
-            
-            if not plant:
-                plant = Plant(
-                    taxon_id=species_taxon.id,
-                    common_name=common_name,
-                    category=category,
-                    planting_place=planting_place,
-                    description=row.get("description", "")
-                )
-                db.add(plant)
-                results["success"] += 1
-            else:
-                 # Update? Skip for now to avoid overwriting user edits, 
-                 # or maybe just update specific fields.
-                 # Let's Skip duplicates in this version.
-                 pass
-                 
-        except Exception as e:
+            # ------------------------------------------------------------------
+            # 8. Build care_data JSON (same shape as AI autofill)
+            # ------------------------------------------------------------------
+            care_data = None
+            if any([care_water, care_sunlight, care_soil, care_maintenance]):
+                care_data = {
+                    "water":       care_water       or None,
+                    "sunlight":    care_sunlight    or None,
+                    "soil":        care_soil        or None,
+                    "maintenance": care_maintenance or None,
+                }
+
+            # ------------------------------------------------------------------
+            # 9. Create plant
+            # ------------------------------------------------------------------
+            plant = Plant(
+                taxon_id=species_taxon.id,
+                common_name=common_name,
+                scientific_name=scientific_name,
+                category=category,
+                planting_place=planting_place,
+                description=description,
+                common_diseases=common_diseases,
+                care_data=care_data,
+                icon_url=icon_url,
+                image_url=image_url,
+            )
+            db.add(plant)
+            results["success"] += 1
+
+        except Exception as exc:
             results["failed"] += 1
-            results["errors"].append(f"Row {row_idx}: {str(e)}")
+            results["errors"].append(f"Row {row_idx}: {exc}")
             continue
 
     await db.commit()

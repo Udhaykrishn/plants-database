@@ -36,5 +36,13 @@ export const plantsApi = {
             }
         });
         return response.data;
+    },
+
+    uploadImageFromUrl: async (url: string, type: 'icon' | 'image'): Promise<{ url: string }> => {
+        const response = await client.post<{ url: string }>("/plants/upload-image-from-url", {
+            url,
+            image_type: type,
+        });
+        return response.data;
     }
 };

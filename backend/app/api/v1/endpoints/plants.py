@@ -12,7 +12,8 @@ from app.models.plant import Plant
 from app.models.taxon import Taxon
 from app.models.enums import PlantingPlace, Rank
 from app.schemas.plant import PlantCreate, PlantResponse, PlantUpdate
-from app.services.cloudinary_service import upload_image
+from app.services.cloudinary_service import upload_image, upload_image_from_url
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -58,6 +59,30 @@ async def handle_upload_image(
         return {"url": url}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class UploadFromUrlRequest(BaseModel):
+    url: str
+    image_type: str = "image"  # 'icon' or 'image'
+
+@router.post("/upload-image-from-url")
+async def handle_upload_image_from_url(
+    request: UploadFromUrlRequest
+) -> Any:
+    """
+    Fetch a remote image URL and upload it to Cloudinary.
+    Returns the Cloudinary secure URL.
+    """
+    if request.image_type not in ["icon", "image"]:
+        raise HTTPException(status_code=400, detail="Invalid image type.")
+    if not request.url or not request.url.startswith("http"):
+        raise HTTPException(status_code=400, detail="Invalid URL.")
+
+    try:
+        url = await upload_image_from_url(request.url, folder="plants")
+        return {"url": url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.post("/", response_model=PlantResponse)
 async def create_plant(

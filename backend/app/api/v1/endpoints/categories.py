@@ -21,7 +21,7 @@ async def read_categories(
     stmt = (
         select(Category, func.count(Plant.id))
         .outerjoin(Plant, Category.name == Plant.category)
-        .group_by(Category.id)
+        .group_by(Category.id, Category.name, Category.description)
         .order_by(Category.name)
         .offset(skip)
         .limit(limit)

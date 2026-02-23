@@ -1,16 +1,40 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Pencil, Trash2, Plus, Tags } from 'lucide-react';
+
 import { categoriesApi } from '../../api/categories';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import type { Category } from '../../types/category';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export const CategoryManager = () => {
     const { showAlert } = useAlert();
     const { confirm } = useConfirm();
     const queryClient = useQueryClient();
 
-    const [isCreating, setIsCreating] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -25,23 +49,23 @@ export const CategoryManager = () => {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             showAlert('Category created successfully', 'success');
-            resetForm();
+            closeDialog();
         },
         onError: (error: any) => {
-            showAlert("Error creating category: " + (error.response?.data?.detail || error.message), 'error');
-        }
+            showAlert('Error creating category: ' + (error.response?.data?.detail || error.message), 'error');
+        },
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }: { id: string, data: any }) => categoriesApi.update(id, data),
+        mutationFn: ({ id, data }: { id: string; data: any }) => categoriesApi.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['categories'] });
             showAlert('Category updated successfully', 'success');
-            resetForm();
+            closeDialog();
         },
         onError: (error: any) => {
-            showAlert("Error updating category: " + (error.response?.data?.detail || error.message), 'error');
-        }
+            showAlert('Error updating category: ' + (error.response?.data?.detail || error.message), 'error');
+        },
     });
 
     const deleteMutation = useMutation({
@@ -51,28 +75,36 @@ export const CategoryManager = () => {
             showAlert('Category deleted successfully', 'success');
         },
         onError: (error: any) => {
-            showAlert("Error deleting category: " + (error.response?.data?.detail || error.message), 'error');
-        }
+            showAlert('Error deleting category: ' + (error.response?.data?.detail || error.message), 'error');
+        },
     });
 
-    const resetForm = () => {
-        setIsCreating(false);
+    const openCreate = () => {
+        setEditingCategory(null);
+        setName('');
+        setDescription('');
+        setIsOpen(true);
+    };
+
+    const openEdit = (cat: Category) => {
+        setEditingCategory(cat);
+        setName(cat.name);
+        setDescription(cat.description || '');
+        setIsOpen(true);
+    };
+
+    const closeDialog = () => {
+        setIsOpen(false);
         setEditingCategory(null);
         setName('');
         setDescription('');
     };
 
-    const handleEdit = (cat: Category) => {
-        setEditingCategory(cat);
-        setName(cat.name);
-        setDescription(cat.description || '');
-    };
-
     const handleDelete = (id: string) => {
         confirm({
             title: 'Delete Category',
-            message: 'Are you sure you want to delete this category? Any plant currently using this category must be updated first.',
-            onConfirm: () => deleteMutation.mutate(id)
+            message: 'Are you sure you want to delete this category? Plants using it must be updated first.',
+            onConfirm: () => deleteMutation.mutate(id),
         });
     };
 
@@ -85,129 +117,133 @@ export const CategoryManager = () => {
         }
     };
 
-    if (isLoading) return <div style={{ padding: '2rem' }}>Loading categories...</div>;
-
-    const showModal = isCreating || editingCategory !== null;
+    const isSaving = createMutation.isPending || updateMutation.isPending;
 
     return (
-        <div className="plant-manager" style={{ padding: '2rem' }}>
-            <div className="toolbar" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem' }}>
-                <h1 style={{ margin: 0, fontSize: '1.8rem' }}>Plant Categories</h1>
-                <button className="btn" style={{ background: '#1a1a1a', color: '#fff' }} onClick={() => setIsCreating(true)}>
-                    + Add Category
-                </button>
-            </div>
-
-            <div className="table-responsive">
-                <table className="plant-table" style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
-                    <thead>
-                        <tr style={{ background: '#f8f9fa', borderBottom: '2px solid #dee2e6' }}>
-                            <th style={{ padding: '1rem', textAlign: 'left' }}>Name</th>
-                            <th style={{ padding: '1rem', textAlign: 'left' }}>Description</th>
-                            <th style={{ padding: '1rem', textAlign: 'left' }}>Members</th>
-                            <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {categories?.map((cat) => (
-                            <tr key={cat.id} style={{ borderBottom: '1px solid #dee2e6' }}>
-                                <td style={{ padding: '1rem', fontWeight: 600 }}>{cat.name}</td>
-                                <td style={{ padding: '1rem', color: '#666' }}>{cat.description || '-'}</td>
-                                <td style={{ padding: '1rem', color: '#666' }}>
-                                    <span style={{ background: '#e9ecef', padding: '2px 8px', borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600 }}>
-                                        {cat.plant_count || 0}
-                                    </span>
-                                </td>
-                                <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                        <button
-                                            onClick={() => handleEdit(cat)}
-                                            style={{
-                                                background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                color: '#555', borderRadius: '4px', transition: 'background 0.2s'
-                                            }}
-                                            title="Edit Category"
-                                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f0f0f0'}
-                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                        >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <path d="M12 20h9"></path>
-                                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                                            </svg>
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(cat.id)}
-                                            style={{
-                                                background: 'transparent', border: 'none', cursor: 'pointer', padding: '6px',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                color: '#dc3545', borderRadius: '4px', transition: 'background 0.2s'
-                                            }}
-                                            title="Delete Category"
-                                            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#ffeeef'}
-                                            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                                        >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <polyline points="3 6 5 6 21 6"></polyline>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                                <line x1="10" y1="11" x2="10" y2="17"></line>
-                                                <line x1="14" y1="11" x2="14" y2="17"></line>
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                {categories?.length === 0 && (
-                    <div style={{ padding: '2rem', textAlign: 'center', color: '#666', background: '#fff' }}>
-                        No categories found.
-                    </div>
-                )}
-            </div>
-
-            {showModal && (
-                <div className="confirm-overlay" style={{ zIndex: 1100 }}>
-                    <div className="confirm-dialog" style={{ maxWidth: '400px', width: '90%' }}>
-                        <h2>{editingCategory ? 'Edit Category' : 'New Category'}</h2>
-                        <form onSubmit={handleSubmit}>
-                            <div className="form-group" style={{ marginBottom: '1rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Name</label>
-                                <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    required
-                                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '4px' }}
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600 }}>Description (Optional)</label>
-                                <textarea
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    style={{ width: '100%', padding: '0.75rem', border: '1px solid #ccc', borderRadius: '4px', minHeight: '80px', resize: 'vertical' }}
-                                />
-                            </div>
-                            <div className="confirm-actions">
-                                <button type="button" className="btn btn-cancel" onClick={resetForm}>
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="btn"
-                                    style={{ background: '#0056b3', color: '#fff' }}
-                                    disabled={createMutation.isPending || updateMutation.isPending || !name.trim()}
-                                >
-                                    {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : 'Save Category'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+        <div>
+            {/* Page Header */}
+            <div className="flex flex-col gap-1 mb-6 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">Categories</h1>
+                    <p className="text-sm text-muted-foreground mt-1">
+                        Organise your plants into custom groups.
+                    </p>
                 </div>
-            )}
+                <Button onClick={openCreate} className="mt-3 sm:mt-0 w-full sm:w-auto">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Category
+                </Button>
+            </div>
+
+            {/* Table */}
+            <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="bg-muted/40">
+                            <TableHead className="font-semibold">Name</TableHead>
+                            <TableHead className="font-semibold hidden sm:table-cell">Description</TableHead>
+                            <TableHead className="font-semibold">Plants</TableHead>
+                            <TableHead className="text-right font-semibold">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            Array.from({ length: 4 }).map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-48" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-8 rounded-full" /></TableCell>
+                                    <TableCell><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : categories?.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                                    <Tags className="w-8 h-8 mx-auto mb-3 opacity-30" />
+                                    <p className="text-sm">No categories yet. Create your first one.</p>
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            categories?.map((cat) => (
+                                <TableRow key={cat.id} className="hover:bg-muted/30 transition-colors">
+                                    <TableCell className="font-medium text-foreground">{cat.name}</TableCell>
+                                    <TableCell className="text-muted-foreground hidden sm:table-cell">
+                                        {cat.description || <span className="text-muted-foreground/50 italic">No description</span>}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="secondary" className="text-xs tabular-nums">
+                                            {cat.plant_count ?? 0}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-1">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                                onClick={() => openEdit(cat)}
+                                                title="Edit"
+                                            >
+                                                <Pencil className="w-3.5 h-3.5" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                                onClick={() => handleDelete(cat.id)}
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/* Dialog */}
+            <Dialog open={isOpen} onOpenChange={(o) => !o && closeDialog()}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{editingCategory ? 'Edit Category' : 'New Category'}</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="cat-name">Name <span className="text-destructive">*</span></Label>
+                            <Input
+                                id="cat-name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                placeholder="e.g. Shade Plants"
+                                required
+                                autoFocus
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="cat-desc">Description <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                            <Textarea
+                                id="cat-desc"
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value)}
+                                placeholder="Brief description of this category..."
+                                rows={3}
+                                className="resize-none"
+                            />
+                        </div>
+                        <DialogFooter className="gap-2 sm:gap-0">
+                            <Button type="button" variant="outline" onClick={closeDialog} disabled={isSaving}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={isSaving || !name.trim()}>
+                                {isSaving ? 'Saving…' : editingCategory ? 'Save Changes' : 'Create Category'}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
