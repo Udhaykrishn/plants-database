@@ -4,7 +4,7 @@ import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { XCircle } from "lucide-react"
 
-import { cn } from "@/lib-frontend/utils"
+import { cn } from "@/lib/utils"
 
 const Dialog = DialogPrimitive.Root
 

@@ -11,7 +11,7 @@ import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { categoriesApi } from '../../api/categories';
 import { aiApi } from '../../api/ai';
-import { cn } from '../../lib-frontend/utils';
+import { cn } from '../../lib/utils';
 import { TaxonomyFormTable } from './TaxonomyFormTable';
 
 // Shadcn components

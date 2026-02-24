@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
 import { Separator } from './components/ui/separator';
-import { cn } from './lib-frontend/utils';
+import { cn } from './lib/utils';
 
 import { TaxonomyManager } from './components/taxonomy/TaxonomyManager';
 import { PlantManager } from './components/plants/PlantManager';
@@ -120,6 +120,7 @@ function Layout() {
                     "brightness(0) saturate(100%) invert(18%) sepia(28%) saturate(1194%) hue-rotate(92deg) brightness(95%) contrast(90%)"
                 }}
               />
+
             </Link>
 
             <Link to="/" className="font-medium text-base text-[#1F4D2E]">
