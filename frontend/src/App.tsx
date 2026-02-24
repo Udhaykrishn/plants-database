@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, Link } from 'react-router-dom';
 import {
-  LayoutDashboard, ListTree, Tags, Leaf, FolderKanban, Menu, X
+  LayoutDashboard, ListTree, Tags, Leaf, FolderKanban, Menu
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
 import { Separator } from './components/ui/separator';
@@ -44,14 +44,6 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
         <span className="text-white font-semibold text-base tracking-wide uppercase">
           Landschaft
         </span>
-        {onClose && (
-          <button
-            onClick={onClose}
-            className="ml-auto text-white/60 hover:text-white lg:hidden"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        )}
       </div>
 
       <Separator className="bg-white/10 mx-4" />
@@ -101,7 +93,9 @@ function Layout() {
       {/* Mobile: top bar + sheet drawer */}
       <div className="flex flex-col flex-1 min-w-0">
         {/* Mobile top bar */}
-        <header className="lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-white">
+        <header className="lg:hidden relative flex items-center px-4 py-3 border-b border-border bg-white">
+
+          {/* Left Menu Button */}
           <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
             <SheetTrigger asChild>
               <button className="p-1 -m-1 rounded text-foreground hover:bg-muted">
@@ -112,12 +106,27 @@ function Layout() {
               <SidebarContent onClose={() => setMobileOpen(false)} />
             </SheetContent>
           </Sheet>
-          <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Landschaft" className="w-7 h-7" />
-            <span className="font-semibold text-sm uppercase tracking-wide text-foreground">
-              Landschaft
-            </span>
+
+          {/* Center Brand */}
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
+
+            <Link to="/">
+              <img
+                src="/logo.svg"
+                alt="Landschaft"
+                className="w-7 h-7"
+                style={{
+                  filter:
+                    "brightness(0) saturate(100%) invert(18%) sepia(28%) saturate(1194%) hue-rotate(92deg) brightness(95%) contrast(90%)"
+                }}
+              />
+            </Link>
+
+            <Link to="/" className="font-medium text-base text-[#1F4D2E]">
+              LANDSCHAFT
+            </Link>
           </div>
+
         </header>
 
         {/* Main content */}
