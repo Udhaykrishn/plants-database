@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    ChevronRight, ChevronDown, Plus, Pencil, Trash2, Search, ListTree, XCircle,
+    Plus, Pencil, Trash2, Search, ListTree, XCircle,
 } from 'lucide-react';
 
 import { taxonomyApi } from '../../api/taxonomy';

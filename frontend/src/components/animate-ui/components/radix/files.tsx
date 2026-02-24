@@ -118,6 +118,7 @@ function FolderContent(props: FolderContentProps) {
 }
 
 type FileItemProps = FilePrimitiveProps & {
+  value: string;
   icon?: React.ElementType;
   gitStatus?: GitStatus;
 };
@@ -127,10 +128,11 @@ function FileItem({
   className,
   children,
   gitStatus,
+  value,
   ...props
 }: FileItemProps) {
   return (
-    <FileHighlightPrimitive>
+    <FileHighlightPrimitive value={value}>
       <FilePrimitive
         className={cn(
           'flex items-center justify-between gap-2 p-2',
