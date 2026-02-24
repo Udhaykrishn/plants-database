@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    ChevronRight, ChevronDown, Plus, Pencil, Trash2, Search, ListTree,
+    ChevronRight, ChevronDown, Plus, Pencil, Trash2, Search, ListTree, XCircle,
 } from 'lucide-react';
 
 import { taxonomyApi } from '../../api/taxonomy';
@@ -17,7 +17,16 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib-frontend/utils';
+import { cn } from '@/lib/utils'; // Use the new utils location
+
+import {
+    Files,
+    FolderItem,
+    FolderTrigger,
+    FolderContent,
+    FileItem,
+    SubFiles,
+} from '@/components/animate-ui/components/radix/files';
 
 /* ─── Tree Node ─────────────────────────────────────────── */
 interface TreeNodeProps {
@@ -25,20 +34,21 @@ interface TreeNodeProps {
     onSelect: (node: TaxonTree) => void;
     selectedId?: string;
     searchTerm?: string;
+    open?: string[];
+    onOpenChange?: (open: string[]) => void;
 }
 
 const rankColor: Record<string, string> = {
-    KINGDOM: 'bg-violet-100 text-violet-700',
-    PHYLUM: 'bg-blue-100 text-blue-700',
-    CLASS: 'bg-cyan-100 text-cyan-700',
-    ORDER: 'bg-teal-100 text-teal-700',
-    FAMILY: 'bg-green-100 text-green-700',
-    GENUS: 'bg-lime-100 text-lime-700',
-    SPECIES: 'bg-yellow-100 text-yellow-700',
+    KINGDOM: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400',
+    PHYLUM: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400',
+    CLASS: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-400',
+    ORDER: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-400',
+    FAMILY: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400',
+    GENUS: 'bg-lime-100 text-lime-700 dark:bg-lime-950 dark:text-lime-400',
+    SPECIES: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400',
 };
 
-const TreeNode = ({ node, onSelect, selectedId, searchTerm }: TreeNodeProps) => {
-    const [expanded, setExpanded] = useState(false);
+const TreeNode = ({ node, onSelect, selectedId, searchTerm, open, onOpenChange }: TreeNodeProps) => {
     const hasChildren = node.children && node.children.length > 0;
     const isSelected = node.id === selectedId;
 
@@ -47,70 +57,70 @@ const TreeNode = ({ node, onSelect, selectedId, searchTerm }: TreeNodeProps) => 
         !!searchTerm &&
         (node.name.toLowerCase().includes(lowerSearch) || node.rank.toLowerCase().includes(lowerSearch));
 
-    useEffect(() => {
-        if (searchTerm && searchTerm.length > 0) {
-            setExpanded(!isMatch);
-        } else {
-            setExpanded(false);
-        }
-    }, [searchTerm, isMatch]);
+    const content = (
+        <div className="flex items-center gap-2 min-w-0" onClick={() => onSelect(node)}>
+            <span
+                className={cn(
+                    'shrink-0 text-[10px] w-5 h-5 flex items-center justify-center font-bold uppercase tracking-wider rounded-md border border-current opacity-80',
+                    rankColor[node.rank] ?? 'bg-muted text-muted-foreground',
+                )}
+            >
+                {node.rank[0]}
+            </span>
+            <span className={cn(
+                "text-sm font-medium truncate",
+                isSelected ? "text-primary font-semibold" : "text-foreground/80",
+                isMatch && "text-amber-600 dark:text-amber-400"
+            )}>
+                {node.name}
+            </span>
+        </div>
+    );
+
+    if (hasChildren) {
+        return (
+            <FolderItem value={node.id}>
+                <FolderTrigger className={cn(
+                    "rounded-lg transition-colors group px-1",
+                    isSelected && "bg-primary/5 shadow-sm ring-1 ring-primary/20",
+                    isMatch && !isSelected && "bg-amber-50 dark:bg-amber-950/20"
+                )}>
+                    {content}
+                </FolderTrigger>
+                <FolderContent>
+                    <SubFiles
+                        className="space-y-0.5"
+                        open={open}
+                        onOpenChange={onOpenChange}
+                    >
+                        {node.children.map((child) => (
+                            <TreeNode
+                                key={child.id}
+                                node={child}
+                                onSelect={onSelect}
+                                selectedId={selectedId}
+                                searchTerm={searchTerm}
+                                open={open}
+                                onOpenChange={onOpenChange}
+                            />
+                        ))}
+                    </SubFiles>
+                </FolderContent>
+            </FolderItem>
+        );
+    }
 
     return (
-        <div>
-            <div
-                className={cn(
-                    'flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer select-none transition-colors group',
-                    isSelected
-                        ? 'bg-primary/10 text-primary'
-                        : 'hover:bg-muted/60 text-foreground',
-                    isMatch && !isSelected && 'bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200',
-                )}
-                onClick={() => onSelect(node)}
-            >
-                {/* expand toggle */}
-                <span
-                    className="flex items-center justify-center w-4 h-4 shrink-0"
-                    onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
-                >
-                    {hasChildren ? (
-                        expanded ? (
-                            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                        ) : (
-                            <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                        )
-                    ) : (
-                        <span className="w-3.5" />
-                    )}
-                </span>
-
-                {/* rank badge */}
-                <span
-                    className={cn(
-                        'shrink-0 text-[0.6rem] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded',
-                        rankColor[node.rank] ?? 'bg-muted text-muted-foreground',
-                    )}
-                >
-                    {node.rank[0]}
-                </span>
-
-                {/* name */}
-                <span className="text-sm font-medium truncate flex-1">{node.name}</span>
-            </div>
-
-            {expanded && hasChildren && (
-                <div className="ml-4 pl-3 border-l border-dashed border-border/60 mt-0.5 space-y-0.5">
-                    {node.children.map((child) => (
-                        <TreeNode
-                            key={child.id}
-                            node={child}
-                            onSelect={onSelect}
-                            selectedId={selectedId}
-                            searchTerm={searchTerm}
-                        />
-                    ))}
-                </div>
+        <FileItem
+            value={node.id}
+            className={cn(
+                "rounded-lg transition-colors group px-1",
+                isSelected && "bg-primary/5 shadow-sm ring-1 ring-primary/20",
+                isMatch && !isSelected && "bg-amber-50 dark:bg-amber-950/20"
             )}
-        </div>
+        >
+            {content}
+        </FileItem>
     );
 };
 
@@ -129,6 +139,7 @@ export const TaxonomyManager = () => {
     const [newName, setNewName] = useState('');
     const [newRank, setNewRank] = useState<Rank>(Rank.KINGDOM);
     const [description, setDescription] = useState('');
+    const [openIds, setOpenIds] = useState<string[]>([]);
 
     const { data: tree, isLoading, error } = useQuery({
         queryKey: ['taxonomy', 'tree'],
@@ -243,12 +254,18 @@ export const TaxonomyManager = () => {
         if (!term) return nodes;
         const lowerTerm = term.toLowerCase();
         return nodes.reduce((acc: TaxonTree[], node) => {
-            const matches = node.name.toLowerCase().includes(lowerTerm) || node.rank.toLowerCase().includes(lowerTerm);
-            if (matches) {
-                acc.push({ ...node });
-            } else {
-                const filteredChildren = filterTree(node.children, term);
-                if (filteredChildren.length > 0) acc.push({ ...node, children: filteredChildren });
+            const matchesSelf =
+                node.name.toLowerCase().includes(lowerTerm) ||
+                node.rank.toLowerCase().includes(lowerTerm);
+
+            const filteredChildren = filterTree(node.children || [], term);
+            const hasMatchingChildren = filteredChildren.length > 0;
+
+            if (matchesSelf || hasMatchingChildren) {
+                acc.push({
+                    ...node,
+                    children: hasMatchingChildren ? filteredChildren : node.children
+                });
             }
             return acc;
         }, []);
@@ -258,6 +275,25 @@ export const TaxonomyManager = () => {
         if (!tree) return [];
         return filterTree(tree, searchTerm);
     }, [tree, searchTerm]);
+
+    // Auto-expand tree on search
+    useEffect(() => {
+        if (searchTerm) {
+            const ids: string[] = [];
+            const collectIds = (nodes: TaxonTree[]) => {
+                nodes.forEach(node => {
+                    if (node.children?.length) {
+                        ids.push(node.id);
+                        collectIds(node.children);
+                    }
+                });
+            };
+            collectIds(filteredTree);
+            setOpenIds(ids);
+        } else {
+            setOpenIds([]);
+        }
+    }, [searchTerm, filteredTree]);
 
     /* ── Panels ── */
     const DetailPanel = () => (
@@ -398,12 +434,20 @@ export const TaxonomyManager = () => {
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
-                                type="search"
+                                type="text"
                                 placeholder="Search taxonomy…"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="pl-9"
+                                className="pl-9 pr-8"
                             />
+                            {searchTerm && (
+                                <button
+                                    onClick={() => setSearchTerm('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground"
+                                >
+                                    <XCircle size={14} />
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -424,15 +468,23 @@ export const TaxonomyManager = () => {
                                 {searchTerm ? 'No results found.' : 'No taxonomy data yet.'}
                             </p>
                         ) : (
-                            filteredTree.map((node) => (
-                                <TreeNode
-                                    key={node.id}
-                                    node={node}
-                                    onSelect={handleNodeSelect}
-                                    selectedId={selectedNode?.id}
-                                    searchTerm={searchTerm}
-                                />
-                            ))
+                            <Files
+                                className="w-full"
+                                open={openIds}
+                                onOpenChange={setOpenIds}
+                            >
+                                {filteredTree.map((node) => (
+                                    <TreeNode
+                                        key={node.id}
+                                        node={node}
+                                        onSelect={handleNodeSelect}
+                                        selectedId={selectedNode?.id}
+                                        searchTerm={searchTerm}
+                                        open={openIds}
+                                        onOpenChange={setOpenIds}
+                                    />
+                                ))}
+                            </Files>
                         )}
                     </div>
                 </div>
