@@ -11,6 +11,7 @@ import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { categoriesApi } from '../../api/categories';
 import { aiApi } from '../../api/ai';
+import { cn } from '../../lib-frontend/utils';
 import { TaxonomyFormTable } from './TaxonomyFormTable';
 
 // Shadcn components
@@ -66,6 +67,8 @@ import {
     FolderOpen,
     Pencil,
     Trash2,
+    ArrowLeft,
+    XCircle,
 } from 'lucide-react';
 
 export const PlantManager = () => {
@@ -402,126 +405,150 @@ export const PlantManager = () => {
         <TooltipProvider>
             <div className="pb-32">
                 {/* ── Page Header ───────────────────────────────────────────── */}
-                <div className="mb-6">
-                    {/* Row 1: Title */}
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+                <div className="mb-6 space-y-4">
+                    {/* Header Row: Title & Primary Action */}
+                    <div className="flex items-center justify-between gap-4">
+                        <h2 className="text-2xl font-bold tracking-tight text-foreground truncate flex items-center gap-2">
                             {isCreating || editingPlantId ? 'Plant Editor' : 'Plant Catalog'}
+                            {!isCreating && !editingPlantId && plants && (
+                                <span className="text-xs font-medium text-muted-foreground bg-muted/80 px-2 py-0.5 rounded-full border border-border/50">
+                                    {displayedPlants.length}
+                                </span>
+                            )}
                         </h2>
-                    </div>
 
-                    {/* Row 2: Controls (view toggle + actions) */}
-                    {!isCreating && !editingPlantId && (
-                        <div className="flex flex-wrap items-center gap-2 mt-3">
-                            {/* View toggle */}
-                            <div className="flex bg-muted rounded-lg p-1 gap-0.5">
-                                <Button
-                                    variant={viewMode === 'card' ? 'secondary' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setViewMode('card')}
-                                    className="h-7 px-2.5 text-xs gap-1.5"
-                                >
-                                    <LayoutGrid size={13} /> Cards
-                                </Button>
-                                <Button
-                                    variant={viewMode === 'table' ? 'secondary' : 'ghost'}
-                                    size="sm"
-                                    onClick={() => setViewMode('table')}
-                                    className="h-7 px-2.5 text-xs gap-1.5"
-                                >
-                                    <LayoutList size={13} /> List
-                                </Button>
-                            </div>
-
-                            {/* spacer pushes import + add to the right */}
-                            <div className="flex-1" />
-
-                            {/* Import CSV */}
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <label className="inline-flex items-center gap-2 h-9 px-3 rounded-md border border-border bg-background text-sm font-medium text-foreground cursor-pointer hover:bg-muted transition-colors shrink-0">
-                                        <Upload size={14} />
-                                        <span className="hidden sm:inline">Import CSV</span>
-                                        <span className="sm:hidden">Import</span>
-                                        <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
-                                    </label>
-                                </TooltipTrigger>
-                                <TooltipContent>Import plants from CSV file</TooltipContent>
-                            </Tooltip>
-
-                            {/* Add Plant */}
+                        {!isCreating && !editingPlantId && (
                             <Button
                                 onClick={toggleCreate}
                                 variant="default"
                                 size="sm"
-                                className="gap-1.5 shrink-0"
+                                className="gap-1.5 shrink-0 shadow-sm"
                             >
-                                <Plus size={14} /> Add Plant
+                                <Plus size={16} />
+                                <span className="hidden xs:inline">Add Plant</span>
                             </Button>
-                        </div>
-                    )}
+                        )}
 
-                    {/* Cancel button when editing */}
-                    {(isCreating || editingPlantId) && (
-                        <div className="flex mt-3">
+                        {(isCreating || editingPlantId) && (
                             <Button
                                 onClick={toggleCreate}
                                 variant="outline"
                                 size="sm"
-                                className="gap-1.5"
+                                className="gap-1.5 shrink-0 shadow-sm"
                             >
-                                <X size={14} /> Cancel
+                                <ArrowLeft size={16} />
+                                <span>Cancel</span>
                             </Button>
+                        )}
+                    </div>
+
+                    {!isCreating && !editingPlantId && (
+                        <div className="space-y-3">
+                            {/* Controls Row: View Toggle & Import */}
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex bg-muted rounded-lg p-1">
+                                    <Button
+                                        variant={viewMode === 'card' ? 'secondary' : 'ghost'}
+                                        size="sm"
+                                        onClick={() => setViewMode('card')}
+                                        className="h-8 px-3 text-xs gap-1.5 focus-visible:ring-0"
+                                    >
+                                        <LayoutGrid size={13} />
+                                        <span className="hidden sm:inline">Cards</span>
+                                    </Button>
+                                    <Button
+                                        variant={viewMode === 'table' ? 'secondary' : 'ghost'}
+                                        size="sm"
+                                        onClick={() => setViewMode('table')}
+                                        className="h-8 px-3 text-xs gap-1.5 focus-visible:ring-0"
+                                    >
+                                        <LayoutList size={13} />
+                                        <span className="hidden sm:inline">List</span>
+                                    </Button>
+                                </div>
+
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <label className="inline-flex items-center justify-center gap-2 h-8 px-3 rounded-md border border-input bg-background text-xs font-medium text-foreground cursor-pointer hover:bg-muted transition-colors shadow-sm shrink-0">
+                                            <Upload size={13} />
+                                            <span className="hidden sm:inline">Import CSV</span>
+                                            <span className="sm:hidden">Import</span>
+                                            <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+                                        </label>
+                                    </TooltipTrigger>
+                                    <TooltipContent>Import plants from CSV file</TooltipContent>
+                                </Tooltip>
+                            </div>
+
+                            {/* Search: Full width on its own line */}
+                            <div className="relative w-full">
+                                <Input
+                                    placeholder="Search catalog..."
+                                    value={searchTerm}
+                                    onChange={e => setSearchTerm(e.target.value)}
+                                    className="h-9 bg-background pr-8 placeholder:text-muted-foreground/60"
+                                />
+                                {searchTerm && (
+                                    <button
+                                        onClick={() => setSearchTerm('')}
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground"
+                                    >
+                                        <XCircle size={14} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Filters Row: Category + Place + Sort in one scrollable line */}
+                            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
+                                {/* Category */}
+                                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                                    <SelectTrigger className="w-[140px] shrink-0 h-9 bg-background">
+                                        <SelectValue placeholder="Categories" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="__all__">All Categories</SelectItem>
+                                        {categoriesOptions?.map(c => (
+                                            <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+
+                                {/* Indoor/Outdoor Toggle Group Style */}
+                                <div className="flex items-center shrink-0 h-9 p-1 rounded-md border border-input bg-background">
+                                    <button
+                                        onClick={() => setFilterIndoor(!filterIndoor)}
+                                        className={cn(
+                                            "px-3 h-full rounded text-[10px] font-bold uppercase tracking-wider transition-colors",
+                                            filterIndoor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                                        )}
+                                    >
+                                        Indoor
+                                    </button>
+                                    <button
+                                        onClick={() => setFilterOutdoor(!filterOutdoor)}
+                                        className={cn(
+                                            "px-3 h-full rounded text-[10px] font-bold uppercase tracking-wider transition-colors",
+                                            filterOutdoor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                                        )}
+                                    >
+                                        Outdoor
+                                    </button>
+                                </div>
+
+                                {/* Sort */}
+                                <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as 'asc' | 'desc')}>
+                                    <SelectTrigger className="w-[100px] shrink-0 h-9 bg-background">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="asc">A → Z</SelectItem>
+                                        <SelectItem value="desc">Z → A</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                     )}
                 </div>
-
-                {/* ── Filters ───────────────────────────────────────────────── */}
-                {!isCreating && !editingPlantId && (
-                    <div className="flex flex-col gap-2 mb-5 sm:flex-row sm:flex-wrap">
-                        {/* Search — always full width on mobile */}
-                        <Input
-                            placeholder="Search catalog..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full sm:flex-1 sm:min-w-[180px] h-9 bg-background"
-                        />
-
-                        {/* Second row on mobile: category + checkboxes + sort */}
-                        <div className="flex flex-wrap gap-2">
-                            <Select value={filterCategory} onValueChange={setFilterCategory}>
-                                <SelectTrigger className="w-[160px] h-9 bg-background">
-                                    <SelectValue placeholder="All Categories" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="__all__">All Categories</SelectItem>
-                                    {categoriesOptions?.map(c => (
-                                        <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-
-                            <div className="flex items-center gap-3 h-9 px-3 rounded-md border border-input bg-background">
-                                <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground cursor-pointer select-none">
-                                    <input type="checkbox" checked={filterIndoor} onChange={e => setFilterIndoor(e.target.checked)} className="accent-primary" /> Indoor
-                                </label>
-                                <label className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground cursor-pointer select-none">
-                                    <input type="checkbox" checked={filterOutdoor} onChange={e => setFilterOutdoor(e.target.checked)} className="accent-primary" /> Outdoor
-                                </label>
-                            </div>
-
-                            <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as 'asc' | 'desc')}>
-                                <SelectTrigger className="w-[90px] h-9 bg-background">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="asc">A → Z</SelectItem>
-                                    <SelectItem value="desc">Z → A</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                )}
 
                 {/* ── Create / Edit Form ────────────────────────────────────── */}
                 {(isCreating || editingPlantId) && (
