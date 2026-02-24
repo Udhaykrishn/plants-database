@@ -21,7 +21,7 @@ import {
   type FileProps as FilePrimitiveProps,
   type FileLabelProps as FileLabelPrimitiveProps,
 } from '@/components/animate-ui/primitives/radix/files';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib-frontend/utils';
 
 type GitStatus = 'untracked' | 'modified' | 'deleted';
 

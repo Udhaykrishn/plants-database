@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
 import { Separator } from './components/ui/separator';
-import { cn } from './lib/utils';
+import { cn } from './lib-frontend/utils';
 
 import { TaxonomyManager } from './components/taxonomy/TaxonomyManager';
 import { PlantManager } from './components/plants/PlantManager';
