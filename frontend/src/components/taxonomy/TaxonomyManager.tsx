@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    ChevronRight, ChevronDown, Plus, Pencil, Trash2, Search, ListTree, XCircle,
+    Plus, Pencil, Trash2, Search, ListTree, XCircle,
 } from 'lucide-react';
 
 import { taxonomyApi } from '../../api/taxonomy';
@@ -17,7 +17,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils'; // Use the new utils location
+import { cn } from '@/lib-frontend/utils'; // Use the new utils location
 
 import {
     Files,

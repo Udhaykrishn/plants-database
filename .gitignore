@@ -25,6 +25,8 @@ wheels/
 venv/
 ENV/
 
+
+!frontend/lib/**
 # Environment Variables
 .env
 .env.local

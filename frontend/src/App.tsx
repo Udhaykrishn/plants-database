@@ -120,6 +120,7 @@ function Layout() {
                     "brightness(0) saturate(100%) invert(18%) sepia(28%) saturate(1194%) hue-rotate(92deg) brightness(95%) contrast(90%)"
                 }}
               />
+
             </Link>
 
             <Link to="/" className="font-medium text-base text-[#1F4D2E]">
