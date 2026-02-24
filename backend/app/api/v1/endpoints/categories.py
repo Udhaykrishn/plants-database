@@ -56,7 +56,7 @@ async def create_category(
 async def update_category(
     *,
     db: AsyncSession = Depends(get_db),
-    category_id: uuid.UUID,
+    category_id: str,
     category_in: CategoryUpdate
 ) -> Any:
     result = await db.execute(select(Category).filter(Category.id == category_id))
@@ -97,7 +97,7 @@ async def update_category(
 async def delete_category(
     *,
     db: AsyncSession = Depends(get_db),
-    category_id: uuid.UUID
+    category_id: str
 ) -> Any:
     result = await db.execute(select(Category).filter(Category.id == category_id))
     category = result.scalars().first()
