@@ -1,2 +1,2 @@
 from app.core.config import settings
-print("API KEY IS:", repr(settings.GEMINI_API_KEY))
+print("API KEY IS:", repr(settings.GROQ_API_KEY))

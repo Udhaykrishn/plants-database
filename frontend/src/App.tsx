@@ -32,7 +32,7 @@ const NAV_ITEMS = [
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
   return (
-    <div className="flex flex-col h-full" style={{ background: 'hsl(var(--sidebar))' }}>
+    <div className="flex flex-col h-full overflow-hidden" style={{ background: 'hsl(var(--sidebar))' }}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-5">
         <img
@@ -49,7 +49,7 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
       <Separator className="bg-white/10 mx-4" />
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
+      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {NAV_ITEMS.map(({ to, end, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -83,10 +83,10 @@ function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
+    <div className="flex h-full w-full overflow-hidden bg-background">
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-60 flex-col shrink-0">
+      <aside className="hidden lg:flex w-60 min-w-[240px] flex-col shrink-0">
         <SidebarContent />
       </aside>
 

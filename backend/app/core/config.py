@@ -23,8 +23,8 @@ class Settings(BaseSettings):
     CLOUDINARY_API_KEY: str = ""
     CLOUDINARY_API_SECRET: str = ""
     
-    # Gemini AI
-    GEMINI_API_KEY: str = ""
+    # Groq AI
+    GROQ_API_KEY: str = ""
 
     # Neon Postgres
     NEON: str = None
