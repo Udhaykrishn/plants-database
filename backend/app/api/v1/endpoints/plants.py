@@ -176,15 +176,47 @@ async def delete_plant(
     plant_id: uuid.UUID
 ) -> Any:
     """
-    Delete plant.
+    Delete plant and its corresponding taxonomy if it is not used by other plants.
     """
     result = await db.execute(select(Plant).filter(Plant.id == plant_id))
     plant = result.scalars().first()
     if not plant:
         raise HTTPException(status_code=404, detail="Plant not found")
     
+    taxon_id = plant.taxon_id
+    
     try:
         await db.delete(plant)
+        
+        # Clean up taxonomy hierarchy: delete the associated taxon and its parents if they're now orphans
+        curr_taxon_id = taxon_id
+        while curr_taxon_id:
+            # 1. Check if any other plant is using this taxon
+            other_p_stmt = select(Plant).filter(Plant.taxon_id == curr_taxon_id, Plant.id != plant_id)
+            other_p_res = await db.execute(other_p_stmt)
+            if other_p_res.scalars().first():
+                break  # Still used by other plants
+            
+            # 2. Check if this taxon has any other children
+            other_c_stmt = select(Taxon).filter(Taxon.parent_id == curr_taxon_id)
+            other_c_res = await db.execute(other_c_stmt)
+            if other_c_res.scalars().first():
+                break  # Still has sub-taxons
+            
+            # 3. Fetch the taxon object to get its parent_id before deletion
+            taxon_to_del_res = await db.execute(select(Taxon).filter(Taxon.id == curr_taxon_id))
+            taxon_to_del = taxon_to_del_res.scalars().first()
+            if not taxon_to_del:
+                break
+            
+            parent_id = taxon_to_del.parent_id
+            await db.delete(taxon_to_del)
+            # Flush so the next iteration's child check doesn't see this deleted taxon
+            await db.flush() 
+            
+            # Move up the tree
+            curr_taxon_id = parent_id
+        
         await db.commit()
         return {"success": True}
     except IntegrityError:
