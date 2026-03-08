@@ -73,6 +73,7 @@ import {
     Copy,
     Check,
     Info,
+    RefreshCw,
 } from 'lucide-react';
 
 export const PlantManager = () => {
@@ -189,6 +190,8 @@ List of Plants to Process:
     const [careSunlight, setCareSunlight] = useState('');
     const [careSoil, setCareSoil] = useState('');
     const [careMaintenance, setCareMaintenance] = useState('');
+    const [iconPage, setIconPage] = useState(1);
+    const [mainImagePage, setMainImagePage] = useState(1);
 
     useEffect(() => {
         if (location.state?.editPlant && plants && taxonomyTree) {
@@ -229,18 +232,33 @@ List of Plants to Process:
     const aiMutation = useMutation({
         mutationFn: () => {
             if (!commonName.trim() && !scientificName.trim()) throw new Error("Please enter a common name or scientific name first");
+            // Clear current images to show we are refreshing
+            setIconUrl('');
+            setImageUrl('');
+            setIconPage(1);
+            setMainImagePage(1);
+
             return aiApi.generatePlantDetails({
                 commonName: commonName.trim() || undefined,
                 scientificName: scientificName.trim() || undefined
             });
         },
         onSuccess: (data) => {
-            if (data.common_name && !commonName.trim()) setCommonName(data.common_name);
+            if (data.common_name) setCommonName(data.common_name);
             if (data.description) setDescription(data.description);
             if (data.common_diseases) setCommonDiseases(data.common_diseases);
             if (data.category) setCategory(data.category);
-            if (data.icon_url) setIconUrl(data.icon_url);
-            if (data.image_url) setImageUrl(data.image_url);
+
+            // Image fetching is now separate via iNaturalist
+            const finalScientificName = data.taxonomy?.genus && data.taxonomy?.species
+                ? `${data.taxonomy.genus} ${data.taxonomy.species}`
+                : data.taxonomy?.species || scientificName;
+
+            imageMutation.mutate({
+                page: 1,
+                name: finalScientificName || data.common_name || commonName
+            });
+
             if (data.planting_place === 'Indoor') { setIsIndoor(true); setIsOutdoor(false); }
             else if (data.planting_place === 'Outdoor') { setIsIndoor(false); setIsOutdoor(true); }
             else if (data.planting_place === 'Indoor & Outdoor') { setIsIndoor(true); setIsOutdoor(true); }
@@ -275,6 +293,35 @@ List of Plants to Process:
         }
     });
 
+    const imageMutation = useMutation({
+        mutationFn: async ({ page, name, target = 'both' }: { page: number, name?: string, target?: 'icon' | 'image' | 'both' }) => {
+            const searchName = name || scientificName.trim() || commonName.trim();
+            if (!searchName) throw new Error("Please enter a common name or scientific name first");
+            const data = await aiApi.fetchPlantImages({ plantName: searchName, page });
+            return { ...data, target };
+        },
+        onSuccess: (data) => {
+            if (data.target === 'both' || data.target === 'icon') {
+                if (data.icon_url) setIconUrl(data.icon_url);
+                setIconPage(data.page);
+            }
+            if (data.target === 'both' || data.target === 'image') {
+                if (data.image_url) setImageUrl(data.image_url);
+                setMainImagePage(data.page);
+            }
+        }
+    });
+
+    const regenerateIcon = () => {
+        const nextPage = iconPage + 1;
+        imageMutation.mutate({ page: nextPage, target: 'icon' });
+    };
+
+    const regenerateMainImage = () => {
+        const nextPage = mainImagePage + 1;
+        imageMutation.mutate({ page: nextPage, target: 'image' });
+    };
+
     const deleteMutation = useMutation({
         mutationFn: plantsApi.delete,
         onSuccess: () => {
@@ -291,6 +338,8 @@ List of Plants to Process:
         setDescription(''); setCommonDiseases(''); setScientificName(''); setTaxonId(null);
         setIconFile(null); setImageFile(null); setIconUrl(''); setImageUrl('');
         setCareWater(''); setCareSunlight(''); setCareSoil(''); setCareMaintenance('');
+        setIconPage(1);
+        setMainImagePage(1);
     };
 
     const handleEdit = (plant: Plant) => {
@@ -311,6 +360,8 @@ List of Plants to Process:
         setCareSunlight(plant.care_data?.sunlight || '');
         setCareSoil(plant.care_data?.soil || '');
         setCareMaintenance(plant.care_data?.maintenance || '');
+        setIconPage(1);
+        setMainImagePage(1);
     };
 
     const handleDelete = (id: string, name: string) => {
@@ -741,8 +792,24 @@ List of Plants to Process:
 
                                 {/* Images */}
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="flex flex-col gap-1.5">
-                                        <FieldLabel>Icon Image</FieldLabel>
+                                    <div className="flex flex-col gap-1.5 min-w-0">
+                                        <div className="flex items-center justify-between">
+                                            <FieldLabel>Icon Image</FieldLabel>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={regenerateIcon}
+                                                disabled={imageMutation.isPending || (!commonName.trim() && !scientificName.trim())}
+                                                className="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-primary"
+                                            >
+                                                {imageMutation.isPending && (imageMutation.variables?.target === 'icon' || imageMutation.variables?.target === 'both')
+                                                    ? <Loader2 size={10} className="animate-spin" />
+                                                    : <RefreshCw size={10} />
+                                                }
+                                                Regenerate
+                                            </Button>
+                                        </div>
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -750,15 +817,41 @@ List of Plants to Process:
                                             className="rounded-md border border-input bg-background px-3 py-2 text-sm file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:bg-muted file:text-xs file:font-medium"
                                         />
                                         {(iconFile || iconUrl) && (
-                                            <img
-                                                src={iconFile ? URL.createObjectURL(iconFile) : iconUrl}
-                                                alt="Icon preview"
-                                                className="w-16 h-16 object-cover rounded-lg border border-border mt-1"
-                                            />
+                                            <div className="relative group w-full max-w-[200px] mt-1">
+                                                <img
+                                                    src={iconFile ? URL.createObjectURL(iconFile) : iconUrl}
+                                                    alt="Icon preview"
+                                                    className="w-full h-auto rounded-lg border border-border"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setIconFile(null); setIconUrl(''); }}
+                                                    className="absolute top-1 right-1 p-1.5 bg-destructive text-white rounded-full transition-all shadow-md hover:scale-110 z-10"
+                                                    title="Remove image"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        <FieldLabel>Main Image</FieldLabel>
+                                    <div className="flex flex-col gap-1.5 min-w-0">
+                                        <div className="flex items-center justify-between">
+                                            <FieldLabel>Main Image</FieldLabel>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={regenerateMainImage}
+                                                disabled={imageMutation.isPending || (!commonName.trim() && !scientificName.trim())}
+                                                className="h-6 px-2 text-[10px] gap-1 text-muted-foreground hover:text-primary"
+                                            >
+                                                {imageMutation.isPending && (imageMutation.variables?.target === 'image' || imageMutation.variables?.target === 'both')
+                                                    ? <Loader2 size={10} className="animate-spin" />
+                                                    : <RefreshCw size={10} />
+                                                }
+                                                Regenerate
+                                            </Button>
+                                        </div>
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -766,11 +859,21 @@ List of Plants to Process:
                                             className="rounded-md border border-input bg-background px-3 py-2 text-sm file:mr-3 file:py-1 file:px-2 file:rounded file:border-0 file:bg-muted file:text-xs file:font-medium"
                                         />
                                         {(imageFile || imageUrl) && (
-                                            <img
-                                                src={imageFile ? URL.createObjectURL(imageFile) : imageUrl}
-                                                alt="Main image preview"
-                                                className="w-full h-28 object-cover rounded-lg border border-border mt-1"
-                                            />
+                                            <div className="relative group w-full mt-1">
+                                                <img
+                                                    src={imageFile ? URL.createObjectURL(imageFile) : imageUrl}
+                                                    alt="Main image preview"
+                                                    className="w-full h-auto max-h-[500px] rounded-lg border border-border"
+                                                />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { setImageFile(null); setImageUrl(''); }}
+                                                    className="absolute top-2 right-2 p-2 bg-destructive text-white rounded-full transition-all shadow-md hover:scale-110 z-10"
+                                                    title="Remove image"
+                                                >
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
