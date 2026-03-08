@@ -24,3 +24,8 @@ class PlantAIDetailsResponse(BaseModel):
     taxonomy: Optional[TaxonomyDetails] = None
     icon_url: Optional[str] = None
     image_url: Optional[str] = None
+
+class PlantImageResponse(BaseModel):
+    icon_url: Optional[str] = None
+    image_url: Optional[str] = None
+    page: int
