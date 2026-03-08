@@ -69,6 +69,10 @@ import {
     Trash2,
     ArrowLeft,
     XCircle,
+    Terminal,
+    Copy,
+    Check,
+    Info,
 } from 'lucide-react';
 
 export const PlantManager = () => {
@@ -93,6 +97,33 @@ export const PlantManager = () => {
 
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [selectedProjectId, setSelectedProjectId] = useState<string>('');
+
+    const [showPromptModal, setShowPromptModal] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const BULK_IMPORT_PROMPT = `Act as a botanical data expert. 
+
+Task: Generate a perfectly formatted CSV file for the plants listed below.
+
+Header (MUST be the first line of your response):
+kingdom,division,class,order,family,genus,species,common_name,scientific_name,category,planting_place,description,common_diseases,care_water,care_sunlight,care_soil,care_maintenance,icon_url,image_url
+
+Strict Requirements (CRITICAL):
+1. MANDATORY FIELDS: Every single column must have a value. DO NOT skip any columns.
+2. SPECIES COLUMN: This is the specific epithet (the second word of the scientific name). For example, if the scientific name is "Psidium guajava", the species is "guajava". DO NOT leave the species column blank.
+3. CATEGORY: MUST be exactly one of [Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other].
+4. PLACE: MUST be exactly one of [Indoor, Outdoor, Indoor & Outdoor].
+5. IMAGES: Use Wikimedia Special:FilePath URLs based on the scientific name (e.g. .../Special:FilePath/Scientific_Name.jpg?width=1000).
+6. FORMATTING: Raw CSV text only. No markdown blocks (no \` \` \`), no explanations, no "Here is your CSV".
+
+List of Plants to Process:
+[PASTE YOUR PLANT NAMES HERE]`;
+
+    const handleCopyPrompt = () => {
+        navigator.clipboard.writeText(BULK_IMPORT_PROMPT);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     // Queries
     const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.getAll });
@@ -467,17 +498,37 @@ export const PlantManager = () => {
                                     </Button>
                                 </div>
 
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <label className="inline-flex items-center justify-center gap-2 h-8 px-3 rounded-md border border-input bg-background text-xs font-medium text-foreground cursor-pointer hover:bg-muted transition-colors shadow-sm shrink-0">
-                                            <Upload size={13} />
-                                            <span className="hidden sm:inline">Import CSV</span>
-                                            <span className="sm:hidden">Import</span>
-                                            <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
-                                        </label>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Import plants from CSV file</TooltipContent>
-                                </Tooltip>
+                                <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setShowPromptModal(true)}
+                                                className="h-8 px-3 text-xs gap-1.5 focus-visible:ring-0 hover:bg-background/50"
+                                            >
+                                                <Terminal size={13} className="text-muted-foreground" />
+                                                <span className="hidden sm:inline">Bulk AI Prompt</span>
+                                                <span className="sm:hidden">Prompt</span>
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Get AI prompt for bulk CSV generation</TooltipContent>
+                                    </Tooltip>
+
+                                    <Separator orientation="vertical" className="h-4 bg-border/50" />
+
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <label className="inline-flex items-center justify-center gap-2 h-8 px-3 rounded-md text-xs font-medium text-foreground cursor-pointer hover:bg-background/50 transition-colors shrink-0">
+                                                <Upload size={13} className="text-muted-foreground" />
+                                                <span className="hidden sm:inline">Import CSV</span>
+                                                <span className="sm:hidden">Import</span>
+                                                <input type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
+                                            </label>
+                                        </TooltipTrigger>
+                                        <TooltipContent>Import plants from CSV file</TooltipContent>
+                                    </Tooltip>
+                                </div>
                             </div>
 
                             {/* Search: Full width on its own line */}
@@ -987,6 +1038,59 @@ export const PlantManager = () => {
                             >
                                 {addPlantsToProjectMutation.isPending ? <><Loader2 size={13} className="animate-spin" /> Adding…</> : 'Add Plants'}
                             </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Bulk Import Prompt Dialog ─────────────────────────────── */}
+                <Dialog open={showPromptModal} onOpenChange={setShowPromptModal}>
+                    <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                        <DialogHeader className="p-6 pb-4">
+                            <DialogTitle className="flex items-center gap-2">
+                                <Terminal size={18} className="text-primary" />
+                                Bulk Import AI Prompt
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="flex-1 overflow-y-auto p-6 pt-0 space-y-4">
+                            <p className="text-sm text-muted-foreground leading-relaxed">
+                                Use this prompt to generate a perfectly formatted CSV for bulk importing plants. Paste it into an AI like ChatGPT or Claude along with your list of plant names.
+                            </p>
+
+                            <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
+                                <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
+                                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Prompt Template</span>
+                                    <Button
+                                        size="sm"
+                                        variant={copied ? "default" : "secondary"}
+                                        onClick={handleCopyPrompt}
+                                        className={cn(
+                                            "h-7 px-3 text-[11px] gap-1.5 transition-all shadow-sm",
+                                            copied ? "bg-green-600 hover:bg-green-600 text-white" : ""
+                                        )}
+                                    >
+                                        {copied ? (
+                                            <><Check size={12} /> Copied!</>
+                                        ) : (
+                                            <><Copy size={12} /> Copy Prompt</>
+                                        )}
+                                    </Button>
+                                </div>
+                                <div className="p-4">
+                                    <pre className="text-[11px] font-mono overflow-x-auto max-h-[250px] whitespace-pre-wrap leading-relaxed text-foreground/90">
+                                        {BULK_IMPORT_PROMPT}
+                                    </pre>
+                                </div>
+                            </div>
+
+                            <div className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-3 flex gap-3">
+                                <Info size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+                                <div className="text-[11px] text-emerald-800 leading-relaxed font-medium">
+                                    Tip: The AI will automatically research taxonomy, care data, and Wikimedia image links. You only need to provide the names of the plants you want to import.
+                                </div>
+                            </div>
+                        </div>
+                        <DialogFooter className="p-6 pt-2 border-t bg-muted/20">
+                            <Button variant="outline" onClick={() => setShowPromptModal(false)}>Close</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>
