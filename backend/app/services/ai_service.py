@@ -1,27 +1,17 @@
 import json
 from typing import Optional
-import google.generativeai as genai
+from openai import AsyncOpenAI
 from fastapi import HTTPException
 from app.core.config import settings
 from app.schemas.ai import PlantAIDetailsResponse, TaxonomyDetails
 
-if settings.GEMINI_API_KEY:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-
 async def generate_plant_details(common_name: Optional[str] = None, scientific_name: Optional[str] = None) -> PlantAIDetailsResponse:
-    if not settings.GEMINI_API_KEY:
-        raise HTTPException(status_code=500, detail="Gemini API Key is not configured")
+    if not settings.GROQ_API_KEY:
+        raise HTTPException(status_code=500, detail="Groq API Key is not configured")
 
-    generation_config = {
-      "temperature": 0.2,
-      "top_p": 0.95,
-      "top_k": 40,
-      "max_output_tokens": 2048,
-    }
-
-    model = genai.GenerativeModel(
-      model_name="models/gemini-2.5-flash", 
-      generation_config=generation_config,
+    client = AsyncOpenAI(
+        api_key=settings.GROQ_API_KEY,
+        base_url="https://api.groq.com/openai/v1"
     )
 
     plant_query = ""
@@ -66,9 +56,21 @@ async def generate_plant_details(common_name: Optional[str] = None, scientific_n
     """
     
     try:
-        response = await model.generate_content_async(prompt)
-        # response_text might be wrapped in ```json ... ``` or directly stringified JSON
-        response_text = response.text.strip()
+        response = await client.chat.completions.create(
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                }
+            ],
+            model="llama-3.3-70b-versatile",
+            temperature=0.2,
+            max_tokens=2048,
+            top_p=0.95,
+            response_format={"type": "json_object"}
+        )
+        
+        response_text = response.choices[0].message.content.strip()
         
         # Strip potential markdown formatting
         if response_text.startswith("```json"):
