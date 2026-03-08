@@ -83,10 +83,10 @@ function Layout() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-background">
+    <div className="flex h-full w-full overflow-hidden bg-background">
 
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-60 flex-col shrink-0">
+      <aside className="hidden lg:flex w-60 min-w-[240px] flex-col shrink-0">
         <SidebarContent />
       </aside>
 
