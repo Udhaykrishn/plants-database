@@ -201,13 +201,19 @@ export const PlantManager = () => {
     const aiMutation = useMutation({
         mutationFn: () => {
             if (!commonName.trim() && !scientificName.trim()) throw new Error("Please enter a common name or scientific name first");
+            // Clear current images to show we are refreshing
+            setIconUrl('');
+            setImageUrl('');
+            setIconPage(1);
+            setMainImagePage(1);
+
             return aiApi.generatePlantDetails({
                 commonName: commonName.trim() || undefined,
                 scientificName: scientificName.trim() || undefined
             });
         },
         onSuccess: (data) => {
-            if (data.common_name && !commonName.trim()) setCommonName(data.common_name);
+            if (data.common_name) setCommonName(data.common_name);
             if (data.description) setDescription(data.description);
             if (data.common_diseases) setCommonDiseases(data.common_diseases);
             if (data.category) setCategory(data.category);
