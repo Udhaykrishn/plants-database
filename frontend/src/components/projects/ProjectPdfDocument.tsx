@@ -17,6 +17,9 @@ import {
     Link,
     StyleSheet,
     pdf,
+    Svg,
+    Path,
+    Circle,
 } from '@react-pdf/renderer';
 import type { Project } from '../../types/project';
 import type { TaxonTree } from '../../types/taxon';
@@ -27,19 +30,19 @@ import type { TaxonTree } from '../../types/taxon';
 
 // ─── Brand palette ────────────────────────────────────────────────────────────
 const C = {
-    bg: '#f4f0ea',
-    dark: '#1c2a1a',
+    bg: '#fbfaf8',
+    dark: '#1a1a1a',
     primary: '#2d5a27',
-    sage: '#8aa87f',
-    mutedBg: '#e4ddd1',
-    mutedFg: '#6b7a6a',
-    border: '#d9d2c5',
+    sage: '#5a7a4f',
+    mutedBg: '#f0ede8',
+    mutedFg: '#666666',
+    border: '#e5e1d8',
     white: '#ffffff',
-    rowAlt: '#faf8f5',
-    redBg: '#fff1f2',
-    redBorder: '#fecdd3',
-    redTitle: '#b91c1c',
-    redBody: '#881337',
+    rowAlt: '#f6f4f1',
+    redBg: '#fff5f5',
+    redBorder: '#fed7d7',
+    redTitle: '#c53030',
+    redBody: '#742a2a',
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -97,75 +100,119 @@ function blobToDataUrl(blob: Blob): Promise<string> {
         r.readAsDataURL(blob);
     });
 }
-
+// ─── Icons ────────────────────────────────────────────────────────────────────
+const I = {
+    Water: () => (
+        <Svg width="11" height="11" viewBox="0 0 24 24" fill={C.primary}>
+            <Path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+        </Svg>
+    ),
+    Sun: () => (
+        <Svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round">
+            <Circle cx="12" cy="12" r="4" fill={C.primary} stroke="none" />
+            <Path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12m11.32 11.32l2.12 2.12M2 12h3m14 0h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+        </Svg>
+    ),
+    Soil: () => (
+        <Svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M12 2v12M7 14h10M12 14c-3.5 0-5 2.5-5 5h10c0-2.5-1.5-5-5-5z" />
+        </Svg>
+    ),
+    Tool: () => (
+        <Svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M16 3L8 11M8 3l8 11M3 13h5v5M16 11h5v5" />
+            <Circle cx="8" cy="16" r="2" />
+            <Circle cx="16" cy="16" r="2" />
+        </Svg>
+    ),
+    Care: () => (
+        <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </Svg>
+    ),
+    Desc: () => (
+        <Svg width="14" height="14" viewBox="0 0 24 24" fill={C.primary}>
+            <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <Path d="M14 2v6h6" stroke="#fff" strokeWidth="2" fill="none" />
+        </Svg>
+    ),
+    Bug: () => (
+        <Svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.redTitle} strokeWidth="2" strokeLinecap="round">
+            <Path d="M8 2v4M16 2v4M3.5 7h17M4.5 12h15M6.5 17h11M12 6c-3.33 0-6 2.67-6 6v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-7c0-3.33-2.67-6-6-6z" />
+        </Svg>
+    ),
+    Lin: () => (
+        <Svg width="14" height="14" viewBox="0 0 24 24" fill={C.primary}>
+            <Path d="M12 19l7-7 3 3-7 7-3-3z" />
+            <Path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke="#fff" strokeWidth="1" />
+        </Svg>
+    )
+};
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
     page: {
         backgroundColor: C.bg,
-        paddingHorizontal: 36,
-        paddingVertical: 30,
+        paddingHorizontal: 40,
+        paddingVertical: 40,
         fontFamily: 'Helvetica',
         color: C.dark,
     },
 
     // ── Cover ──
-    coverTitle: { fontSize: 26, fontFamily: 'Helvetica-Bold', color: C.dark, marginBottom: 5, letterSpacing: -0.5 },
-    coverMeta: { flexDirection: 'row', gap: 20, marginBottom: 4 },
+    coverTitle: { fontSize: 32, fontFamily: 'Helvetica-Bold', color: C.dark, marginBottom: 8, letterSpacing: -0.8 },
+    coverMeta: { flexDirection: 'row', gap: 24, marginBottom: 6 },
     coverMetaText: { fontSize: 11, color: C.mutedFg },
-    coverMetaBold: { fontFamily: 'Helvetica-Bold', color: C.dark },
-    coverDesc: { fontSize: 10.5, color: C.mutedFg, lineHeight: 1.6, marginTop: 2 },
-    divider: { borderBottomWidth: 1.5, borderBottomColor: C.primary, marginVertical: 12 },
-    sectionTitle: { fontSize: 15, fontFamily: 'Helvetica-Bold', color: C.primary, marginBottom: 10, letterSpacing: -0.3 },
+    coverMetaBold: { fontFamily: 'Helvetica-Bold', color: C.dark, marginRight: 4 },
+    coverDesc: { fontSize: 11, color: C.mutedFg, lineHeight: 1.6, marginTop: 4, maxWidth: '85%' },
+    divider: { borderBottomWidth: 1.5, borderBottomColor: C.primary, marginVertical: 20 },
+    sectionTitle: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: C.primary, marginBottom: 12, letterSpacing: -0.4 },
 
     // ── Table ──
-    tableHead: { flexDirection: 'row', backgroundColor: C.mutedBg, borderBottomWidth: 1.5, borderBottomColor: C.primary },
-    th: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.5, paddingVertical: 6, paddingHorizontal: 6 },
-    catRow: { paddingVertical: 8, paddingBottom: 3, borderLeftWidth: 3, borderLeftColor: C.primary, paddingLeft: 8, marginTop: 4 },
-    catLabel: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: C.primary, textTransform: 'uppercase', letterSpacing: 1 },
+    tableHead: { flexDirection: 'row', backgroundColor: C.mutedBg, borderBottomWidth: 1.5, borderBottomColor: C.primary, alignItems: 'center' },
+    th: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.8, paddingVertical: 8, paddingHorizontal: 8 },
+    catRow: { paddingVertical: 10, paddingBottom: 4, borderLeftWidth: 4, borderLeftColor: C.primary, paddingLeft: 10, marginTop: 12 },
+    catLabel: { fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: C.primary, textTransform: 'uppercase', letterSpacing: 1.2 },
     tableRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5, borderBottomColor: C.border },
-    td: { fontSize: 10.5, color: C.dark, paddingVertical: 6, paddingHorizontal: 6 },
-    tdMuted: { fontSize: 10.5, color: C.mutedFg, paddingVertical: 6, paddingHorizontal: 6 },
-    pill: { backgroundColor: C.mutedBg, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2.5, borderWidth: 0.5, borderColor: C.border, alignSelf: 'flex-start' },
+    td: { fontSize: 11, color: C.dark, paddingVertical: 8, paddingHorizontal: 8 },
+    tdMuted: { fontSize: 10.5, color: C.mutedFg, paddingVertical: 8, paddingHorizontal: 8 },
+    pill: { backgroundColor: C.mutedBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3, borderWidth: 0.5, borderColor: C.border, alignSelf: 'flex-start' },
     pillText: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: C.mutedFg, textTransform: 'uppercase', letterSpacing: 0.6 },
 
     // ── Plant page ──
     plantPage: {
         backgroundColor: C.bg,
-        paddingHorizontal: 30,
-        paddingVertical: 26,
+        paddingHorizontal: 40,
+        paddingVertical: 40,
         fontFamily: 'Helvetica',
         color: C.dark,
         flex: 1,
     },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, marginBottom: 12 },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, marginBottom: 20 },
     headerLeft: { flex: 1 },
-    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 6 },
-    iconImg: { width: 52, height: 52, borderRadius: 8, objectFit: 'cover', borderWidth: 0.5, borderColor: C.border },
-    plantName: { fontSize: 24, fontFamily: 'Helvetica-Bold', color: C.dark, letterSpacing: -0.5, lineHeight: 1.1 },
-    sciName: { fontSize: 11, color: C.mutedFg, marginTop: 2 },
-    pillsRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', marginBottom: 6 },
-    notesBox: { backgroundColor: C.white, borderWidth: 0.5, borderColor: C.border, borderRadius: 6, padding: 8, marginTop: 2 },
-    notesLabel: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 2 },
-    notesText: { fontSize: 10.5, color: C.dark },
-    heroImg: { width: 210, height: 148, borderRadius: 10, objectFit: 'cover' },
-    dividerThin: { borderBottomWidth: 0.5, borderBottomColor: C.border, marginVertical: 10 },
-    bodyGrid: { flex: 1, flexDirection: 'row', gap: 12 },
-    mainCol: { flex: 7, flexDirection: 'column', gap: 10 },
-    sideCol: { flex: 5, flexDirection: 'column', gap: 10 },
-    card: { backgroundColor: C.white, borderWidth: 0.5, borderColor: C.border, borderRadius: 8, padding: 12 },
-    cardTitle: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 8, paddingBottom: 7, borderBottomWidth: 0.5, borderBottomColor: C.border },
-    cardTitleText: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: C.dark },
-    bodyText: { fontSize: 10.5, color: C.mutedFg, lineHeight: 1.7 },
-    careGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-    careItem: { backgroundColor: C.mutedBg, borderRadius: 6, padding: 8, width: '48%' },
-    careKey: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 0.5, color: C.dark, marginBottom: 3 },
-    careVal: { fontSize: 10, color: C.mutedFg, lineHeight: 1.5 },
-    redCard: { backgroundColor: C.redBg, borderWidth: 0.5, borderColor: C.redBorder, borderRadius: 8, padding: 12 },
-    redTitle: { color: C.redTitle },
-    redBody: { fontSize: 10.5, color: C.redBody, lineHeight: 1.7 },
-    taxRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: C.border },
-    taxRank: { fontSize: 8, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 0.8, color: C.mutedFg },
-    taxName: { fontSize: 10.5, fontFamily: 'Helvetica', color: C.dark },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
+    iconImg: { width: 64, height: 64, borderRadius: 12, objectFit: 'cover', borderWidth: 1, borderColor: C.border },
+    plantName: { fontSize: 28, fontFamily: 'Helvetica-Bold', color: C.dark, letterSpacing: -0.8, lineHeight: 1.1 },
+    sciName: { fontSize: 14, fontFamily: 'Helvetica-Oblique', color: C.mutedFg, marginTop: 4 },
+    pillsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 },
+    heroImg: { width: 220, height: 160, borderRadius: 12, objectFit: 'cover', borderWidth: 1, borderColor: C.border },
+    dividerThin: { borderBottomWidth: 0.5, borderBottomColor: C.border, marginVertical: 15 },
+    bodyGrid: { flex: 1, flexDirection: 'row', gap: 20 },
+    mainCol: { flex: 7, flexDirection: 'column', gap: 15 },
+    sideCol: { flex: 5, flexDirection: 'column', gap: 15 },
+    card: { backgroundColor: C.white, borderWidth: 0.5, borderColor: C.border, borderRadius: 12, padding: 16 },
+    cardTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: C.border },
+    cardTitleText: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.5, lineHeight: 1.2 },
+    bodyText: { fontSize: 11, color: C.dark, lineHeight: 1.6 },
+    careGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    careItem: { backgroundColor: C.mutedBg, borderRadius: 8, padding: 10, width: '47%', minHeight: 48 },
+    careKey: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 0.8, color: C.primary, marginBottom: 4, lineHeight: 1.2 },
+    careVal: { fontSize: 10.5, color: C.dark, lineHeight: 1.5 },
+    redCard: { backgroundColor: C.redBg, borderWidth: 0.5, borderColor: C.redBorder, borderRadius: 12, padding: 16 },
+    redTitle: { color: C.redTitle, fontSize: 12, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 0.5 },
+    redBody: { fontSize: 11, color: C.redBody, lineHeight: 1.6 },
+    taxRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border },
+    taxRank: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 1, color: C.mutedFg },
+    taxName: { fontSize: 11, fontFamily: 'Helvetica', color: C.dark },
 });
 
 // ─── COVER PAGE ───────────────────────────────────────────────────────────────
@@ -236,9 +283,9 @@ function CoverPage({ project, imgCache }: CoverProps) {
                         const placement = cleanVal(p.planting_place);
 
                         return (
-                            <View key={pp.plant_id} style={[s.tableRow, { backgroundColor: rowBg }]}>
+                            <View key={pp.plant_id} style={[s.tableRow, { backgroundColor: rowBg, minHeight: 40 }]}>
                                 {/* # */}
-                                <Text style={[s.tdMuted, { width: COL.num, textAlign: 'center', fontSize: 9 }]}>{serial}</Text>
+                                <Text style={[s.tdMuted, { width: COL.num, textAlign: 'center', fontSize: 9.5, color: C.dark }]}>{serial}</Text>
 
                                 {/* Plant name + icon */}
                                 <Link
@@ -324,13 +371,13 @@ function PlantDetailPage({ pp, taxTree, imgCache }: PlantPageProps) {
                     <View style={s.pillsRow}>
                         {p.category && (
                             <View style={s.pill}>
-                                <Text style={s.pillText}>🏷 {cleanVal(p.category)}</Text>
+                                <Text style={s.pillText}>{cleanVal(p.category)}</Text>
                             </View>
                         )}
                         {cleaningPlace(p.planting_place) && (
                             <View style={s.pill}>
                                 <Text style={s.pillText}>
-                                    📍 {placement === 'INDOOR & OUTDOOR' ? 'Both' : placement}
+                                    {placement === 'INDOOR & OUTDOOR' ? 'Both' : placement}
                                 </Text>
                             </View>
                         )}
@@ -352,7 +399,8 @@ function PlantDetailPage({ pp, taxTree, imgCache }: PlantPageProps) {
                     {/* Description */}
                     <View style={[s.card, { flex: 1 }]}>
                         <View style={s.cardTitle}>
-                            <Text style={s.cardTitleText}>📄 Description</Text>
+                            <View style={{ paddingTop: 3 }}><I.Desc /></View>
+                            <Text style={s.cardTitleText}>Description</Text>
                         </View>
                         <Text style={s.bodyText}>
                             {p.description || 'No description provided.'}
@@ -363,15 +411,29 @@ function PlantDetailPage({ pp, taxTree, imgCache }: PlantPageProps) {
                     {careEntries.length > 0 && (
                         <View style={s.card}>
                             <View style={s.cardTitle}>
-                                <Text style={s.cardTitleText}>🌱 Care Data</Text>
+                                <View style={{ paddingTop: 3 }}><I.Care /></View>
+                                <Text style={s.cardTitleText}>Care Guide</Text>
                             </View>
                             <View style={s.careGrid}>
-                                {careEntries.map(([key, value]) => (
-                                    <View key={key} style={s.careItem}>
-                                        <Text style={s.careKey}>{key.replace(/_/g, ' ')}</Text>
-                                        <Text style={s.careVal}>{String(value)}</Text>
-                                    </View>
-                                ))}
+                                {careEntries.map(([key, value]) => {
+                                    const k = key.toLowerCase();
+                                    let Icon = I.Soil;
+                                    if (k.includes('water')) Icon = I.Water;
+                                    else if (k.includes('sun') || k.includes('light')) Icon = I.Sun;
+                                    else if (k.includes('maintenance') || k.includes('pruning')) Icon = I.Tool;
+
+                                    return (
+                                        <View key={key} style={s.careItem}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                                <View style={{ paddingTop: 1.5 }}>
+                                                    <Icon />
+                                                </View>
+                                                <Text style={s.careKey}>{key.replace(/_/g, ' ')}</Text>
+                                            </View>
+                                            <Text style={s.careVal}>{String(value)}</Text>
+                                        </View>
+                                    );
+                                })}
                             </View>
                         </View>
                     )}
@@ -383,7 +445,8 @@ function PlantDetailPage({ pp, taxTree, imgCache }: PlantPageProps) {
                     {p.common_diseases && (
                         <View style={s.redCard}>
                             <View style={[s.cardTitle, { borderBottomColor: C.redBorder }]}>
-                                <Text style={[s.cardTitleText, s.redTitle]}>🐛 Common Diseases & Pests</Text>
+                                <View style={{ paddingTop: 3 }}><I.Bug /></View>
+                                <Text style={[s.cardTitleText, s.redTitle]}>Diseases & Pests</Text>
                             </View>
                             <Text style={s.redBody}>{p.common_diseases}</Text>
                         </View>
@@ -393,7 +456,8 @@ function PlantDetailPage({ pp, taxTree, imgCache }: PlantPageProps) {
                     {taxPath && taxPath.length > 0 && (
                         <View style={[s.card, { flex: 1 }]}>
                             <View style={s.cardTitle}>
-                                <Text style={s.cardTitleText}>🌿 Taxonomy Lineage</Text>
+                                <View style={{ paddingTop: 3 }}><I.Lin /> </View>
+                                <Text style={s.cardTitleText}>Taxonomy Lineage</Text>
                             </View>
                             {taxPath.map((t, i) => (
                                 <View key={t.id} style={[s.taxRow, i === taxPath.length - 1 ? { borderBottomWidth: 0 } : {}]}>
@@ -468,9 +532,13 @@ export function ProjectPdfContainer({ project, taxTree, projectId: _projectId, o
         for (const pp of project.plants) {
             const p = pp.plant;
             if (!p) continue;
-            if (p.icon_url) urls.push({ key: p.id, url: p.icon_url });
-            if (p.image_url) urls.push({ key: `hero_${p.id}`, url: p.image_url });
-            if (p.icon_url) urls.push({ key: `icon_${p.id}`, url: p.icon_url });
+            if (p.icon_url) {
+                urls.push({ key: p.id, url: p.icon_url });
+                urls.push({ key: `icon_${p.id}`, url: p.icon_url });
+            }
+            if (p.image_url) {
+                urls.push({ key: `hero_${p.id}`, url: p.image_url });
+            }
         }
 
         Promise.all(
