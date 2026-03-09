@@ -315,19 +315,7 @@ function PlantCard({
                         </div>
                     )}
 
-                    {/* notes */}
-                    {pp.notes && (
-                        <div className="pv-card">
-                            <h3 className="pv-card-title">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2d5a27" strokeWidth="2.5" strokeLinecap="round" style={{ display: 'inline', marginRight: 5, verticalAlign: 'middle' }}>
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                </svg>
-                                Project Notes
-                            </h3>
-                            <p className="pv-card-body">{pp.notes}</p>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* side col */}
@@ -380,6 +368,10 @@ export function ProjectPublicView() {
         queryFn: () => projectsApi.getByShareToken(token!),
         enabled: !!token,
         retry: false,
+        // Don't keep stale data when a fetch fails — prevents showing
+        // the old cached project beneath an error state.
+        gcTime: 0,
+        staleTime: 0,
     });
 
     const { data: taxTree } = useQuery({
@@ -394,6 +386,8 @@ export function ProjectPublicView() {
     return (
         <>
             <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
             /* ── Public view styles ── */
             .pv-root {
                 background: #fbfaf8;
@@ -409,7 +403,7 @@ export function ProjectPublicView() {
                 background: #2d5a27;
                 padding: 14px 24px;
                 display: flex;
-                align-items: center;
+                align-items: flex-end;
                 gap: 12px;
                 position: sticky;
                 top: 0;
@@ -421,9 +415,10 @@ export function ProjectPublicView() {
             }
             .pv-bar-wordmark {
                 color: #fff;
+                font-family: 'Montserrat', sans-serif;
                 font-weight: 700;
-                font-size: 15px;
-                letter-spacing: 0.12em;
+                font-size: 17px;
+                letter-spacing: 0.05em;
                 text-transform: uppercase;
             }
             .pv-bar-tagline {
@@ -603,7 +598,7 @@ export function ProjectPublicView() {
                 <div className="pv-bar">
                     <img src="/logo.svg" alt="Landschaft" className="pv-bar-logo" />
                     <span className="pv-bar-wordmark">Landschaft</span>
-                    <span className="pv-bar-tagline">Plants Database — Shared Report</span>
+                    <span className="pv-bar-tagline">Shared Report</span>
                 </div>
 
                 <div className="pv-page">
@@ -629,12 +624,12 @@ export function ProjectPublicView() {
                         <div className="pv-state">
                             <Leaf size={40} className="pv-state-icon" strokeWidth={1.5} />
                             <h2>Project Not Found</h2>
-                            <p>This share link is invalid or has been removed.</p>
+                            <p>This link has expired.</p>
                         </div>
                     )}
 
                     {/* content */}
-                    {project && (
+                    {project && !error && (
                         <>
                             {/* cover */}
                             <div className="pv-cover">
