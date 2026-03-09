@@ -14,6 +14,7 @@ import {
     View,
     Text,
     Image,
+    Link,
     StyleSheet,
     pdf,
 } from '@react-pdf/renderer';
@@ -240,14 +241,25 @@ function CoverPage({ project, imgCache }: CoverProps) {
                                 <Text style={[s.tdMuted, { width: COL.num, textAlign: 'center', fontSize: 9 }]}>{serial}</Text>
 
                                 {/* Plant name + icon */}
-                                <View style={{ width: COL.name, flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 5, paddingHorizontal: 6 }}>
+                                <Link
+                                    src={`#plant-${p.id}`}
+                                    style={{
+                                        width: COL.name,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        paddingVertical: 5,
+                                        paddingHorizontal: 6,
+                                        textDecoration: 'none'
+                                    }}
+                                >
                                     {iconSrc && (
                                         <Image src={iconSrc} style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} />
                                     )}
                                     <Text style={{ fontSize: 10.5, fontFamily: 'Helvetica-Bold', color: C.primary, flex: 1 }}>
                                         {p.common_name}
                                     </Text>
-                                </View>
+                                </Link>
 
                                 {/* Scientific */}
                                 <Text style={[s.tdMuted, { width: COL.sci, fontSize: 9.5 }]}>
@@ -296,7 +308,7 @@ function PlantDetailPage({ pp, taxTree, imgCache }: PlantPageProps) {
     return (
         <Page size="A4" style={s.plantPage}>
             {/* Header */}
-            <View style={s.header}>
+            <View style={s.header} id={`plant-${p.id}`}>
                 <View style={s.headerLeft}>
                     <View style={s.nameRow}>
                         {iconSrc && <Image src={iconSrc} style={s.iconImg} />}
@@ -324,13 +336,7 @@ function PlantDetailPage({ pp, taxTree, imgCache }: PlantPageProps) {
                         )}
                     </View>
 
-                    {/* Project notes */}
-                    {pp.notes && (
-                        <View style={s.notesBox}>
-                            <Text style={s.notesLabel}>Project Notes</Text>
-                            <Text style={s.notesText}>{pp.notes}</Text>
-                        </View>
-                    )}
+
                 </View>
 
                 {/* Hero image */}
