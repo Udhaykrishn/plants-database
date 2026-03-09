@@ -510,28 +510,27 @@ List of Plants to Process:
                         )}
 
                         {/* Info + actions bar */}
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex items-center gap-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <FileUp size={14} className="text-primary" />
-                                    <span className="font-medium text-foreground truncate max-w-[200px]">{fileName || 'Manual entry'}</span>
+                                    <span className="font-medium text-foreground truncate max-w-[150px] sm:max-w-[200px]">{fileName || 'Manual entry'}</span>
                                     <span>·</span>
-                                    <span>{rows.filter(r => r.common_name?.trim()).length} plants</span>
+                                    <span className="whitespace-nowrap">{rows.filter(r => r.common_name?.trim()).length} plants</span>
                                 </div>
                                 <button
                                     onClick={() => { setStage('upload'); setParseErrors([]); }}
-                                    className="text-xs text-primary hover:underline"
+                                    className="text-xs text-primary hover:underline font-medium"
                                 >
                                     Re-upload
                                 </button>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
                                 <Button
-                                    variant="outline"
                                     size="sm"
                                     onClick={addRow}
-                                    className="gap-1.5 h-8 text-xs"
+                                    className="flex-1 sm:flex-initial gap-1.5 h-8 text-[11px] font-bold"
                                 >
                                     <Plus size={13} /> Add Row
                                 </Button>
@@ -539,7 +538,7 @@ List of Plants to Process:
                                     size="sm"
                                     onClick={handleImport}
                                     disabled={isImporting || parseErrors.length > 0}
-                                    className="gap-1.5 h-8 text-xs bg-primary hover:bg-primary/90"
+                                    className="flex-1 sm:flex-initial gap-1.5 h-8 text-[11px] font-bold bg-primary hover:bg-primary/90"
                                 >
                                     {isImporting ? (
                                         <><Loader2 size={13} className="animate-spin" /> Importing…</>
@@ -551,13 +550,13 @@ List of Plants to Process:
                         </div>
 
                         {/* Spreadsheet */}
-                        <div className="flex-1 min-h-0 rounded-xl border border-border overflow-hidden shadow-sm">
-                            <div className="overflow-auto h-full max-h-[calc(100vh-18rem)]">
+                        <div className="flex-1 min-h-0 rounded-xl border border-border overflow-hidden shadow-sm bg-white">
+                            <div className="overflow-auto h-full max-h-[calc(100vh-18rem)] overscroll-behavior-x-contain">
                                 <table className="border-collapse text-xs" style={{ width: 'max-content', minWidth: '100%' }}>
                                     <thead className="sticky top-0 z-20 bg-muted shadow-sm">
                                         <tr>
                                             {/* Row number */}
-                                            <th className="w-9 min-w-[36px] text-center text-[10px] font-bold text-muted-foreground/60 border-b border-r border-border px-1 py-2 bg-muted sticky left-0 z-30">
+                                            <th className="w-9 min-w-[36px] text-center text-[10px] font-bold text-muted-foreground/60 border-b border-r border-border px-1 py-2 bg-muted md:sticky md:left-0 z-30">
                                                 #
                                             </th>
                                             {ALL_FIELDS.map(f => (
@@ -565,7 +564,7 @@ List of Plants to Process:
                                                     key={f.key}
                                                     className={cn(
                                                         "text-left px-2 py-2 border-b border-r border-border font-bold text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap",
-                                                        f.isSticky ? "sticky left-[36px] z-40 bg-muted" : "z-20"
+                                                        f.isSticky ? "md:sticky md:left-[36px] z-40 bg-muted" : "z-20"
                                                     )}
                                                     style={{ minWidth: f.width }}
                                                 >
@@ -591,7 +590,7 @@ List of Plants to Process:
                                                 >
                                                     {/* Row num */}
                                                     <td className={cn(
-                                                        "text-center text-[10px] text-muted-foreground/40 tabular-nums border-r border-b border-border px-1 sticky left-0 z-10 align-top pt-2",
+                                                        "text-center text-[10px] text-muted-foreground/40 tabular-nums border-r border-b border-border px-1 md:sticky md:left-0 z-10 align-top pt-2",
                                                         rowIdx % 2 === 0 ? "bg-white" : "bg-[#f9fafb]"
                                                     )}>
                                                         {rowIdx + 1}
@@ -599,7 +598,7 @@ List of Plants to Process:
                                                     {ALL_FIELDS.map(f => (
                                                         <td key={f.key} className={cn(
                                                             "border-r border-b border-border p-0 align-top",
-                                                            f.isSticky ? (rowIdx % 2 === 0 ? "sticky left-[36px] z-10 bg-white" : "sticky left-[36px] z-10 bg-[#f9fafb]") : ""
+                                                            f.isSticky ? (rowIdx % 2 === 0 ? "md:sticky md:left-[36px] z-10 bg-white" : "md:sticky md:left-[36px] z-10 bg-[#f9fafb]") : ""
                                                         )}>
                                                             {f.isImage ? (
                                                                 <ImageCell
