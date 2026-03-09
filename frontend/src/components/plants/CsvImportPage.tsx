@@ -1,14 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ioApi } from '../../api/io';
 import { aiApi } from '../../api/ai';
+import { categoriesApi } from '../../api/categories';
 import { useAlert } from '../../contexts/AlertContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '../../lib-frontend/utils';
 import {
     ArrowLeft, Upload, FileUp, Loader2, Trash2, Plus,
     AlertCircle, ChevronRight, Info, X, ImageOff, ZoomIn, RefreshCw, Maximize2,
+    Copy, Check, Sparkles,
 } from 'lucide-react';
 
 // ── Field config ─────────────────────────────────────────────────────────────
@@ -215,6 +217,39 @@ export const CsvImportPage = () => {
     const [isImporting, setIsImporting] = useState(false);
     const [fileName, setFileName] = useState('');
     const [parseErrors, setParseErrors] = useState<string[]>([]);
+    const [copied, setCopied] = useState(false);
+
+    // Categories for the prompt
+    const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
+
+    const categoriesList = useMemo(() => {
+        if (!categoriesOptions || categoriesOptions.length === 0) return "Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other";
+        return categoriesOptions.map(c => c.name).join(", ");
+    }, [categoriesOptions]);
+
+    const bulkImportPrompt = useMemo(() => `Act as a botanical data expert. 
+
+Task: Generate a perfectly formatted CSV file for the plants listed below.
+
+Header (MUST be the first line of your response):
+kingdom,division,class,order,family,genus,species,common_name,scientific_name,category,planting_place,description,common_diseases,care_water,care_sunlight,care_soil,care_maintenance,icon_url,image_url
+
+Strict Requirements (CRITICAL):
+1. MANDATORY FIELDS: Every single column must have a value. DO NOT skip any columns.
+2. SPECIES COLUMN: This is the specific epithet (the second word of the scientific name). For example, if the scientific name is "Psidium guajava", the species is "guajava". DO NOT leave the species column blank.
+3. CATEGORY: MUST be exactly one of [${categoriesList}].
+4. PLACE: MUST be exactly one of [Indoor, Outdoor, Indoor & Outdoor].
+5. IMAGES: Use Wikimedia Special:FilePath URLs based on the scientific name (e.g. .../Special:FilePath/Scientific_Name.jpg?width=1000).
+6. FORMATTING: Raw CSV text only. No markdown blocks (no \` \` \`), no explanations, no "Here is your CSV".
+
+List of Plants to Process:
+[PASTE YOUR PLANT NAMES HERE]`, [categoriesList]);
+
+    const handleCopyPrompt = () => {
+        navigator.clipboard.writeText(bulkImportPrompt);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     // The editable rows
     const [rows, setRows] = useState<Record<string, string>[]>([BLANK_ROW()]);
@@ -390,7 +425,7 @@ export const CsvImportPage = () => {
                                 onDragLeave={() => setIsDragOver(false)}
                                 onDrop={handleDrop}
                                 className={cn(
-                                    'flex flex-col items-center justify-center gap-5 rounded-2xl border-2 border-dashed p-16 text-center transition-all duration-200 cursor-pointer select-none',
+                                    'flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center transition-all duration-200 cursor-pointer select-none',
                                     isPreviewing
                                         ? 'border-primary/40 bg-primary/5 cursor-wait'
                                         : isDragOver
@@ -399,12 +434,12 @@ export const CsvImportPage = () => {
                                 )}
                             >
                                 <div className={cn(
-                                    'flex items-center justify-center w-16 h-16 rounded-2xl transition-colors',
+                                    'flex items-center justify-center w-14 h-14 rounded-2xl transition-colors',
                                     isDragOver ? 'bg-primary/15' : 'bg-muted'
                                 )}>
                                     {isPreviewing
-                                        ? <Loader2 size={28} className="text-primary animate-spin" />
-                                        : <FileUp size={28} className={isDragOver ? 'text-primary' : 'text-muted-foreground'} />
+                                        ? <Loader2 size={24} className="text-primary animate-spin" />
+                                        : <FileUp size={24} className={isDragOver ? 'text-primary' : 'text-muted-foreground'} />
                                     }
                                 </div>
                                 <div className="space-y-1.5">
@@ -423,11 +458,32 @@ export const CsvImportPage = () => {
                             </div>
                         </label>
 
-                        <div className="w-full bg-emerald-50/60 border border-emerald-100 rounded-xl p-4 flex gap-3">
-                            <Info size={15} className="text-emerald-600 shrink-0 mt-0.5" />
-                            <p className="text-xs text-emerald-800 leading-relaxed">
-                                Don't have a CSV yet? Go back to Plants and click <strong>Import CSV</strong> to copy the AI prompt that generates correctly formatted CSVs.
-                            </p>
+                        <div className="w-full space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                    <Sparkles size={16} className="text-emerald-500" />
+                                    AI Prompt for CSV Generation
+                                </h3>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCopyPrompt}
+                                    className="h-8 gap-1.5 text-xs font-bold border-primary/20 hover:bg-primary/5"
+                                >
+                                    {copied ? <><Check size={13} className="text-emerald-600" /> COPIED</> : <><Copy size={13} /> COPY PROMPT</>}
+                                </Button>
+                            </div>
+                            <div className="rounded-xl border border-border bg-muted/30 p-4 relative group">
+                                <pre className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-relaxed font-mono overflow-auto max-h-[200px]">
+                                    {bulkImportPrompt}
+                                </pre>
+                            </div>
+                            <div className="bg-emerald-50/60 border border-emerald-100 rounded-xl p-4 flex gap-3">
+                                <Info size={15} className="text-emerald-600 shrink-0 mt-0.5" />
+                                <p className="text-xs text-emerald-800 leading-relaxed">
+                                    Copy the prompt above and paste it into ChatGPT/Claude along with your list of plants. Then download the resulting CSV and upload it here.
+                                </p>
+                            </div>
                         </div>
                     </div>
                 )}

@@ -70,8 +70,6 @@ import {
     ArrowLeft,
     XCircle,
     Terminal,
-    Copy,
-    Check,
     Info,
     RefreshCw,
     FileUp,
@@ -100,42 +98,12 @@ export const PlantManager = () => {
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
-    const [copied, setCopied] = useState(false);
-
     // Queries
     const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.getAll });
     const { data: plants, isLoading: plantsLoading } = useQuery({ queryKey: ['plants'], queryFn: plantsApi.getAll });
     const { data: taxonomyTree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: taxonomyApi.getTree });
     const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
 
-    const categoriesList = useMemo(() => {
-        if (!categoriesOptions || categoriesOptions.length === 0) return "Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other";
-        return categoriesOptions.map(c => c.name).join(", ");
-    }, [categoriesOptions]);
-
-    const bulkImportPrompt = useMemo(() => `Act as a botanical data expert. 
-
-Task: Generate a perfectly formatted CSV file for the plants listed below.
-
-Header (MUST be the first line of your response):
-kingdom,division,class,order,family,genus,species,common_name,scientific_name,category,planting_place,description,common_diseases,care_water,care_sunlight,care_soil,care_maintenance,icon_url,image_url
-
-Strict Requirements (CRITICAL):
-1. MANDATORY FIELDS: Every single column must have a value. DO NOT skip any columns.
-2. SPECIES COLUMN: This is the specific epithet (the second word of the scientific name). For example, if the scientific name is "Psidium guajava", the species is "guajava". DO NOT leave the species column blank.
-3. CATEGORY: MUST be exactly one of [${categoriesList}].
-4. PLACE: MUST be exactly one of [Indoor, Outdoor, Indoor & Outdoor].
-5. IMAGES: Use Wikimedia Special:FilePath URLs based on the scientific name (e.g. .../Special:FilePath/Scientific_Name.jpg?width=1000).
-6. FORMATTING: Raw CSV text only. No markdown blocks (no \` \` \`), no explanations, no "Here is your CSV".
-
-List of Plants to Process:
-[PASTE YOUR PLANT NAMES HERE]`, [categoriesList]);
-
-    const handleCopyPrompt = () => {
-        navigator.clipboard.writeText(bulkImportPrompt);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
 
     // Mutations
     const addPlantsToProjectMutation = useMutation({
