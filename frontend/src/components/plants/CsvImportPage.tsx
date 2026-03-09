@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ioApi } from '../../api/io';
@@ -69,6 +69,11 @@ const ImageCell = ({
         setImgError(false);
         onChange(rowIdx, fieldKey, val);
     };
+
+    // Reset error state when URL changes externally (e.g. via regeneration)
+    useEffect(() => {
+        setImgError(false);
+    }, [url]);
 
     return (
         <div className="flex h-[80px] w-full items-stretch">
