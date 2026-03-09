@@ -2,17 +2,18 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { ioApi } from '../../api/io';
+import { aiApi } from '../../api/ai';
 import { useAlert } from '../../contexts/AlertContext';
 import { Button } from '@/components/ui/button';
 import { cn } from '../../lib-frontend/utils';
 import {
     ArrowLeft, Upload, FileUp, Loader2, Trash2, Plus,
-    AlertCircle, ChevronRight, Info, X, ImageOff, ZoomIn,
+    AlertCircle, ChevronRight, Info, X, ImageOff, ZoomIn, RefreshCw, Maximize2,
 } from 'lucide-react';
 
 // ── Field config ─────────────────────────────────────────────────────────────
-const ALL_FIELDS: { key: string; label: string; width: string; required?: boolean; isImage?: boolean }[] = [
-    { key: 'common_name', label: 'Common Name', width: '160px', required: true },
+const ALL_FIELDS: { key: string; label: string; width: string; required?: boolean; isImage?: boolean; isSticky?: boolean }[] = [
+    { key: 'common_name', label: 'Common Name', width: '160px', required: true, isSticky: true },
     { key: 'scientific_name', label: 'Scientific Name', width: '160px' },
     { key: 'category', label: 'Category', width: '120px' },
     { key: 'planting_place', label: 'Planting Place', width: '130px' },
@@ -29,8 +30,8 @@ const ALL_FIELDS: { key: string; label: string; width: string; required?: boolea
     { key: 'care_sunlight', label: 'Sunlight', width: '140px' },
     { key: 'care_soil', label: 'Soil', width: '140px' },
     { key: 'care_maintenance', label: 'Maintenance', width: '140px' },
-    { key: 'icon_url', label: 'Icon URL', width: '200px', isImage: true },
-    { key: 'image_url', label: 'Image URL', width: '200px', isImage: true },
+    { key: 'icon_url', label: 'Icon URL', width: '320px', isImage: true },
+    { key: 'image_url', label: 'Image URL', width: '320px', isImage: true },
 ];
 
 const BLANK_ROW = (): Record<string, string> =>
@@ -43,49 +44,59 @@ const ImageCell = ({
     url,
     fieldKey,
     rowIdx,
+    plantName,
     onChange,
     onZoom,
-    fieldWidth,
+    onRegenerate,
+    isRegenerating,
 }: {
     url: string;
     fieldKey: string;
     rowIdx: number;
+    plantName: string;
     onChange: (rowIdx: number, key: string, val: string) => void;
-    onZoom: (url: string, label: string) => void;
-    fieldWidth: string;
+    onZoom: (data: { url: string; label: string; rowIdx: number; fieldKey: string; plantName: string }) => void;
+    onRegenerate: (rowIdx: number, fieldKey: string, plantName: string) => Promise<void>;
+    isRegenerating: boolean;
 }) => {
     const [imgError, setImgError] = useState(false);
     const hasUrl = url.trim().startsWith('http');
+    const label = fieldKey === 'icon_url' ? 'Icon' : 'Image';
 
-    // Reset error state when url changes
     const handleUrlChange = (val: string) => {
         setImgError(false);
         onChange(rowIdx, fieldKey, val);
     };
 
     return (
-        <div className="flex flex-col h-full" style={{ minWidth: fieldWidth }}>
-            {/* Thumbnail */}
-            <div className="relative w-full border-b border-border/50 bg-muted/20" style={{ height: '60px' }}>
+        <div className="flex h-[80px] w-full items-stretch">
+            {/* Thumbnail - Square Crop */}
+            <div
+                className={cn(
+                    "relative w-20 h-20 shrink-0 bg-muted/20 border-r border-border/40 overflow-hidden group/img transition-all",
+                    hasUrl && !imgError ? "cursor-zoom-in" : ""
+                )}
+                onClick={() => {
+                    if (hasUrl && !imgError) {
+                        onZoom({ url, label, rowIdx, fieldKey, plantName });
+                    }
+                }}
+            >
                 {hasUrl && !imgError ? (
                     <>
                         <img
                             src={url}
                             alt=""
                             onError={() => setImgError(true)}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover/img:scale-110"
                         />
-                        {/* Zoom overlay */}
-                        <button
-                            onClick={() => onZoom(url, fieldKey === 'icon_url' ? 'Icon' : 'Image')}
-                            className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/40 transition-colors group"
-                            title="Enlarge preview"
-                        >
-                            <ZoomIn
+                        {/* Zoom hint overlay */}
+                        <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-colors flex items-center justify-center">
+                            <Maximize2
                                 size={18}
-                                className="text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg"
+                                className="text-white opacity-0 group-hover/img:opacity-100 transition-all scale-75 group-hover/img:scale-100 drop-shadow-lg"
                             />
-                        </button>
+                        </div>
                     </>
                 ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -95,52 +106,98 @@ const ImageCell = ({
                         }
                     </div>
                 )}
+
+                {/* Regenerate button - Float it over the top-right */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onRegenerate(rowIdx, fieldKey, plantName);
+                    }}
+                    disabled={isRegenerating || !plantName.trim()}
+                    className={cn(
+                        'absolute top-1 right-1 w-6 h-6 flex items-center justify-center rounded-lg transition-all shadow-md backdrop-blur-md z-10',
+                        'bg-black/60 hover:bg-primary text-white',
+                        'disabled:opacity-20 disabled:cursor-not-allowed'
+                    )}
+                    title="Fetch new image"
+                >
+                    {isRegenerating ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
+                </button>
             </div>
+
             {/* URL input */}
-            <textarea
-                value={url}
-                onChange={e => handleUrlChange(e.target.value)}
-                rows={1}
-                className={cn(
-                    'flex-1 w-full px-2 py-1.5 text-xs bg-transparent resize-none',
-                    'focus:outline-none focus:ring-1 focus:ring-primary/40 focus:bg-primary/3',
-                    'placeholder:text-muted-foreground/30 transition-colors',
-                    'min-h-[32px]'
-                )}
-                style={{ maxHeight: '60px' }}
-                placeholder="https://…"
-            />
+            <div className="flex-1 min-w-0">
+                <textarea
+                    value={url}
+                    onChange={e => handleUrlChange(e.target.value)}
+                    className={cn(
+                        'w-full h-full px-2 py-2 text-[11px] bg-transparent resize-none leading-relaxed',
+                        'focus:outline-none focus:ring-1 focus:ring-primary/40 focus:bg-primary/3',
+                        'placeholder:text-muted-foreground/20 transition-colors'
+                    )}
+                    placeholder="https://…"
+                />
+            </div>
         </div>
     );
 };
 
 // ── Lightbox overlay ──────────────────────────────────────────────────────────
-const Lightbox = ({ url, label, onClose }: { url: string; label: string; onClose: () => void }) => (
+// ── Lightbox overlay ──────────────────────────────────────────────────────────
+const Lightbox = ({
+    url,
+    label,
+    onClose,
+    onRegenerate,
+    isRegenerating,
+}: {
+    url: string;
+    label: string;
+    onClose: () => void;
+    onRegenerate?: () => Promise<void>;
+    isRegenerating?: boolean;
+}) => (
     <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-8"
         onClick={onClose}
     >
         <div
-            className="relative max-w-3xl max-h-[85vh] m-4"
+            className="relative max-w-4xl w-full max-h-full flex flex-col gap-4"
             onClick={e => e.stopPropagation()}
         >
-            <button
-                onClick={onClose}
-                className="absolute -top-3 -right-3 z-10 w-7 h-7 flex items-center justify-center rounded-full bg-white text-foreground shadow-lg hover:bg-muted transition-colors"
-            >
-                <X size={14} />
-            </button>
-            <div className="rounded-xl overflow-hidden shadow-2xl bg-muted border border-border/20">
-                <div className="px-3 py-2 bg-muted/80 border-b border-border/40 flex items-center gap-2">
-                    <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</span>
+            <div className="bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+                <div className="px-5 py-4 bg-muted/40 border-b border-border/40 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">{label}</span>
+                        {onRegenerate && (
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={onRegenerate}
+                                disabled={isRegenerating}
+                                className="h-7 px-3 text-[10px] gap-2 rounded-lg bg-white shadow-sm hover:bg-primary hover:text-white border-primary/20 transition-all font-bold"
+                            >
+                                {isRegenerating ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                                REGENERATE
+                            </Button>
+                        )}
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 flex items-center justify-center rounded-xl bg-muted/50 text-foreground hover:bg-red-50 hover:text-red-500 transition-all"
+                    >
+                        <X size={16} />
+                    </button>
                 </div>
-                <img
-                    src={url}
-                    alt={label}
-                    className="block max-w-full max-h-[75vh] object-contain"
-                />
-                <div className="px-3 py-1.5 border-t border-border/40">
-                    <p className="text-[10px] text-muted-foreground truncate">{url}</p>
+                <div className="bg-muted/10 p-2 min-h-[40vh] flex items-center justify-center">
+                    <img
+                        src={url}
+                        alt={label}
+                        className="max-w-full max-h-[65vh] object-contain rounded-lg shadow-lg"
+                    />
+                </div>
+                <div className="px-5 py-3 bg-white border-t border-border/40 overflow-hidden">
+                    <p className="text-[11px] font-mono text-muted-foreground/60 break-all select-all">{url}</p>
                 </div>
             </div>
         </div>
@@ -162,8 +219,46 @@ export const CsvImportPage = () => {
     // The editable rows
     const [rows, setRows] = useState<Record<string, string>[]>([BLANK_ROW()]);
 
-    // Lightbox state
-    const [lightbox, setLightbox] = useState<{ url: string; label: string } | null>(null);
+    // Lightbox & Regeneration state
+    const [lightbox, setLightbox] = useState<{
+        url: string;
+        label: string;
+        rowIdx: number;
+        fieldKey: string;
+        plantName: string;
+    } | null>(null);
+    const [isRegenerating, setIsRegenerating] = useState<Record<string, boolean>>({});
+    const [regeneratePages, setRegeneratePages] = useState<Record<string, number>>({});
+
+    const handleRegenerate = async (rowIdx: number, fieldKey: string, plantName: string) => {
+        const searchName = plantName.trim();
+        if (!searchName) return;
+
+        const key = `${rowIdx}_${fieldKey}`;
+        setIsRegenerating(prev => ({ ...prev, [key]: true }));
+
+        try {
+            const currentPage = regeneratePages[key] || 1;
+            const nextPage = currentPage + 1;
+
+            const data = await aiApi.fetchPlantImages({ plantName: searchName, page: nextPage });
+
+            setRegeneratePages(prev => ({ ...prev, [key]: data.page }));
+
+            const newUrl = fieldKey === 'icon_url' ? data.icon_url : data.image_url;
+            if (newUrl) {
+                updateCell(rowIdx, fieldKey, newUrl);
+                // If lightbox is open for this cell, update it too
+                if (lightbox && lightbox.rowIdx === rowIdx && lightbox.fieldKey === fieldKey) {
+                    setLightbox(prev => prev ? { ...prev, url: newUrl } : null);
+                }
+            }
+        } catch (error) {
+            console.error('Failed to regenerate image:', error);
+        } finally {
+            setIsRegenerating(prev => ({ ...prev, [key]: false }));
+        }
+    };
 
     // ── File handling ──────────────────────────────────────────────────────
     const processFile = useCallback(async (file: File) => {
@@ -407,7 +502,10 @@ export const CsvImportPage = () => {
                                             {ALL_FIELDS.map(f => (
                                                 <th
                                                     key={f.key}
-                                                    className="text-left px-2 py-2 border-b border-r border-border font-bold text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap"
+                                                    className={cn(
+                                                        "text-left px-2 py-2 border-b border-r border-border font-bold text-[10px] uppercase tracking-wider text-muted-foreground whitespace-nowrap",
+                                                        f.isSticky ? "sticky left-[36px] z-40 bg-muted" : "z-20"
+                                                    )}
                                                     style={{ minWidth: f.width }}
                                                 >
                                                     {f.label}
@@ -426,24 +524,32 @@ export const CsvImportPage = () => {
                                                     key={rowIdx}
                                                     className={cn(
                                                         'group',
-                                                        rowIdx % 2 === 0 ? 'bg-background' : 'bg-muted/10',
+                                                        rowIdx % 2 === 0 ? 'bg-white' : 'bg-[#f9fafb]',
                                                         isEmpty ? 'opacity-50' : ''
                                                     )}
                                                 >
                                                     {/* Row num */}
-                                                    <td className="text-center text-[10px] text-muted-foreground/40 tabular-nums border-r border-b border-border px-1 sticky left-0 z-10 bg-inherit align-top pt-2">
+                                                    <td className={cn(
+                                                        "text-center text-[10px] text-muted-foreground/40 tabular-nums border-r border-b border-border px-1 sticky left-0 z-10 align-top pt-2",
+                                                        rowIdx % 2 === 0 ? "bg-white" : "bg-[#f9fafb]"
+                                                    )}>
                                                         {rowIdx + 1}
                                                     </td>
                                                     {ALL_FIELDS.map(f => (
-                                                        <td key={f.key} className="border-r border-b border-border p-0 align-top">
+                                                        <td key={f.key} className={cn(
+                                                            "border-r border-b border-border p-0 align-top",
+                                                            f.isSticky ? (rowIdx % 2 === 0 ? "sticky left-[36px] z-10 bg-white" : "sticky left-[36px] z-10 bg-[#f9fafb]") : ""
+                                                        )}>
                                                             {f.isImage ? (
                                                                 <ImageCell
                                                                     url={row[f.key] ?? ''}
                                                                     fieldKey={f.key}
                                                                     rowIdx={rowIdx}
+                                                                    plantName={row.common_name || row.scientific_name || ''}
                                                                     onChange={updateCell}
-                                                                    onZoom={(url, label) => setLightbox({ url, label })}
-                                                                    fieldWidth={f.width}
+                                                                    onZoom={setLightbox}
+                                                                    onRegenerate={handleRegenerate}
+                                                                    isRegenerating={!!isRegenerating[`${rowIdx}_${f.key}`]}
                                                                 />
                                                             ) : (
                                                                 <textarea
@@ -451,24 +557,21 @@ export const CsvImportPage = () => {
                                                                     onChange={e => updateCell(rowIdx, f.key, e.target.value)}
                                                                     rows={1}
                                                                     className={cn(
-                                                                        'w-full h-full min-h-[32px] px-2 py-1.5 text-xs bg-transparent resize-none',
+                                                                        'w-full h-full min-h-[32px] px-2 py-1.5 text-xs bg-transparent resize-none p-2',
                                                                         'focus:outline-none focus:ring-1 focus:ring-primary/40 focus:bg-primary/3',
-                                                                        'placeholder:text-muted-foreground/30 transition-colors',
-                                                                        f.required && !row[f.key]?.trim()
-                                                                            ? 'bg-red-50/40'
-                                                                            : ''
+                                                                        'placeholder:text-muted-foreground/30 transition-colors'
                                                                     )}
-                                                                    style={{ minWidth: f.width, maxHeight: '80px' }}
+                                                                    style={{ minWidth: f.width, height: f.isImage ? '80px' : 'auto', minHeight: '80px' }}
                                                                     placeholder={f.required ? '(required)' : ''}
                                                                 />
                                                             )}
                                                         </td>
                                                     ))}
                                                     {/* Delete */}
-                                                    <td className="border-b border-border p-0 text-center align-top pt-1">
+                                                    <td className="border-b border-border p-0 text-center align-top pt-2">
                                                         <button
                                                             onClick={() => deleteRow(rowIdx)}
-                                                            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 text-muted-foreground hover:text-red-500"
+                                                            className="p-1.5 text-muted-foreground/40 hover:text-red-500 transition-colors"
                                                             title="Remove row"
                                                         >
                                                             <Trash2 size={13} />
@@ -489,6 +592,15 @@ export const CsvImportPage = () => {
                             Required fields are marked <span className="text-red-400 font-bold">*</span>.
                         </p>
                     </div>
+                )}
+                {/* Lightbox */}
+                {lightbox && (
+                    <Lightbox
+                        {...lightbox}
+                        onClose={() => setLightbox(null)}
+                        onRegenerate={() => handleRegenerate(lightbox.rowIdx, lightbox.fieldKey, lightbox.plantName)}
+                        isRegenerating={!!isRegenerating[`${lightbox.rowIdx}_${lightbox.fieldKey}`]}
+                    />
                 )}
             </div>
         </>
