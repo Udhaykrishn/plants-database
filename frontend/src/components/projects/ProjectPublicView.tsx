@@ -409,6 +409,9 @@ export function ProjectPublicView() {
                 top: 0;
                 z-index: 10;
             }
+            @media (max-width: 640px) {
+                .pv-bar { padding: 14px 16px; }
+            }
             .pv-bar-logo {
                 width: 28px; height: 28px;
                 filter: brightness(0) invert(1);
@@ -431,10 +434,10 @@ export function ProjectPublicView() {
             .pv-page {
                 max-width: 960px;
                 margin: 0 auto;
-                padding: 64px 40px 120px;
+                padding: 40px 40px 120px;
             }
             @media (max-width: 640px) {
-                .pv-page { padding: 40px 20px 80px; }
+                .pv-page { padding: 24px 16px 60px; }
             }
 
             /* ── State screens ── */
@@ -455,22 +458,22 @@ export function ProjectPublicView() {
             @keyframes pv-spin { to { transform: rotate(360deg); } }
 
             /* ── Cover ── */
-            .pv-cover { margin-bottom: 48px; }
+            .pv-cover { margin-bottom: 32px; }
             .pv-cover-title {
-                font-size: clamp(32px, 5vw, 48px); font-weight: 700;
-                letter-spacing: -1.5px; color: #1a1a1a; margin: 0 0 16px;
+                font-size: clamp(28px, 5vw, 44px); font-weight: 700;
+                letter-spacing: -1.5px; color: #1a1a1a; margin: 0 0 12px;
             }
-            .pv-cover-meta { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 14px; }
+            .pv-cover-meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 10px; }
             .pv-cover-meta-item {
                 display: flex; align-items: center; gap: 7px;
                 font-size: 14px; color: #666;
             }
             .pv-cover-desc {
                 font-size: 15px; color: #555; line-height: 1.8;
-                max-width: 680px; margin-top: 12px;
+                max-width: 680px; margin-top: 10px;
             }
             .pv-divider-main {
-                border: none; border-top: 1.5px solid #2d5a27; margin: 36px 0;
+                border: none; border-top: 1.5px solid #2d5a27; margin: 24px 0;
             }
 
             /* ── Section title ── */
