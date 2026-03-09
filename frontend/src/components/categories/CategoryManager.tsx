@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Trash2, Plus, Tags } from 'lucide-react';
 
@@ -33,6 +34,7 @@ export const CategoryManager = () => {
     const { showAlert } = useAlert();
     const { confirm } = useConfirm();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     const [isOpen, setIsOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -166,14 +168,27 @@ export const CategoryManager = () => {
                         ) : (
                             categories?.map((cat) => (
                                 <TableRow key={cat.id} className="hover:bg-muted/30 transition-colors">
-                                    <TableCell className="font-medium text-foreground">{cat.name}</TableCell>
+                                    <TableCell className="font-medium">
+                                        <button
+                                            onClick={() => navigate(`/plants?category=${encodeURIComponent(cat.name)}`)}
+                                            className="text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors text-left"
+                                            title={`View plants in ${cat.name}`}
+                                        >
+                                            {cat.name}
+                                        </button>
+                                    </TableCell>
                                     <TableCell className="text-muted-foreground hidden sm:table-cell">
                                         {cat.description || <span className="text-muted-foreground/50 italic">No description</span>}
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="secondary" className="text-xs tabular-nums">
-                                            {cat.plant_count ?? 0}
-                                        </Badge>
+                                        <button
+                                            onClick={() => navigate(`/plants?category=${encodeURIComponent(cat.name)}`)}
+                                            title={`View plants in ${cat.name}`}
+                                        >
+                                            <Badge variant="secondary" className="text-xs tabular-nums cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors">
+                                                {cat.plant_count ?? 0}
+                                            </Badge>
+                                        </button>
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-1">

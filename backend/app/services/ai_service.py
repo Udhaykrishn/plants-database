@@ -5,7 +5,11 @@ from fastapi import HTTPException
 from app.core.config import settings
 from app.schemas.ai import PlantAIDetailsResponse, TaxonomyDetails
 
-async def generate_plant_details(common_name: Optional[str] = None, scientific_name: Optional[str] = None) -> PlantAIDetailsResponse:
+async def generate_plant_details(
+    common_name: Optional[str] = None, 
+    scientific_name: Optional[str] = None,
+    valid_categories: Optional[list[str]] = None
+) -> PlantAIDetailsResponse:
     if not settings.GROQ_API_KEY:
         raise HTTPException(status_code=500, detail="Groq API Key is not configured")
 
@@ -24,13 +28,15 @@ async def generate_plant_details(common_name: Optional[str] = None, scientific_n
     else:
         raise HTTPException(status_code=400, detail="Must provide at least one name")
 
+    categories_list = ", ".join(valid_categories) if valid_categories else "Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, or Other"
+
     prompt = f"""
     You are an expert botanist and horticulturist.
     Please provide detailed information for the plant with the {plant_query}.
     Your response must be in valid JSON format exactly matching this structure, returning null for values you are uncertain about:
     {{
       "common_name": "String (the most widely used English common name for this plant)",
-      "category": "String (best matching one of: Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, or Other)",
+      "category": "String (best matching one of: {categories_list})",
       "planting_place": "String (must be exactly one of: 'Indoor', 'Outdoor', 'Indoor & Outdoor')",
       "description": "String (a short, simple, and very concise description using plain language)",
       "common_diseases": "String (a short, simple bulleted list of common diseases and pests, using '•')",

@@ -7,7 +7,7 @@ router = APIRouter()
 
 @router.post("/generate-plant-details", response_model=PlantAIDetailsResponse)
 async def fetch_plant_details(request: PlantAIDetailsRequest):
-    return await generate_plant_details(request.common_name, request.scientific_name)
+    return await generate_plant_details(request.common_name, request.scientific_name, request.categories)
 
 @router.get("/fetch-plant-images", response_model=PlantImageResponse)
 async def fetch_images(plant_name: str, page: int = 1):
