@@ -100,6 +100,61 @@ STANDARD_HEADER = (
     "care_water,care_sunlight,care_soil,care_maintenance,icon_url,image_url"
 )
 
+# Fields shown in the preview table (subset of all columns for readability)
+PREVIEW_FIELDS = [
+    "common_name", "scientific_name", "category", "planting_place",
+    "genus", "species", "description",
+]
+
+
+def preview_csv(file_content: bytes) -> Dict[str, Any]:
+    """Parse the CSV and return a lightweight preview without touching the DB.
+
+    Returns a dict with:
+      - rows: list of dicts (one per data row, trimmed to PREVIEW_FIELDS)
+      - columns: list of column names actually present
+      - total: total number of data rows
+      - errors: list of parse-level problems (missing required columns, etc.)
+    """
+    decoded = file_content.decode("utf-8")
+    decoded = _sanitize_csv_text(decoded)
+
+    # Auto-detect missing header
+    peek_reader = csv.reader(io.StringIO(decoded))
+    first_row = next(peek_reader, [])
+    first_row_lower = [c.strip().lower() for c in first_row]
+    required = ["kingdom", "species", "common_name"]
+
+    if not all(r in first_row_lower for r in required):
+        decoded = STANDARD_HEADER + "\n" + decoded
+
+    csv_reader = csv.DictReader(io.StringIO(decoded))
+    headers = [h.strip().lower() for h in csv_reader.fieldnames or []]
+    missing = [r for r in required if r not in headers]
+    if missing:
+        return {
+            "rows": [],
+            "columns": [],
+            "total": 0,
+            "errors": [f"Missing required columns: {', '.join(missing)}"],
+        }
+
+    # Collect rows
+    rows = []
+    for row in csv_reader:
+        clean = {k.strip().lower(): (v.strip() if v else "") for k, v in row.items()}
+        preview_row = {f: clean.get(f, "") for f in PREVIEW_FIELDS if f in headers or f in PREVIEW_FIELDS}
+        rows.append(preview_row)
+
+    visible_cols = [f for f in PREVIEW_FIELDS if any(r.get(f) for r in rows)]
+
+    return {
+        "rows": rows,
+        "columns": visible_cols or PREVIEW_FIELDS,
+        "total": len(rows),
+        "errors": [],
+    }
+
 async def process_csv_import(db: AsyncSession, file_content: bytes) -> Dict[str, Any]:
     """
     Process CSV content to import plants and build the taxonomy hierarchy.

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
-from app.services.import_service import process_csv_import
+from app.services.import_service import process_csv_import, preview_csv
 from app.models.project import Project, ProjectPlant
 from app.models.plant import Plant
 from app.models.taxon import Taxon
@@ -46,6 +46,19 @@ def _val(f) -> str:
     if f is None:
         return '—'
     return f.value if hasattr(f, 'value') else str(f)
+
+
+# ── CSV Preview (no DB writes) ───────────────────────────────────────────────
+@router.post('/import/csv/preview')
+async def preview_plants_csv(file: UploadFile = File(...)) -> Any:
+    """Parse the CSV and return a preview without writing anything to the database."""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(400, 'File must be CSV')
+    content = await file.read()
+    try:
+        return preview_csv(content)
+    except Exception as e:
+        raise HTTPException(400, str(e))
 
 
 # ── CSV Import ──────────────────────────────────────────────────────────────
