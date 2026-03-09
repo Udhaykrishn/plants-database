@@ -220,9 +220,15 @@ async def process_csv_import(db: AsyncSession, file_content: bytes) -> Dict[str,
 
             if needs_ai:
                 try:
+                    # Fetch valid categories to make AI prompt dynamic
+                    cat_stmt = select(Category.name)
+                    cat_res = await db.execute(cat_stmt)
+                    valid_categories = [c for c in cat_res.scalars().all()]
+                    
                     ai = await generate_plant_details(
                         common_name=common_name,
                         scientific_name=scientific_name or species_name,
+                        valid_categories=valid_categories
                     )
 
                     # Fill in only what the CSV left blank

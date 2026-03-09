@@ -102,7 +102,18 @@ export const PlantManager = () => {
     const [showPromptModal, setShowPromptModal] = useState(false);
     const [copied, setCopied] = useState(false);
 
-    const BULK_IMPORT_PROMPT = `Act as a botanical data expert. 
+    // Queries
+    const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.getAll });
+    const { data: plants, isLoading: plantsLoading } = useQuery({ queryKey: ['plants'], queryFn: plantsApi.getAll });
+    const { data: taxonomyTree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: taxonomyApi.getTree });
+    const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
+
+    const categoriesList = useMemo(() => {
+        if (!categoriesOptions || categoriesOptions.length === 0) return "Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other";
+        return categoriesOptions.map(c => c.name).join(", ");
+    }, [categoriesOptions]);
+
+    const bulkImportPrompt = useMemo(() => `Act as a botanical data expert. 
 
 Task: Generate a perfectly formatted CSV file for the plants listed below.
 
@@ -112,25 +123,19 @@ kingdom,division,class,order,family,genus,species,common_name,scientific_name,ca
 Strict Requirements (CRITICAL):
 1. MANDATORY FIELDS: Every single column must have a value. DO NOT skip any columns.
 2. SPECIES COLUMN: This is the specific epithet (the second word of the scientific name). For example, if the scientific name is "Psidium guajava", the species is "guajava". DO NOT leave the species column blank.
-3. CATEGORY: MUST be exactly one of [Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other].
+3. CATEGORY: MUST be exactly one of [${categoriesList}].
 4. PLACE: MUST be exactly one of [Indoor, Outdoor, Indoor & Outdoor].
 5. IMAGES: Use Wikimedia Special:FilePath URLs based on the scientific name (e.g. .../Special:FilePath/Scientific_Name.jpg?width=1000).
 6. FORMATTING: Raw CSV text only. No markdown blocks (no \` \` \`), no explanations, no "Here is your CSV".
 
 List of Plants to Process:
-[PASTE YOUR PLANT NAMES HERE]`;
+[PASTE YOUR PLANT NAMES HERE]`, [categoriesList]);
 
     const handleCopyPrompt = () => {
-        navigator.clipboard.writeText(BULK_IMPORT_PROMPT);
+        navigator.clipboard.writeText(bulkImportPrompt);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
-
-    // Queries
-    const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.getAll });
-    const { data: plants, isLoading: plantsLoading } = useQuery({ queryKey: ['plants'], queryFn: plantsApi.getAll });
-    const { data: taxonomyTree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: taxonomyApi.getTree });
-    const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
 
     // Mutations
     const addPlantsToProjectMutation = useMutation({
@@ -240,7 +245,8 @@ List of Plants to Process:
 
             return aiApi.generatePlantDetails({
                 commonName: commonName.trim() || undefined,
-                scientificName: scientificName.trim() || undefined
+                scientificName: scientificName.trim() || undefined,
+                categories: categoriesOptions?.map(c => c.name)
             });
         },
         onSuccess: (data) => {
@@ -690,7 +696,7 @@ List of Plants to Process:
                                                         }
                                                     </Button>
                                                 </TooltipTrigger>
-                                                <TooltipContent>Auto-fill plant details using Gemini AI</TooltipContent>
+                                                <TooltipContent>Auto-fill plant details using AI (Groq)</TooltipContent>
                                             </Tooltip>
                                         </div>
                                     </div>
@@ -1180,7 +1186,7 @@ List of Plants to Process:
                                 </div>
                                 <div className="p-4">
                                     <pre className="text-[11px] font-mono overflow-x-auto max-h-[250px] whitespace-pre-wrap leading-relaxed text-foreground/90">
-                                        {BULK_IMPORT_PROMPT}
+                                        {bulkImportPrompt}
                                     </pre>
                                 </div>
                             </div>

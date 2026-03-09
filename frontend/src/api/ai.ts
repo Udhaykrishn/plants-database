@@ -29,10 +29,11 @@ export interface PlantImageResponse {
 }
 
 export const aiApi = {
-    generatePlantDetails: async ({ commonName, scientificName }: { commonName?: string, scientificName?: string }): Promise<PlantAIDetailsResponse> => {
+    generatePlantDetails: async ({ commonName, scientificName, categories }: { commonName?: string, scientificName?: string, categories?: string[] }): Promise<PlantAIDetailsResponse> => {
         const response = await client.post<PlantAIDetailsResponse>("/ai/generate-plant-details", {
             common_name: commonName,
-            scientific_name: scientificName
+            scientific_name: scientificName,
+            categories: categories
         });
         return response.data;
     },

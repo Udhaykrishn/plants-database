@@ -52,8 +52,7 @@ Database** via the **Import CSV** button on the Plant Catalog page.
 | `icon_url` | No | `https://commons.wikimedia.org/wiki/Special:FilePath/Rosa_rubiginosa.jpg?width=400` | Wikimedia thumbnail (width=400). Use `Scientific_Name.jpg` with underscores. Leave blank if uncertain. |
 | `image_url` | No | `https://commons.wikimedia.org/wiki/Special:FilePath/Rosa_rubiginosa.jpg?width=1000` | Wikimedia hero image (width=1000). Same filename as icon, different width. Leave blank if uncertain. |
 
-> **Valid `category` values:** `Tree`, `Shrub`, `Herb`, `Creeper`, `Palm`, `Grass`,
-> `Succulent`, `Fern`, `Aquatic`, `Other`
+> **Valid `category` values:** The categories available in your database (e.g., Tree, Shrub, Palm, etc.). Use the **Bulk AI Prompt** button in the app to get the current list.
 
 > **Important rules:**
 > - `kingdom`, `species`, and `common_name` are **mandatory** on every row.
@@ -93,7 +92,7 @@ Rules:
 1. Fill in ALL taxonomy columns (kingdom → genus) accurately using accepted botanical classification.
 2. The `species` column must be the full binomial name (e.g. "Bambusa vulgaris"), NOT just the epithet.
 3. `scientific_name` should be the same as `species` (or include author citation if known).
-4. `category` must be exactly one of: Tree, Shrub, Herb, Creeper, Palm, Grass, Succulent, Fern, Aquatic — pick the most botanically appropriate.
+4. `category` must be exactly one of the following (copy from the in-app "Bulk AI Prompt" button for the live list): Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other — pick the most botanically appropriate.
 5. `planting_place` must be exactly one of: Indoor, Outdoor, Indoor & Outdoor
 6. `description`: 1–2 sentences covering ecology, growth habit, and landscape use.
 7. `common_diseases`: list the 2–4 most common diseases or pests this plant faces.
