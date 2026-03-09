@@ -14,6 +14,7 @@ import { PlantDetails } from './components/plants/PlantDetails';
 import { CategoryManager } from './components/categories/CategoryManager';
 import { ProjectManager } from './components/projects/ProjectManager';
 import { ProjectDetails } from './components/projects/ProjectDetails';
+import { ProjectPublicView } from './components/projects/ProjectPublicView';
 import { Dashboard } from './components/common/Dashboard';
 import { AlertProvider } from './contexts/AlertContext';
 import { ConfirmProvider } from './contexts/ConfirmContext';
@@ -155,7 +156,12 @@ function App() {
       <BrowserRouter>
         <AlertProvider>
           <ConfirmProvider>
-            <Layout />
+            <Routes>
+              {/* Public share page — no sidebar or app chrome */}
+              <Route path="/share/:token" element={<ProjectPublicView />} />
+              {/* All other routes get the full app layout */}
+              <Route path="/*" element={<Layout />} />
+            </Routes>
           </ConfirmProvider>
         </AlertProvider>
       </BrowserRouter>

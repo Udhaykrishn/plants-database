@@ -1,13 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     ArrowLeft, Download, Plus, Pencil, Trash2, Leaf,
     User, MapPin, ExternalLink, Search, ChevronUp, ChevronDown,
     ChevronsUpDown, ChevronLeft, ChevronRight,
+    Link2, Copy, Check, RefreshCw,
 } from 'lucide-react';
 
 import { projectsApi } from '../../api/projects';
+import type { ShareLinkInfo } from '../../api/projects';
 import { plantsApi } from '../../api/plants';
 import { taxonomyApi } from '../../api/taxonomy';
 import type { ProjectPlantCreate } from '../../types/project';
@@ -95,6 +97,36 @@ export const ProjectDetails = () => {
 
     const [pdfLoading, setPdfLoading] = useState(false);
     const [pdfReady, setPdfReady] = useState(false);
+
+    /* ── Share link state ── */
+    const [shareLink, setShareLink] = useState<ShareLinkInfo | null>(null);
+    const [shareLinkLoaded, setShareLinkLoaded] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const generateShareMutation = useMutation({
+        mutationFn: () => projectsApi.generateShareLink(id!),
+        onSuccess: (data) => setShareLink(data),
+    });
+
+    /* ── Fetch existing share link on mount ── */
+    useEffect(() => {
+        if (!id) return;
+        projectsApi.getShareLink(id).then((link) => {
+            setShareLink(link);
+            setShareLinkLoaded(true);
+        }).catch(() => setShareLinkLoaded(true));
+    }, [id]);
+
+    const fullShareUrl = shareLink
+        ? `${window.location.origin}${shareLink.url}`
+        : null;
+
+    const handleCopyLink = async () => {
+        if (!fullShareUrl) return;
+        await navigator.clipboard.writeText(fullShareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     /* ── Queries ── */
     const { data: project, isLoading } = useQuery({
@@ -250,15 +282,62 @@ export const ProjectDetails = () => {
                             <p className="text-sm text-muted-foreground leading-relaxed mt-3">{project.description}</p>
                         )}
                     </div>
-                    <Button
-                        variant="outline" size="sm"
-                        className="shrink-0 w-full sm:w-auto"
-                        onClick={handleDownloadPdf}
-                        disabled={pdfLoading || !pdfReady}
-                    >
-                        <Download className="w-4 h-4 mr-2" />
-                        {pdfLoading ? 'Generating PDF…' : !pdfReady ? 'Preparing…' : 'Download PDF'}
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                        {/* ── Share link group ── */}
+                        {shareLinkLoaded && (
+                            <div className="flex items-center gap-1.5">
+                                {shareLink ? (
+                                    <>
+                                        <button
+                                            onClick={handleCopyLink}
+                                            title={fullShareUrl || ''}
+                                            className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md border border-border bg-white text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+                                        >
+                                            <Link2 className="w-3.5 h-3.5 text-primary" />
+                                            <span className="hidden sm:inline max-w-[140px] truncate text-xs text-muted-foreground">
+                                                {fullShareUrl}
+                                            </span>
+                                            {copied
+                                                ? <Check className="w-3.5 h-3.5 text-green-600" />
+                                                : <Copy className="w-3.5 h-3.5 text-muted-foreground" />}
+                                        </button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                                            onClick={() => generateShareMutation.mutate()}
+                                            disabled={generateShareMutation.isPending}
+                                            title="Regenerate link (new 2-day expiry)"
+                                        >
+                                            <RefreshCw className={`w-3.5 h-3.5 ${generateShareMutation.isPending ? 'animate-spin' : ''}`} />
+                                        </Button>
+                                    </>
+                                ) : (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => generateShareMutation.mutate()}
+                                        disabled={generateShareMutation.isPending}
+                                        className="h-9 gap-1.5"
+                                    >
+                                        <Link2 className="w-3.5 h-3.5" />
+                                        {generateShareMutation.isPending ? 'Generating…' : 'Public Link'}
+                                    </Button>
+                                )}
+                            </div>
+                        )}
+
+                        {/* ── Download PDF button ── */}
+                        <Button
+                            variant="outline" size="sm"
+                            className="h-9"
+                            onClick={handleDownloadPdf}
+                            disabled={pdfLoading || !pdfReady}
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            {pdfLoading ? 'Generating PDF…' : !pdfReady ? 'Preparing…' : 'Download PDF'}
+                        </Button>
+                    </div>
                 </div>
             </div>
 
