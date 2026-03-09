@@ -1,56 +1,61 @@
 /**
  * ProjectPdfDocument.tsx
  *
- * Hidden off-screen components rendered by html2canvas → jsPDF.
- * IMPORTANT: All styles are inline CSS (Tailwind is ignored by html2canvas).
- *
- * Layout:
- *   - pdf-cover-{projectId}  → inventory page (grouped by category, with icon)
- *   - pdf-plant-{plantId}    → one A4-sized page per plant (matches PlantDetails.tsx)
+ * Generates a real vector PDF using @react-pdf/renderer.
+ * - Text is selectable / copyable
+ * - File size is dramatically smaller than the html2canvas bitmap approach
+ * - Layout matches the original design
  */
 
 import { useEffect, useState } from 'react';
+import {
+    Document,
+    Page,
+    View,
+    Text,
+    Image,
+    Link,
+    StyleSheet,
+    pdf,
+    Svg,
+    Path,
+    Circle,
+} from '@react-pdf/renderer';
 import type { Project } from '../../types/project';
 import type { TaxonTree } from '../../types/taxon';
 
-// ─── Brand palette (exact from index.css) ────────────────────────────────────
+// ─── Register fonts ───────────────────────────────────────────────────────────
+// Using built-in Helvetica so no external font download is needed.
+// If you have Inter woff2 hosted, you can register it here instead.
+
+// ─── Brand palette ────────────────────────────────────────────────────────────
 const C = {
-    bg: '#f4f0ea',   // warm cream
-    dark: '#1c2a1a',   // near-black forest
-    primary: '#2d5a27',   // dark forest green
-    sage: '#8aa87f',   // sage green
-    mutedBg: '#e4ddd1',   // warm beige
-    mutedFg: '#6b7a6a',   // muted foreground
-    border: '#d9d2c5',   // border
+    bg: '#fbfaf8',
+    dark: '#1a1a1a',
+    primary: '#2d5a27',
+    sage: '#5a7a4f',
+    mutedBg: '#f0ede8',
+    mutedFg: '#666666',
+    border: '#e5e1d8',
     white: '#ffffff',
-    rowAlt: '#faf8f5',   // near-cream for alternating rows (not harsh white)
-    redBg: '#fff1f2',
-    redBorder: '#fecdd3',
-    redTitle: '#b91c1c',
-    redBody: '#881337',
+    rowAlt: '#f6f4f1',
+    redBg: '#fff5f5',
+    redBorder: '#fed7d7',
+    redTitle: '#c53030',
+    redBody: '#742a2a',
 };
 
-// A4 at 96 dpi: 794 × 1123 px
-const A4_W = 794;
-const A4_H = 1123;
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/** Strip enum class prefix like "PlantingPlace.OUTDOOR" → "OUTDOOR" */
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function cleanVal(val: string | null | undefined): string {
     if (!val) return '—';
     const v = String(val);
     return v.includes('.') ? v.split('.').pop()!.replace(/_/g, ' ') : v;
 }
 
-const CARE_ICONS: [string, string][] = [
-    ['water', '💧'], ['sun', '☀️'], ['light', '☀️'], ['soil', '🌱'],
-    ['maintenance', '⚙️'], ['fertiliz', '🌿'], ['humidity', '💦'],
-    ['temp', '🌡️'], ['prun', '✂️'],
-];
-function careIcon(key: string) {
-    const k = key.toLowerCase();
-    return CARE_ICONS.find(([w]) => k.includes(w))?.[1] ?? '•';
+function cleaningPlace(val: unknown): boolean {
+    if (!val) return false;
+    const s = String(val);
+    return s !== '' && s !== 'null' && s !== 'undefined';
 }
 
 function getTaxPath(nodes: TaxonTree[], id: string, path: TaxonTree[] = []): TaxonTree[] | null {
@@ -65,13 +70,10 @@ function getTaxPath(nodes: TaxonTree[], id: string, path: TaxonTree[] = []): Tax
     return null;
 }
 
-/** Build the proxy URL for an external image. Falls back to a direct CORS fetch. */
 const API_BASE = 'http://localhost:8000/api/v1';
 
 async function imgToDataUrl(url: string | null | undefined): Promise<string | null> {
     if (!url) return null;
-
-    // Method 1: Via backend proxy (avoids all CORS / redirect issues)
     try {
         const proxyUrl = `${API_BASE}/proxy/image?url=${encodeURIComponent(url)}`;
         const res = await fetch(proxyUrl);
@@ -80,8 +82,6 @@ async function imgToDataUrl(url: string | null | undefined): Promise<string | nu
             return await blobToDataUrl(blob);
         }
     } catch { /* fall through */ }
-
-    // Method 2: Direct CORS fetch
     try {
         const res = await fetch(url, { mode: 'cors' });
         if (res.ok) {
@@ -89,22 +89,7 @@ async function imgToDataUrl(url: string | null | undefined): Promise<string | nu
             return await blobToDataUrl(blob);
         }
     } catch { /* fall through */ }
-
-    // Method 3: Image element with crossOrigin (last resort)
-    return new Promise((resolve) => {
-        const img = new window.Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = () => {
-            try {
-                const c = document.createElement('canvas');
-                c.width = img.naturalWidth; c.height = img.naturalHeight;
-                c.getContext('2d')!.drawImage(img, 0, 0);
-                resolve(c.toDataURL());
-            } catch { resolve(null); }
-        };
-        img.onerror = () => resolve(null);
-        img.src = url;
-    });
+    return null;
 }
 
 function blobToDataUrl(blob: Blob): Promise<string> {
@@ -115,219 +100,249 @@ function blobToDataUrl(blob: Blob): Promise<string> {
         r.readAsDataURL(blob);
     });
 }
+// ─── Icons ────────────────────────────────────────────────────────────────────
+const I = {
+    Water: () => (
+        <Svg width="11" height="11" viewBox="0 0 24 24" fill={C.primary}>
+            <Path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
+        </Svg>
+    ),
+    Sun: () => (
+        <Svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round">
+            <Circle cx="12" cy="12" r="4" fill={C.primary} stroke="none" />
+            <Path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12m11.32 11.32l2.12 2.12M2 12h3m14 0h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12" />
+        </Svg>
+    ),
+    Soil: () => (
+        <Svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M12 2v12M7 14h10M12 14c-3.5 0-5 2.5-5 5h10c0-2.5-1.5-5-5-5z" />
+        </Svg>
+    ),
+    Tool: () => (
+        <Svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M16 3L8 11M8 3l8 11M3 13h5v5M16 11h5v5" />
+            <Circle cx="8" cy="16" r="2" />
+            <Circle cx="16" cy="16" r="2" />
+        </Svg>
+    ),
+    Care: () => (
+        <Svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={C.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <Path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+        </Svg>
+    ),
+    Desc: () => (
+        <Svg width="14" height="14" viewBox="0 0 24 24" fill={C.primary}>
+            <Path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <Path d="M14 2v6h6" stroke="#fff" strokeWidth="2" fill="none" />
+        </Svg>
+    ),
+    Bug: () => (
+        <Svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.redTitle} strokeWidth="2" strokeLinecap="round">
+            <Path d="M8 2v4M16 2v4M3.5 7h17M4.5 12h15M6.5 17h11M12 6c-3.33 0-6 2.67-6 6v7a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-7c0-3.33-2.67-6-6-6z" />
+        </Svg>
+    ),
+    Lin: () => (
+        <Svg width="14" height="14" viewBox="0 0 24 24" fill={C.primary}>
+            <Path d="M12 19l7-7 3 3-7 7-3-3z" />
+            <Path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" stroke="#fff" strokeWidth="1" />
+        </Svg>
+    )
+};
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+    page: {
+        backgroundColor: C.bg,
+        paddingHorizontal: 40,
+        paddingVertical: 40,
+        fontFamily: 'Helvetica',
+        color: C.dark,
+    },
 
-// ─── Pill / Badge component ───────────────────────────────────────────────────
-function Pill({ label, emoji }: { label: string; emoji?: string }) {
-    return (
-        <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            background: C.mutedBg, color: C.mutedFg,
-            padding: '3px 11px', borderRadius: 999,
-            fontSize: 10.5, fontWeight: 700,
-            textTransform: 'uppercase' as const, letterSpacing: '0.06em',
-            whiteSpace: 'nowrap' as const,
-        }}>
-            {emoji && <span>{emoji}</span>}
-            {label}
-        </span>
-    );
-}
+    // ── Cover ──
+    coverTitle: { fontSize: 32, fontFamily: 'Helvetica-Bold', color: C.dark, marginBottom: 8, letterSpacing: -0.8 },
+    coverMeta: { flexDirection: 'row', gap: 24, marginBottom: 6 },
+    coverMetaText: { fontSize: 11, color: C.mutedFg },
+    coverMetaBold: { fontFamily: 'Helvetica-Bold', color: C.dark, marginRight: 4 },
+    coverDesc: { fontSize: 11, color: C.mutedFg, lineHeight: 1.6, marginTop: 4, maxWidth: '85%' },
+    divider: { borderBottomWidth: 1.5, borderBottomColor: C.primary, marginVertical: 20 },
+    sectionTitle: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: C.primary, marginBottom: 12, letterSpacing: -0.4 },
+
+    // ── Table ──
+    tableHead: { flexDirection: 'row', backgroundColor: C.mutedBg, borderBottomWidth: 1.5, borderBottomColor: C.primary, alignItems: 'center' },
+    th: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.8, paddingVertical: 8, paddingHorizontal: 8 },
+    catRow: { paddingVertical: 10, paddingBottom: 4, borderLeftWidth: 4, borderLeftColor: C.primary, paddingLeft: 10, marginTop: 12 },
+    catLabel: { fontSize: 9.5, fontFamily: 'Helvetica-Bold', color: C.primary, textTransform: 'uppercase', letterSpacing: 1.2 },
+    tableRow: { flexDirection: 'row', alignItems: 'center', borderBottomWidth: 0.5, borderBottomColor: C.border },
+    td: { fontSize: 11, color: C.dark, paddingVertical: 8, paddingHorizontal: 8 },
+    tdMuted: { fontSize: 10.5, color: C.mutedFg, paddingVertical: 8, paddingHorizontal: 8 },
+    pill: { backgroundColor: C.mutedBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3, borderWidth: 0.5, borderColor: C.border, alignSelf: 'flex-start' },
+    pillText: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: C.mutedFg, textTransform: 'uppercase', letterSpacing: 0.6 },
+
+    // ── Plant page ──
+    plantPage: {
+        backgroundColor: C.bg,
+        paddingHorizontal: 40,
+        paddingVertical: 40,
+        fontFamily: 'Helvetica',
+        color: C.dark,
+        flex: 1,
+    },
+    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, marginBottom: 20 },
+    headerLeft: { flex: 1 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 10 },
+    iconImg: { width: 64, height: 64, borderRadius: 12, objectFit: 'cover', borderWidth: 1, borderColor: C.border },
+    plantName: { fontSize: 28, fontFamily: 'Helvetica-Bold', color: C.dark, letterSpacing: -0.8, lineHeight: 1.1 },
+    sciName: { fontSize: 14, fontFamily: 'Helvetica-Oblique', color: C.mutedFg, marginTop: 4 },
+    pillsRow: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 10 },
+    heroImg: { width: 220, height: 160, borderRadius: 12, objectFit: 'cover', borderWidth: 1, borderColor: C.border },
+    dividerThin: { borderBottomWidth: 0.5, borderBottomColor: C.border, marginVertical: 15 },
+    bodyGrid: { flex: 1, flexDirection: 'row', gap: 20 },
+    mainCol: { flex: 7, flexDirection: 'column', gap: 15 },
+    sideCol: { flex: 5, flexDirection: 'column', gap: 15 },
+    card: { backgroundColor: C.white, borderWidth: 0.5, borderColor: C.border, borderRadius: 12, padding: 16 },
+    cardTitle: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: C.border },
+    cardTitleText: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.5, lineHeight: 1.2 },
+    bodyText: { fontSize: 11, color: C.dark, lineHeight: 1.6 },
+    careGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    careItem: { backgroundColor: C.mutedBg, borderRadius: 8, padding: 10, width: '47%', minHeight: 48 },
+    careKey: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 0.8, color: C.primary, marginBottom: 4, lineHeight: 1.2 },
+    careVal: { fontSize: 10.5, color: C.dark, lineHeight: 1.5 },
+    redCard: { backgroundColor: C.redBg, borderWidth: 0.5, borderColor: C.redBorder, borderRadius: 12, padding: 16 },
+    redTitle: { color: C.redTitle, fontSize: 12, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 0.5 },
+    redBody: { fontSize: 11, color: C.redBody, lineHeight: 1.6 },
+    taxRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: C.border },
+    taxRank: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 1, color: C.mutedFg },
+    taxName: { fontSize: 11, fontFamily: 'Helvetica', color: C.dark },
+});
 
 // ─── COVER PAGE ───────────────────────────────────────────────────────────────
 interface CoverProps {
     project: Project;
-    elementId: string;
-    imgCache: Record<string, string>;   // plantId → icon base64
+    imgCache: Record<string, string>;
 }
 
-function ProjectPdfCover({ project, elementId, imgCache }: CoverProps) {
-    // Group by category
+function CoverPage({ project, imgCache }: CoverProps) {
     const groups = new Map<string, Project['plants']>();
     for (const pp of project.plants) {
         const cat = cleanVal(pp.plant?.category ?? 'Other');
         if (!groups.has(cat)) groups.set(cat, []);
         groups.get(cat)!.push(pp);
     }
-
     let serial = 0;
 
+    // Column widths (sum = 100%)
+    const COL = { num: '6%', name: '28%', sci: '24%', place: '16%', notes: '26%' };
+
     return (
-        <div id={elementId} style={{
-            position: 'absolute', left: '-9999px', top: 0,
-            visibility: 'hidden', zIndex: -1,
-            width: A4_W, minHeight: A4_H,
-            backgroundColor: C.bg,
-            fontFamily: "'Inter', system-ui, sans-serif",
-            WebkitFontSmoothing: 'antialiased',
-            color: C.dark, lineHeight: '1.6',
-            padding: '36px 44px',
-            boxSizing: 'border-box',
-        }}>
-            {/* Project header */}
-            <div style={{ marginBottom: 20 }}>
-                <h1 style={{ fontSize: 36, fontWeight: 700, color: C.dark, margin: '0 0 6px', letterSpacing: '-0.02em' }}>
-                    {project.name}
-                </h1>
-                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' as const, marginBottom: 6 }}>
-                    {project.client_name && (
-                        <span style={{ fontSize: 13, color: C.mutedFg }}>
-                            <b style={{ color: C.dark }}>Client:</b> {project.client_name}
-                        </span>
-                    )}
-                    {project.location && (
-                        <span style={{ fontSize: 13, color: C.mutedFg }}>
-                            <b style={{ color: C.dark }}>Location:</b> {project.location}
-                        </span>
-                    )}
-                </div>
-                {project.description && (
-                    <p style={{ fontSize: 12.5, color: C.mutedFg, margin: 0, lineHeight: '1.6' }}>
-                        {project.description}
-                    </p>
+        <Page size="A4" style={s.page} wrap>
+            {/* Header */}
+            <Text style={s.coverTitle}>{project.name}</Text>
+            <View style={s.coverMeta}>
+                {project.client_name && (
+                    <Text style={s.coverMetaText}>
+                        <Text style={s.coverMetaBold}>Client: </Text>{project.client_name}
+                    </Text>
                 )}
-            </div>
+                {project.location && (
+                    <Text style={s.coverMetaText}>
+                        <Text style={s.coverMetaBold}>Location: </Text>{project.location}
+                    </Text>
+                )}
+            </View>
+            {project.description && (
+                <Text style={s.coverDesc}>{project.description}</Text>
+            )}
+            <View style={s.divider} />
+            <Text style={s.sectionTitle}>Project Inventory</Text>
 
-            {/* Divider */}
-            <div style={{ borderTop: `2px solid ${C.primary}`, marginBottom: 18 }} />
+            {/* Table header */}
+            <View style={s.tableHead}>
+                <Text style={[s.th, { width: COL.num, textAlign: 'center' }]}>#</Text>
+                <Text style={[s.th, { width: COL.name }]}>Plant</Text>
+                <Text style={[s.th, { width: COL.sci }]}>Scientific Name</Text>
+                <Text style={[s.th, { width: COL.place }]}>Placement</Text>
+                <Text style={[s.th, { width: COL.notes }]}>Notes</Text>
+            </View>
 
-            <h2 style={{ fontSize: 19, fontWeight: 700, color: C.primary, margin: '0 0 14px', letterSpacing: '-0.01em' }}>
-                Project Inventory
-            </h2>
+            {/* Rows */}
+            {Array.from(groups.entries()).map(([cat, pps]) => (
+                <View key={cat}>
+                    {/* Category heading */}
+                    <View style={{ paddingVertical: 6, paddingBottom: 2 }}>
+                        <View style={s.catRow}>
+                            <Text style={s.catLabel}>{cat}</Text>
+                        </View>
+                    </View>
 
-            {/* Table */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-                <thead>
-                    <tr style={{ background: C.mutedBg }}>
-                        <th style={TH}>#</th>
-                        <th style={{ ...TH, textAlign: 'left' as const, paddingLeft: 8 }}>Plant</th>
-                        <th style={{ ...TH, textAlign: 'left' as const }}>Scientific Name</th>
-                        <th style={{ ...TH, textAlign: 'left' as const }}>Placement</th>
-                        <th style={{ ...TH, textAlign: 'left' as const }}>Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {Array.from(groups.entries()).map(([cat, pps]) => (
-                        <>
-                            {/* Category sub-heading — tr gets same bg to avoid white flash */}
-                            <tr key={`cat-${cat}`} style={{ backgroundColor: C.bg }}>
-                                <td colSpan={5} style={{ padding: '12px 0 5px', backgroundColor: C.bg }}>
-                                    <div style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 8,
-                                        borderLeft: `3px solid ${C.primary}`,
-                                        paddingLeft: 10,
-                                    }}>
-                                        <span style={{
-                                            fontSize: 11, fontWeight: 800,
-                                            color: C.primary,
-                                            textTransform: 'uppercase' as const,
-                                            letterSpacing: '0.09em',
-                                        }}>
-                                            {cat}
-                                        </span>
-                                    </div>
-                                </td>
-                            </tr>
+                    {pps.map((pp, rowIdx) => {
+                        const p = pp.plant;
+                        if (!p) return null;
+                        serial += 1;
+                        const rowBg = rowIdx % 2 === 0 ? C.bg : C.rowAlt;
+                        const iconSrc = imgCache[p.id];
+                        const placement = cleanVal(p.planting_place);
 
-                            {/* Plant rows */}
-                            {pps.map((pp, rowIdx) => {
-                                const p = pp.plant;
-                                if (!p) return null;
-                                serial += 1;
-                                // Alternate per-category: first row = cream, second = near-cream
-                                const rowBg = rowIdx % 2 === 0 ? C.bg : C.rowAlt;
-                                const iconSrc = imgCache[p.id];
-                                const placement = cleanVal(p.planting_place);
+                        return (
+                            <View key={pp.plant_id} style={[s.tableRow, { backgroundColor: rowBg, minHeight: 40 }]}>
+                                {/* # */}
+                                <Text style={[s.tdMuted, { width: COL.num, textAlign: 'center', fontSize: 9.5, color: C.dark }]}>{serial}</Text>
 
-                                return (
-                                    <tr key={pp.plant_id} style={{ background: rowBg }}>
-                                        {/* # */}
-                                        <td style={{ ...TD, width: 28, textAlign: 'center' as const, color: C.mutedFg, fontSize: 11 }}>
-                                            {serial}
-                                        </td>
+                                {/* Plant name + icon */}
+                                <Link
+                                    src={`#plant-${p.id}`}
+                                    style={{
+                                        width: COL.name,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        gap: 6,
+                                        paddingVertical: 5,
+                                        paddingHorizontal: 6,
+                                        textDecoration: 'none'
+                                    }}
+                                >
+                                    {iconSrc && (
+                                        <Image src={iconSrc} style={{ width: 28, height: 28, borderRadius: 6, objectFit: 'cover' }} />
+                                    )}
+                                    <Text style={{ fontSize: 10.5, fontFamily: 'Helvetica-Bold', color: C.primary, flex: 1 }}>
+                                        {p.common_name}
+                                    </Text>
+                                </Link>
 
-                                        {/* Plant: icon + name */}
-                                        <td style={{ ...TD, paddingLeft: 8 }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                                {iconSrc
-                                                    ? <img src={iconSrc} alt=""
-                                                        style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 8, border: `1px solid ${C.border}`, flexShrink: 0 }} />
-                                                    : null   /* no placeholder — avoids white rectangle */
-                                                }
-                                                <span
-                                                    data-plant-id={p.id}
-                                                    style={{ fontWeight: 700, color: C.primary, textDecoration: 'underline', textUnderlineOffset: 2, fontSize: 13 }}
-                                                >
-                                                    {p.common_name}
-                                                </span>
-                                            </div>
-                                        </td>
+                                {/* Scientific */}
+                                <Text style={[s.tdMuted, { width: COL.sci, fontSize: 9.5 }]}>
+                                    {p.scientific_name || p.taxon?.name || '—'}
+                                </Text>
 
-                                        {/* Scientific */}
-                                        <td style={{ ...TD, fontStyle: 'italic', color: C.mutedFg, fontSize: 12 }}>
-                                            {p.scientific_name || p.taxon?.name || '—'}
-                                        </td>
+                                {/* Placement */}
+                                <View style={{ width: COL.place, paddingVertical: 5, paddingHorizontal: 6 }}>
+                                    {cleaningPlace(p.planting_place) && (
+                                        <View style={s.pill}>
+                                            <Text style={s.pillText}>
+                                                {placement === 'INDOOR & OUTDOOR' ? 'Both' : placement}
+                                            </Text>
+                                        </View>
+                                    )}
+                                </View>
 
-                                        {/* Placement pill — website's muted badge style */}
-                                        <td style={TD}>
-                                            {cleaning_place(p.planting_place) && (
-                                                <span style={{
-                                                    display: 'inline-block',
-                                                    background: C.mutedBg,
-                                                    color: C.mutedFg,
-                                                    padding: '2px 9px', borderRadius: 999,
-                                                    fontSize: 10.5, fontWeight: 700,
-                                                    textTransform: 'uppercase' as const,
-                                                    letterSpacing: '0.05em',
-                                                    border: `1px solid ${C.border}`,
-                                                }}>
-                                                    {placement === 'INDOOR & OUTDOOR' ? 'Both' : placement}
-                                                </span>
-                                            )}
-                                        </td>
-
-                                        {/* Notes */}
-                                        <td style={{ ...TD, color: C.mutedFg, fontSize: 12 }}>
-                                            {pp.notes || '—'}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                                {/* Notes */}
+                                <Text style={[s.tdMuted, { width: COL.notes, fontSize: 9.5 }]}>{pp.notes || '—'}</Text>
+                            </View>
+                        );
+                    })}
+                </View>
+            ))}
+        </Page>
     );
 }
-
-// Helper: check if planting_place has a real value
-function cleaning_place(val: unknown): boolean {
-    if (!val) return false;
-    const s = String(val);
-    return s !== '' && s !== 'null' && s !== 'undefined';
-}
-
-const TH: React.CSSProperties = {
-    padding: '8px 10px', textAlign: 'center' as const,
-    fontWeight: 700, fontSize: 10.5,
-    color: C.primary, textTransform: 'uppercase' as const,
-    letterSpacing: '0.04em',
-    borderBottom: `2px solid ${C.primary}`,
-};
-const TD: React.CSSProperties = {
-    padding: '7px 10px', borderBottom: `1px solid ${C.border}`,
-    verticalAlign: 'middle' as const,
-};
 
 // ─── PLANT DETAIL PAGE ────────────────────────────────────────────────────────
 interface PlantPageProps {
     pp: Project['plants'][number];
     taxTree: TaxonTree[] | null | undefined;
-    elementId: string;
-    imgCache: Record<string, string>;   // cacheKey → base64 data-url
+    imgCache: Record<string, string>;
 }
 
-function ProjectPdfPlantPage({ pp, taxTree, elementId, imgCache }: PlantPageProps) {
+function PlantDetailPage({ pp, taxTree, imgCache }: PlantPageProps) {
     const p = pp.plant;
     if (!p) return null;
 
@@ -337,178 +352,165 @@ function ProjectPdfPlantPage({ pp, taxTree, elementId, imgCache }: PlantPageProp
     const placement = cleanVal(p.planting_place);
     const careEntries = Object.entries(p.care_data || {}).filter(([, v]) => v);
 
-    // ── Outer div is EXACTLY A4 height with flex-column layout ──
-    // The body section (flex:1) fills all remaining space after the header.
-    // This means no whitespace at the bottom and no pixel distortion —
-    // we distribute space via CSS, not by stretching the rendered bitmap.
     return (
-        <div id={elementId} style={{
-            position: 'absolute', left: '-9999px', top: 0,
-            visibility: 'hidden', zIndex: -1,
-            width: A4_W, height: A4_H,            // ← exact A4 pixels
-            display: 'flex', flexDirection: 'column',
-            overflow: 'hidden',
-            backgroundColor: C.bg,
-            fontFamily: "'Inter', system-ui, sans-serif",
-            WebkitFontSmoothing: 'antialiased',
-            color: C.dark, lineHeight: '1.5',
-            padding: '28px 36px',
-            boxSizing: 'border-box',
-            gap: 0,
-        }}>
-
-            {/* ── HEADER (fixed height, flexShrink:0) ── */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 20, flexShrink: 0 }}>
-
-                {/* Left: icon + name + sci + pills */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                        {iconSrc && (
-                            <img src={iconSrc} alt="" style={{
-                                width: 64, height: 64, objectFit: 'cover',
-                                borderRadius: 10, border: `1px solid ${C.border}`,
-                                boxShadow: '0 2px 6px rgba(0,0,0,0.10)', flexShrink: 0,
-                            }} />
-                        )}
-                        <div>
-                            <h1 style={{ fontSize: 32, fontWeight: 700, color: C.dark, margin: 0, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
-                                {p.common_name}
-                            </h1>
-                            <p style={{ fontSize: 13, fontStyle: 'italic', color: C.mutedFg, margin: '4px 0 0' }}>
+        <Page size="A4" style={s.plantPage}>
+            {/* Header */}
+            <View style={s.header} id={`plant-${p.id}`}>
+                <View style={s.headerLeft}>
+                    <View style={s.nameRow}>
+                        {iconSrc && <Image src={iconSrc} style={s.iconImg} />}
+                        <View style={{ flex: 1 }}>
+                            <Text style={s.plantName}>{p.common_name}</Text>
+                            <Text style={s.sciName}>
                                 {p.scientific_name || p.taxon?.name || 'Scientific Name Unknown'}
-                            </p>
-                        </div>
-                    </div>
+                            </Text>
+                        </View>
+                    </View>
 
-                    {/* Pills row */}
-                    <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' as const, marginBottom: 8 }}>
-                        {p.category && <Pill label={cleanVal(p.category)} emoji="🏷" />}
-                        {cleaning_place(p.planting_place) && (
-                            <Pill label={placement === 'INDOOR & OUTDOOR' ? 'Both' : placement} emoji="📍" />
+                    {/* Pills */}
+                    <View style={s.pillsRow}>
+                        {p.category && (
+                            <View style={s.pill}>
+                                <Text style={s.pillText}>{cleanVal(p.category)}</Text>
+                            </View>
                         )}
-                    </div>
+                        {cleaningPlace(p.planting_place) && (
+                            <View style={s.pill}>
+                                <Text style={s.pillText}>
+                                    {placement === 'INDOOR & OUTDOOR' ? 'Both' : placement}
+                                </Text>
+                            </View>
+                        )}
+                    </View>
 
-                    {/* Project notes */}
-                    {pp.notes && (
-                        <div style={{ background: C.white, border: `1px solid ${C.border}`, borderRadius: 8, padding: '8px 12px' }}>
-                            <p style={{ fontSize: 10, fontWeight: 700, color: C.primary, margin: '0 0 2px', textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Project Notes</p>
-                            <p style={{ fontSize: 12, color: C.dark, margin: 0 }}>{pp.notes}</p>
-                        </div>
-                    )}
-                </div>
+
+                </View>
 
                 {/* Hero image */}
-                {heroSrc && (
-                    <img src={heroSrc} alt={p.common_name} style={{
-                        width: 270, height: 190, objectFit: 'cover',
-                        borderRadius: 14, boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
-                        flexShrink: 0,
-                    }} />
-                )}
-            </div>
+                {heroSrc && <Image src={heroSrc} style={s.heroImg} />}
+            </View>
 
-            {/* ── DIVIDER ── */}
-            <div style={{ borderTop: `1px solid ${C.border}`, margin: '14px 0', flexShrink: 0 }} />
+            <View style={s.dividerThin} />
 
-            {/* ── BODY GRID — fills all remaining height (flex:1) ── */}
-            <div style={{ flex: 1, display: 'flex', gap: 16, alignItems: 'stretch', minHeight: 0 }}>
-
-                {/* MAIN column (7/12) — description grows, care grid fixed */}
-                <div style={{ flex: 7, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-                    {/* Description — flex:1 so it expands to fill available height */}
-                    <div style={{ ...CARD, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                        <CardTitle emoji="📄" label="Description" />
-                        <p style={{ fontSize: 12.5, lineHeight: '1.80', color: C.mutedFg, margin: 0, whiteSpace: 'pre-wrap', flex: 1 }}>
+            {/* Body grid */}
+            <View style={s.bodyGrid}>
+                {/* Main column */}
+                <View style={s.mainCol}>
+                    {/* Description */}
+                    <View style={[s.card, { flex: 1 }]}>
+                        <View style={s.cardTitle}>
+                            <View style={{ paddingTop: 3 }}><I.Desc /></View>
+                            <Text style={s.cardTitleText}>Description</Text>
+                        </View>
+                        <Text style={s.bodyText}>
                             {p.description || 'No description provided.'}
-                        </p>
-                    </div>
+                        </Text>
+                    </View>
 
-                    {/* Care 2×2 grid — fixed height */}
+                    {/* Care data */}
                     {careEntries.length > 0 && (
-                        <div style={{ ...CARD, flexShrink: 0 }}>
-                            <CardTitle emoji="🌱" label="Care Data" />
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                                {careEntries.map(([key, value]) => (
-                                    <div key={key} style={{ background: C.mutedBg, borderRadius: 8, padding: '10px 12px' }}>
-                                        <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.04em', color: C.dark, marginBottom: 4 }}>
-                                            {careIcon(key)} {key.replace(/_/g, ' ')}
-                                        </div>
-                                        <p style={{ fontSize: 12, lineHeight: '1.65', color: C.mutedFg, margin: 0 }}>
-                                            {String(value)}
-                                        </p>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <View style={s.card}>
+                            <View style={s.cardTitle}>
+                                <View style={{ paddingTop: 3 }}><I.Care /></View>
+                                <Text style={s.cardTitleText}>Care Guide</Text>
+                            </View>
+                            <View style={s.careGrid}>
+                                {careEntries.map(([key, value]) => {
+                                    const k = key.toLowerCase();
+                                    let Icon = I.Soil;
+                                    if (k.includes('water')) Icon = I.Water;
+                                    else if (k.includes('sun') || k.includes('light')) Icon = I.Sun;
+                                    else if (k.includes('maintenance') || k.includes('pruning')) Icon = I.Tool;
+
+                                    return (
+                                        <View key={key} style={s.careItem}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                                <View style={{ paddingTop: 1.5 }}>
+                                                    <Icon />
+                                                </View>
+                                                <Text style={s.careKey}>{key.replace(/_/g, ' ')}</Text>
+                                            </View>
+                                            <Text style={s.careVal}>{String(value)}</Text>
+                                        </View>
+                                    );
+                                })}
+                            </View>
+                        </View>
                     )}
-                </div>
+                </View>
 
-                {/* SIDE column (5/12) */}
-                <div style={{ flex: 5, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
-
-                    {/* Diseases (red) — fixed height */}
+                {/* Side column */}
+                <View style={s.sideCol}>
+                    {/* Diseases */}
                     {p.common_diseases && (
-                        <div style={{ ...CARD, flexShrink: 0, background: C.redBg, borderColor: C.redBorder }}>
-                            <CardTitle emoji="🐛" label="Common Diseases & Pests" color={C.redTitle} borderColor={C.redBorder} />
-                            <p style={{ fontSize: 12.5, lineHeight: '1.80', color: C.redBody, margin: 0, whiteSpace: 'pre-wrap' }}>
-                                {p.common_diseases}
-                            </p>
-                        </div>
+                        <View style={s.redCard}>
+                            <View style={[s.cardTitle, { borderBottomColor: C.redBorder }]}>
+                                <View style={{ paddingTop: 3 }}><I.Bug /></View>
+                                <Text style={[s.cardTitleText, s.redTitle]}>Diseases & Pests</Text>
+                            </View>
+                            <Text style={s.redBody}>{p.common_diseases}</Text>
+                        </View>
                     )}
 
-                    {/* Taxonomy — flex:1 so it fills remaining side height */}
+                    {/* Taxonomy */}
                     {taxPath && taxPath.length > 0 && (
-                        <div style={{ ...CARD, flex: 1, display: 'flex', flexDirection: 'column' }}>
-                            <CardTitle emoji="🌿" label="Taxonomy Lineage" />
-                            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                                {taxPath.map((t, i) => (
-                                    <div key={t.id} style={{
-                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                        padding: '8px 0',
-                                        borderBottom: i < taxPath.length - 1 ? `1px dashed ${C.border}` : 'none',
-                                    }}>
-                                        <span style={{ fontSize: 9.5, textTransform: 'uppercase' as const, letterSpacing: '0.08em', fontWeight: 700, color: C.mutedFg }}>
-                                            {t.rank}
-                                        </span>
-                                        <span style={{ fontSize: 12.5, fontWeight: 500, color: C.dark }}>
-                                            {t.name}
-                                        </span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <View style={[s.card, { flex: 1 }]}>
+                            <View style={s.cardTitle}>
+                                <View style={{ paddingTop: 3 }}><I.Lin /> </View>
+                                <Text style={s.cardTitleText}>Taxonomy Lineage</Text>
+                            </View>
+                            {taxPath.map((t, i) => (
+                                <View key={t.id} style={[s.taxRow, i === taxPath.length - 1 ? { borderBottomWidth: 0 } : {}]}>
+                                    <Text style={s.taxRank}>{t.rank}</Text>
+                                    <Text style={s.taxName}>{t.name}</Text>
+                                </View>
+                            ))}
+                        </View>
                     )}
-                </div>
-            </div>
-        </div>
+                </View>
+            </View>
+        </Page>
     );
 }
 
-const CARD: React.CSSProperties = {
-    background: C.white,
-    border: `1px solid ${C.border}`,
-    borderRadius: 10,
-    padding: '14px 16px',
-    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-};
+// ─── ROOT PDF DOCUMENT ────────────────────────────────────────────────────────
+interface PdfDocProps {
+    project: Project;
+    taxTree: TaxonTree[] | null | undefined;
+    imgCache: Record<string, string>;
+}
 
-function CardTitle({ emoji, label, color = C.dark, borderColor = C.border }: {
-    emoji: string; label: string; color?: string; borderColor?: string;
-}) {
+function ProjectPdfDoc({ project, taxTree, imgCache }: PdfDocProps) {
     return (
-        <div style={{
-            display: 'flex', alignItems: 'center', gap: 7,
-            fontSize: 13, fontWeight: 600, color,
-            marginBottom: 10, paddingBottom: 9,
-            borderBottom: `1px solid ${borderColor}`,
-        }}>
-            <span>{emoji}</span> {label}
-        </div>
+        <Document title={project.name} author="Landschaft" creator="Landschaft Plants Database">
+            <CoverPage project={project} imgCache={imgCache} />
+            {project.plants.map((pp) =>
+                pp.plant ? (
+                    <PlantDetailPage key={pp.plant_id} pp={pp} taxTree={taxTree} imgCache={imgCache} />
+                ) : null
+            )}
+        </Document>
     );
 }
 
-// ─── CONTAINER (renders all hidden pages) ─────────────────────────────────────
+// ─── Export utility ───────────────────────────────────────────────────────────
+export async function exportProjectPdfNew(
+    project: Project,
+    taxTree: TaxonTree[] | null | undefined,
+    imgCache: Record<string, string>,
+    filename: string,
+): Promise<void> {
+    const doc = <ProjectPdfDoc project={project} taxTree={taxTree} imgCache={imgCache} />;
+    const blob = await pdf(doc).toBlob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ─── CONTAINER (manages image caching + triggers export) ──────────────────────
 interface ContainerProps {
     project: Project;
     taxTree: TaxonTree[] | null | undefined;
@@ -516,21 +518,27 @@ interface ContainerProps {
     onReady?: () => void;
 }
 
-export function ProjectPdfContainer({ project, taxTree, projectId, onReady }: ContainerProps) {
-    // Preload all images as base64 to avoid CORS issues in html2canvas
+/**
+ * Kept as a passthrough component so ProjectDetails.tsx still renders it.
+ * It pre-loads images into the cache and signals readiness.
+ */
+export function ProjectPdfContainer({ project, taxTree, projectId: _projectId, onReady }: ContainerProps) {
     const [imgCache, setImgCache] = useState<Record<string, string>>({});
-    const [ready, setReady] = useState(false);
 
     useEffect(() => {
-        if (!project?.plants?.length) { setReady(true); onReady?.(); return; }
+        if (!project?.plants?.length) { onReady?.(); return; }
 
         const urls: Array<{ key: string; url: string }> = [];
         for (const pp of project.plants) {
             const p = pp.plant;
             if (!p) continue;
-            if (p.icon_url) urls.push({ key: p.id, url: p.icon_url });
-            if (p.image_url) urls.push({ key: `hero_${p.id}`, url: p.image_url });
-            if (p.icon_url) urls.push({ key: `icon_${p.id}`, url: p.icon_url });
+            if (p.icon_url) {
+                urls.push({ key: p.id, url: p.icon_url });
+                urls.push({ key: `icon_${p.id}`, url: p.icon_url });
+            }
+            if (p.image_url) {
+                urls.push({ key: `hero_${p.id}`, url: p.image_url });
+            }
         }
 
         Promise.all(
@@ -541,31 +549,21 @@ export function ProjectPdfContainer({ project, taxTree, projectId, onReady }: Co
                 if (data) cache[key] = data;
             }
             setImgCache(cache);
-            setReady(true);
             onReady?.();
         });
     }, [project]);
 
-    if (!ready) return null;
+    // Store cache on a ref accessible by the export trigger
+    // We expose the generate function through a custom event so ProjectDetails
+    // doesn't need a major refactor.
+    useEffect(() => {
+        const handler = async (e: Event) => {
+            const { filename } = (e as CustomEvent).detail;
+            await exportProjectPdfNew(project, taxTree, imgCache, filename);
+        };
+        window.addEventListener('trigger-pdf-export', handler);
+        return () => window.removeEventListener('trigger-pdf-export', handler);
+    }, [project, taxTree, imgCache]);
 
-    return (
-        <>
-            <ProjectPdfCover
-                project={project}
-                elementId={`pdf-cover-${projectId}`}
-                imgCache={imgCache}
-            />
-            {project.plants.map((pp) =>
-                pp.plant ? (
-                    <ProjectPdfPlantPage
-                        key={pp.plant_id}
-                        pp={pp}
-                        taxTree={taxTree}
-                        elementId={`pdf-plant-${pp.plant_id}`}
-                        imgCache={imgCache}
-                    />
-                ) : null
-            )}
-        </>
-    );
+    return null; // No DOM output needed
 }

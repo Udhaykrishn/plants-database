@@ -14,7 +14,6 @@ import type { ProjectPlantCreate } from '../../types/project';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { ProjectPdfContainer } from './ProjectPdfDocument';
-import { exportProjectPdf } from '../../utils/exportPdf';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -118,11 +117,11 @@ export const ProjectDetails = () => {
         if (!project) return;
         setPdfLoading(true);
         try {
-            const coverElementId = `pdf-cover-${id}`;
-            const plantElementIds = project.plants
-                .filter(pp => !!pp.plant)
-                .map(pp => ({ elementId: `pdf-plant-${pp.plant_id}`, plantId: pp.plant_id }));
-            await exportProjectPdf(coverElementId, plantElementIds, project.name);
+            // Fires the custom event that ProjectPdfContainer listens to,
+            // which uses @react-pdf/renderer to generate a real vector PDF.
+            window.dispatchEvent(
+                new CustomEvent('trigger-pdf-export', { detail: { filename: project.name } })
+            );
         } catch (e) {
             console.error(e);
             showAlert('PDF export failed', 'error');
