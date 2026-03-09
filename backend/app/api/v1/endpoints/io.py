@@ -1,12 +1,12 @@
-from typing import Any
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
+from typing import Any, List, Dict
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, Body
 from fastapi.responses import JSONResponse, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.db.session import get_db
-from app.services.import_service import process_csv_import, preview_csv
+from app.services.import_service import process_csv_import, preview_csv, process_rows_import
 from app.models.project import Project, ProjectPlant
 from app.models.plant import Plant
 from app.models.taxon import Taxon
@@ -70,6 +70,20 @@ async def import_plants_csv(file: UploadFile = File(...),
     content = await file.read()
     try:
         return await process_csv_import(db, content)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f'Import failed: {e}')
+
+# ── JSON Rows Import (from editable preview page) ────────────────────────────
+@router.post('/import/rows')
+async def import_plants_rows(
+    rows: List[Dict[str, str]] = Body(...),
+    db: AsyncSession = Depends(get_db)
+) -> Any:
+    """Import plants from pre-edited JSON rows (output from the preview editor)."""
+    try:
+        return await process_rows_import(db, rows)
     except ValueError as e:
         raise HTTPException(400, str(e))
     except Exception as e:

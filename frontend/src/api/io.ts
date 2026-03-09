@@ -3,7 +3,6 @@ import { client } from "./client";
 export const ioApi = {
     previewCsv: async (file: File): Promise<{
         rows: Record<string, string>[];
-        columns: string[];
         total: number;
         errors: string[];
     }> => {
@@ -18,12 +17,18 @@ export const ioApi = {
     importCsv: async (file: File): Promise<any> => {
         const formData = new FormData();
         formData.append("file", file);
-
         const response = await client.post("/import/csv", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
+            headers: { "Content-Type": "multipart/form-data" },
         });
+        return response.data;
+    },
+
+    importRows: async (rows: Record<string, string>[]): Promise<{
+        success: number;
+        failed: number;
+        errors: string[];
+    }> => {
+        const response = await client.post("/import/rows", rows);
         return response.data;
     },
 
