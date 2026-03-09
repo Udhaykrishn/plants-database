@@ -401,10 +401,10 @@ export function ProjectPublicView() {
             /* ── Brand bar ── */
             .pv-bar {
                 background: #2d5a27;
-                padding: 14px 24px;
+                padding: 18px 32px;
                 display: flex;
                 align-items: flex-end;
-                gap: 12px;
+                gap: 14px;
                 position: sticky;
                 top: 0;
                 z-index: 10;
@@ -429,9 +429,12 @@ export function ProjectPublicView() {
 
             /* ── Page wrapper ── */
             .pv-page {
-                max-width: 900px;
+                max-width: 960px;
                 margin: 0 auto;
-                padding: 40px 24px 80px;
+                padding: 64px 40px 120px;
+            }
+            @media (max-width: 640px) {
+                .pv-page { padding: 40px 20px 80px; }
             }
 
             /* ── State screens ── */
@@ -452,50 +455,50 @@ export function ProjectPublicView() {
             @keyframes pv-spin { to { transform: rotate(360deg); } }
 
             /* ── Cover ── */
-            .pv-cover { margin-bottom: 32px; }
+            .pv-cover { margin-bottom: 48px; }
             .pv-cover-title {
-                font-size: clamp(28px, 5vw, 42px); font-weight: 700;
-                letter-spacing: -1px; color: #1a1a1a; margin: 0 0 10px;
+                font-size: clamp(32px, 5vw, 48px); font-weight: 700;
+                letter-spacing: -1.5px; color: #1a1a1a; margin: 0 0 16px;
             }
-            .pv-cover-meta { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 10px; }
+            .pv-cover-meta { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 14px; }
             .pv-cover-meta-item {
-                display: flex; align-items: center; gap: 6px;
-                font-size: 13px; color: #666;
+                display: flex; align-items: center; gap: 7px;
+                font-size: 14px; color: #666;
             }
             .pv-cover-desc {
-                font-size: 14px; color: #555; line-height: 1.7;
-                max-width: 680px; margin-top: 8px;
+                font-size: 15px; color: #555; line-height: 1.8;
+                max-width: 680px; margin-top: 12px;
             }
             .pv-divider-main {
-                border: none; border-top: 1.5px solid #2d5a27; margin: 20px 0;
+                border: none; border-top: 1.5px solid #2d5a27; margin: 36px 0;
             }
 
             /* ── Section title ── */
             .pv-section-title {
-                font-size: 20px; font-weight: 700; color: #2d5a27;
-                margin: 0 0 16px; letter-spacing: -0.3px;
+                font-size: 22px; font-weight: 700; color: #2d5a27;
+                margin: 0 0 20px; letter-spacing: -0.3px;
             }
             .pv-details-heading {
-                font-size: 20px; font-weight: 700; color: #2d5a27;
-                margin: 48px 0 20px; letter-spacing: -0.3px;
-                padding-top: 8px; border-top: 1px solid #e5e1d8;
+                font-size: 22px; font-weight: 700; color: #2d5a27;
+                margin: 72px 0 28px; letter-spacing: -0.3px;
+                padding-top: 24px; border-top: 1px solid #e5e1d8;
             }
 
             /* ── Table ── */
-            .pv-inventory { overflow-x: auto; margin-bottom: 16px; }
+            .pv-inventory { overflow-x: auto; margin-bottom: 24px; }
             .pv-table { width: 100%; border-collapse: collapse; font-size: 13px; }
             .pv-table thead th {
                 background: #f0ede8; color: #2d5a27; font-weight: 700;
                 font-size: 10px; letter-spacing: 0.8px; text-transform: uppercase;
-                padding: 9px 10px; text-align: left; border-bottom: 1.5px solid #2d5a27;
+                padding: 12px 14px; text-align: left; border-bottom: 1.5px solid #2d5a27;
             }
             .pv-cat-row td {
-                padding: 10px 10px 4px; font-weight: 700; font-size: 10px;
+                padding: 16px 14px 6px; font-weight: 700; font-size: 10px;
                 letter-spacing: 1.1px; text-transform: uppercase; color: #2d5a27;
-                border-left: 3px solid #2d5a27; padding-left: 10px; background: transparent;
+                border-left: 3px solid #2d5a27; padding-left: 14px; background: transparent;
             }
             .pv-data-row td {
-                padding: 8px 10px; border-bottom: 0.5px solid #e5e1d8; vertical-align: middle;
+                padding: 11px 14px; border-bottom: 0.5px solid #e5e1d8; vertical-align: middle;
             }
             .pv-data-row:nth-child(even) td { background: #f6f4f1; }
             .pv-num { text-align: center; color: #888; font-size: 12px; }
@@ -519,53 +522,53 @@ export function ProjectPublicView() {
 
             /* ── Plant cards section ── */
             .pv-plant-card {
-                background: #fff; border: 0.5px solid #e5e1d8; border-radius: 16px;
-                padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.04);
-                scroll-margin-top: 72px;
+                background: #fff; border: 0.5px solid #e5e1d8; border-radius: 20px;
+                padding: 36px; margin-bottom: 32px; box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+                scroll-margin-top: 80px;
             }
             .pv-pc-header {
-                display: flex; gap: 20px; justify-content: space-between;
-                align-items: flex-start; margin-bottom: 16px;
+                display: flex; gap: 28px; justify-content: space-between;
+                align-items: flex-start; margin-bottom: 24px;
             }
             .pv-pc-header-left { flex: 1; min-width: 0; }
-            .pv-pc-name-row { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 10px; }
-            .pv-pc-icon { width: 64px; height: 64px; object-fit: cover; border-radius: 12px; border: 1px solid #e5e1d8; flex-shrink: 0; }
-            .pv-pc-index { font-size: 11px; color: #999; font-weight: 600; margin: 0 0 2px; }
-            .pv-pc-name { font-size: clamp(20px, 4vw, 28px); font-weight: 700; letter-spacing: -0.5px; margin: 0 0 4px; color: #1a1a1a; line-height: 1.1; }
-            .pv-pc-sci { font-size: 13px; font-style: italic; color: #666; margin: 0; }
-            .pv-pills-row { display: flex; flex-wrap: wrap; gap: 6px; }
-            .pv-pc-hero { width: 220px; height: 160px; object-fit: cover; border-radius: 12px; border: 1px solid #e5e1d8; flex-shrink: 0; }
+            .pv-pc-name-row { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 14px; }
+            .pv-pc-icon { width: 72px; height: 72px; object-fit: cover; border-radius: 14px; border: 1px solid #e5e1d8; flex-shrink: 0; }
+            .pv-pc-index { font-size: 11px; color: #bbb; font-weight: 600; margin: 0 0 4px; }
+            .pv-pc-name { font-size: clamp(22px, 4vw, 30px); font-weight: 700; letter-spacing: -0.5px; margin: 0 0 5px; color: #1a1a1a; line-height: 1.1; }
+            .pv-pc-sci { font-size: 14px; font-style: italic; color: #888; margin: 0; }
+            .pv-pills-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+            .pv-pc-hero { width: 240px; height: 180px; object-fit: cover; border-radius: 14px; border: 1px solid #e5e1d8; flex-shrink: 0; }
             @media (max-width: 600px) {
                 .pv-pc-header { flex-direction: column-reverse; }
-                .pv-pc-hero { width: 100%; height: 200px; }
+                .pv-pc-hero { width: 100%; height: 220px; }
             }
 
-            .pv-divider { border: none; border-top: 0.5px solid #e5e1d8; margin: 12px 0 16px; }
-            .pv-pc-body { display: flex; gap: 20px; }
-            .pv-pc-main { flex: 7; display: flex; flex-direction: column; gap: 14px; }
-            .pv-pc-side { flex: 4; display: flex; flex-direction: column; gap: 14px; }
+            .pv-divider { border: none; border-top: 0.5px solid #e5e1d8; margin: 20px 0 24px; }
+            .pv-pc-body { display: flex; gap: 28px; }
+            .pv-pc-main { flex: 7; display: flex; flex-direction: column; gap: 18px; }
+            .pv-pc-side { flex: 4; display: flex; flex-direction: column; gap: 18px; }
             @media (max-width: 700px) { .pv-pc-body { flex-direction: column; } }
 
             /* ── Inner cards ── */
             .pv-card {
-                background: #fff; border: 0.5px solid #e5e1d8; border-radius: 10px; padding: 14px;
+                background: #fff; border: 0.5px solid #e5e1d8; border-radius: 12px; padding: 18px;
             }
             .pv-card-red { background: #fff5f5; border-color: #fed7d7; }
             .pv-card-title {
                 font-size: 11px; font-weight: 700; color: #2d5a27; text-transform: uppercase;
-                letter-spacing: 0.5px; margin: 0 0 8px; padding-bottom: 8px;
+                letter-spacing: 0.5px; margin: 0 0 12px; padding-bottom: 10px;
                 border-bottom: 0.5px solid #e5e1d8; display: flex; align-items: center; gap: 5px;
             }
             .pv-card-title svg { flex-shrink: 0; }
             .pv-card-title-red { color: #c53030; border-bottom-color: #fed7d7; }
-            .pv-card-body { font-size: 13px; color: #1a1a1a; line-height: 1.65; margin: 0; }
+            .pv-card-body { font-size: 14px; color: #1a1a1a; line-height: 1.75; margin: 0; }
             .pv-card-body-red { color: #742a2a; }
 
             /* ── Care grid ── */
-            .pv-care-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+            .pv-care-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
             @media (max-width: 500px) { .pv-care-grid { grid-template-columns: 1fr; } }
-            .pv-care-item { background: #f0ede8; border-radius: 8px; padding: 10px; }
-            .pv-care-key-row { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+            .pv-care-item { background: #f0ede8; border-radius: 10px; padding: 14px; }
+            .pv-care-key-row { display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
             .pv-care-key-row svg { flex-shrink: 0; }
             .pv-care-key {
                 font-size: 9px; font-weight: 700; text-transform: uppercase;
@@ -577,7 +580,7 @@ export function ProjectPublicView() {
             .pv-tax-list { display: flex; flex-direction: column; }
             .pv-tax-row {
                 display: flex; justify-content: space-between; align-items: center;
-                padding: 6px 0; border-bottom: 0.5px solid #e5e1d8;
+                padding: 8px 0; border-bottom: 0.5px solid #e5e1d8;
             }
             .pv-tax-last { border-bottom: none; }
             .pv-tax-rank {
