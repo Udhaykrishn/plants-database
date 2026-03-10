@@ -15,10 +15,11 @@ from app.models.project import Project, ProjectPlant
 from app.models.plant import Plant
 from app.models.share_link import ProjectShareLink
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectPlantCreate, ProjectUpdate
+from app.core.security import get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=List[ProjectResponse])
+@router.get("/", response_model=List[ProjectResponse], dependencies=[Depends(get_current_user)])
 async def read_projects(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -33,7 +34,7 @@ async def read_projects(
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.post("/", response_model=ProjectResponse)
+@router.post("/", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def create_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -84,7 +85,7 @@ async def get_project_by_share_token(
     return project
 
 
-@router.get("/{project_id}", response_model=ProjectResponse)
+@router.get("/{project_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def read_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -102,7 +103,7 @@ async def read_project(
         raise HTTPException(status_code=404, detail="Project not found")
     return project
 
-@router.post("/{project_id}/plants", response_model=ProjectResponse)
+@router.post("/{project_id}/plants", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def add_plant_to_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -158,7 +159,7 @@ async def add_plant_to_project(
     result = await db.execute(query)
     return result.scalars().first()
 
-@router.put("/{project_id}/plants/{plant_id}", response_model=ProjectResponse)
+@router.put("/{project_id}/plants/{plant_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def update_plant_in_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -197,7 +198,7 @@ async def update_plant_in_project(
     result = await db.execute(query)
     return result.scalars().first()
 
-@router.delete("/{project_id}/plants/{plant_id}", response_model=ProjectResponse)
+@router.delete("/{project_id}/plants/{plant_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def remove_plant_from_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -233,7 +234,7 @@ async def remove_plant_from_project(
     result = await db.execute(query)
     return result.scalars().first()
 
-@router.put("/{project_id}", response_model=ProjectResponse)
+@router.put("/{project_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def update_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -264,7 +265,7 @@ async def update_project(
     result = await db.execute(query)
     return result.scalars().first()
 
-@router.delete("/{project_id}")
+@router.delete("/{project_id}", dependencies=[Depends(get_current_user)])
 async def delete_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -282,7 +283,7 @@ async def delete_project(
     await db.commit()
     return {"success": True}
 
-@router.post("/{project_id}/duplicate", response_model=ProjectResponse)
+@router.post("/{project_id}/duplicate", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def duplicate_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -339,7 +340,7 @@ class ShareLinkResponse(BaseModel):
 
 
 # ─── Generate / regenerate share link ─────────────────────────────────────────
-@router.post("/{project_id}/share", response_model=ShareLinkResponse)
+@router.post("/{project_id}/share", response_model=ShareLinkResponse, dependencies=[Depends(get_current_user)])
 async def create_or_regenerate_share_link(
     *,
     db: AsyncSession = Depends(get_db),
@@ -382,7 +383,7 @@ async def create_or_regenerate_share_link(
 
 
 # ─── Get current share link info ──────────────────────────────────────────────
-@router.get("/{project_id}/share", response_model=Optional[ShareLinkResponse])
+@router.get("/{project_id}/share", response_model=Optional[ShareLinkResponse], dependencies=[Depends(get_current_user)])
 async def get_share_link(
     *,
     db: AsyncSession = Depends(get_db),
