@@ -41,10 +41,10 @@ const StatCard = ({
 );
 
 export const Dashboard = () => {
-    const { data: plants } = useQuery({ queryKey: ['plants'], queryFn: plantsApi.getAll });
-    const { data: tree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: taxonomyApi.getTree });
-    const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
-    const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.getAll });
+    const { data: plants } = useQuery({ queryKey: ['plants'], queryFn: () => plantsApi.getAll() });
+    const { data: tree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: () => taxonomyApi.getTree() });
+    const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesApi.getAll() });
+    const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: () => projectsApi.getAll() });
 
     const taxonCount = tree
         ? (() => {

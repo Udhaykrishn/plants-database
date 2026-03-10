@@ -146,7 +146,7 @@ export const TaxonomyManager = () => {
 
     const { data: tree, isLoading, error } = useQuery({
         queryKey: ['taxonomy', 'tree'],
-        queryFn: taxonomyApi.getTree,
+        queryFn: () => taxonomyApi.getTree(),
     });
 
     const isSpecies = selectedNode?.rank === Rank.SPECIES;

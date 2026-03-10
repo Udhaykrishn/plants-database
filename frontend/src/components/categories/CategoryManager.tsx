@@ -43,7 +43,7 @@ export const CategoryManager = () => {
 
     const { data: categories, isLoading } = useQuery({
         queryKey: ['categories'],
-        queryFn: categoriesApi.getAll,
+        queryFn: () => categoriesApi.getAll(),
     });
 
     const createMutation = useMutation({

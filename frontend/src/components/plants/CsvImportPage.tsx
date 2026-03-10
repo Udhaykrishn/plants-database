@@ -225,7 +225,7 @@ export const CsvImportPage = () => {
     const [copied, setCopied] = useState(false);
 
     // Categories for the prompt
-    const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
+    const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesApi.getAll() });
 
     const categoriesList = useMemo(() => {
         if (!categoriesOptions || categoriesOptions.length === 0) return "Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other";

@@ -376,7 +376,7 @@ export function ProjectPublicView() {
 
     const { data: taxTree } = useQuery({
         queryKey: ['taxonomy', 'tree'],
-        queryFn: taxonomyApi.getTree,
+        queryFn: () => taxonomyApi.getTree(),
         enabled: !!project,
     });
 

@@ -137,12 +137,12 @@ export const ProjectDetails = () => {
 
     const { data: allPlants } = useQuery({
         queryKey: ['plants'],
-        queryFn: plantsApi.getAll,
+        queryFn: () => plantsApi.getAll(),
     });
 
     const { data: taxTree } = useQuery({
         queryKey: ['taxonomy', 'tree'],
-        queryFn: taxonomyApi.getTree,
+        queryFn: () => taxonomyApi.getTree(),
     });
 
     const handleDownloadPdf = async () => {

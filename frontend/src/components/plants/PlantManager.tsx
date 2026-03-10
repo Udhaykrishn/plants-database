@@ -111,10 +111,10 @@ export const PlantManager = () => {
     const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
     // Queries
-    const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.getAll });
-    const { data: plants, isLoading: plantsLoading } = useQuery({ queryKey: ['plants'], queryFn: plantsApi.getAll });
-    const { data: taxonomyTree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: taxonomyApi.getTree });
-    const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
+    const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: () => projectsApi.getAll() });
+    const { data: plants, isLoading: plantsLoading } = useQuery({ queryKey: ['plants'], queryFn: () => plantsApi.getAll() });
+    const { data: taxonomyTree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: () => taxonomyApi.getTree() });
+    const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesApi.getAll() });
 
 
     // Mutations
@@ -498,7 +498,7 @@ export const PlantManager = () => {
                     <div className="flex items-center justify-between gap-4">
                         <h2 className="text-2xl font-bold tracking-tight text-foreground truncate flex items-center gap-2">
                             {isCreating || editingPlantId ? 'Plant Editor' : 'Plant Catalog'}
-                            {!isCreating && !editingPlantId && plants && (
+                            {!isCreating && !editingPlantId && !!plants && (
                                 <span className="text-xs font-medium text-muted-foreground bg-muted/80 px-2 py-0.5 rounded-full border border-border/50">
                                     {filteredPlants.length}
                                 </span>

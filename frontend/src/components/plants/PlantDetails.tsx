@@ -20,7 +20,7 @@ export const PlantDetails = () => {
 
     const { data: tree } = useQuery({
         queryKey: ['taxonomy', 'tree'],
-        queryFn: taxonomyApi.getTree,
+        queryFn: () => taxonomyApi.getTree(),
     });
 
     const getTaxonomyPath = (nodes: TaxonTree[], targetId: string, currentPath: TaxonTree[] = []): TaxonTree[] | null => {
