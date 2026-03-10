@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '../../lib-frontend/utils';
 import {
     ArrowLeft, Upload, FileUp, Loader2, Trash2, Plus,
-    AlertCircle, ChevronRight, Info, X, ImageOff, ZoomIn, RefreshCw, Maximize2,
+    AlertCircle, ChevronRight, Info, X, ImageOff, RefreshCw, Maximize2,
     Copy, Check, Sparkles,
 } from 'lucide-react';
 

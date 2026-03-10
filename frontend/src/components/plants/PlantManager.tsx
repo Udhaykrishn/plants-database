@@ -6,7 +6,7 @@ import { taxonomyApi } from '../../api/taxonomy';
 import { projectsApi } from '../../api/projects';
 import { PlantingPlace } from '../../types/plant';
 import type { PlantCreate, Plant } from '../../types/plant';
-import { ioApi } from '../../api/io';
+
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { categoriesApi } from '../../api/categories';
@@ -69,10 +69,7 @@ import {
     Trash2,
     ArrowLeft,
     XCircle,
-    Terminal,
-    Info,
     RefreshCw,
-    FileUp,
 } from 'lucide-react';
 
 export const PlantManager = () => {
@@ -135,16 +132,7 @@ export const PlantManager = () => {
     const [filterOutdoor, setFilterOutdoor] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            // no-op: import page handles this now
-        }
-    };
 
-    const handleDrop = async (e: React.DragEvent<HTMLLabelElement>) => {
-        e.preventDefault();
-        // no-op: import page handles this now
-    };
 
     // Form State
     const [commonName, setCommonName] = useState('');
