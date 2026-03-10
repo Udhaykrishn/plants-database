@@ -11,6 +11,7 @@ import { cn } from './lib-frontend/utils';
 import { TaxonomyManager } from './components/taxonomy/TaxonomyManager';
 import { PlantManager } from './components/plants/PlantManager';
 import { PlantDetails } from './components/plants/PlantDetails';
+import { CsvImportPage } from './components/plants/CsvImportPage';
 import { CategoryManager } from './components/categories/CategoryManager';
 import { ProjectManager } from './components/projects/ProjectManager';
 import { ProjectDetails } from './components/projects/ProjectDetails';
@@ -139,6 +140,7 @@ function Layout() {
               <Route path="/taxonomy" element={<TaxonomyManager />} />
               <Route path="/categories" element={<CategoryManager />} />
               <Route path="/plants" element={<PlantManager />} />
+              <Route path="/plants/import" element={<CsvImportPage />} />
               <Route path="/plants/:id" element={<PlantDetails />} />
               <Route path="/projects" element={<ProjectManager />} />
               <Route path="/projects/:id" element={<ProjectDetails />} />

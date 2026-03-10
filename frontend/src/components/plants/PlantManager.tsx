@@ -6,7 +6,7 @@ import { taxonomyApi } from '../../api/taxonomy';
 import { projectsApi } from '../../api/projects';
 import { PlantingPlace } from '../../types/plant';
 import type { PlantCreate, Plant } from '../../types/plant';
-import { ioApi } from '../../api/io';
+
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { categoriesApi } from '../../api/categories';
@@ -69,12 +69,7 @@ import {
     Trash2,
     ArrowLeft,
     XCircle,
-    Terminal,
-    Copy,
-    Check,
-    Info,
     RefreshCw,
-    FileUp,
 } from 'lucide-react';
 
 export const PlantManager = () => {
@@ -100,44 +95,12 @@ export const PlantManager = () => {
     const [showProjectModal, setShowProjectModal] = useState(false);
     const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
-    const [showImportModal, setShowImportModal] = useState(false);
-    const [copied, setCopied] = useState(false);
-    const [isDragOver, setIsDragOver] = useState(false);
-
     // Queries
     const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: projectsApi.getAll });
     const { data: plants, isLoading: plantsLoading } = useQuery({ queryKey: ['plants'], queryFn: plantsApi.getAll });
     const { data: taxonomyTree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: taxonomyApi.getTree });
     const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: categoriesApi.getAll });
 
-    const categoriesList = useMemo(() => {
-        if (!categoriesOptions || categoriesOptions.length === 0) return "Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other";
-        return categoriesOptions.map(c => c.name).join(", ");
-    }, [categoriesOptions]);
-
-    const bulkImportPrompt = useMemo(() => `Act as a botanical data expert. 
-
-Task: Generate a perfectly formatted CSV file for the plants listed below.
-
-Header (MUST be the first line of your response):
-kingdom,division,class,order,family,genus,species,common_name,scientific_name,category,planting_place,description,common_diseases,care_water,care_sunlight,care_soil,care_maintenance,icon_url,image_url
-
-Strict Requirements (CRITICAL):
-1. MANDATORY FIELDS: Every single column must have a value. DO NOT skip any columns.
-2. SPECIES COLUMN: This is the specific epithet (the second word of the scientific name). For example, if the scientific name is "Psidium guajava", the species is "guajava". DO NOT leave the species column blank.
-3. CATEGORY: MUST be exactly one of [${categoriesList}].
-4. PLACE: MUST be exactly one of [Indoor, Outdoor, Indoor & Outdoor].
-5. IMAGES: Use Wikimedia Special:FilePath URLs based on the scientific name (e.g. .../Special:FilePath/Scientific_Name.jpg?width=1000).
-6. FORMATTING: Raw CSV text only. No markdown blocks (no \` \` \`), no explanations, no "Here is your CSV".
-
-List of Plants to Process:
-[PASTE YOUR PLANT NAMES HERE]`, [categoriesList]);
-
-    const handleCopyPrompt = () => {
-        navigator.clipboard.writeText(bulkImportPrompt);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
 
     // Mutations
     const addPlantsToProjectMutation = useMutation({
@@ -169,34 +132,7 @@ List of Plants to Process:
     const [filterOutdoor, setFilterOutdoor] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            await processImportFile(e.target.files[0]);
-        }
-    };
 
-    const processImportFile = async (file: File) => {
-        if (!file.name.toLowerCase().endsWith('.csv')) {
-            showAlert('Please upload a valid .csv file.', 'error');
-            return;
-        }
-        try {
-            const result = await ioApi.importCsv(file);
-            showAlert(`Import Complete! Success: ${result.success}, Failed: ${result.failed}`, 'success');
-            setShowImportModal(false);
-            queryClient.invalidateQueries({ queryKey: ['plants'] });
-            queryClient.invalidateQueries({ queryKey: ['taxonomy'] });
-        } catch (error: any) {
-            showAlert("Import failed: " + error.message, 'error');
-        }
-    };
-
-    const handleDrop = async (e: React.DragEvent<HTMLLabelElement>) => {
-        e.preventDefault();
-        setIsDragOver(false);
-        const file = e.dataTransfer.files[0];
-        if (file) await processImportFile(file);
-    };
 
     // Form State
     const [commonName, setCommonName] = useState('');
@@ -582,7 +518,7 @@ List of Plants to Process:
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => setShowImportModal(true)}
+                                                onClick={() => navigate('/plants/import')}
                                                 className="h-8 px-3 text-xs gap-1.5 focus-visible:ring-0 hover:bg-background/50"
                                             >
                                                 <Upload size={13} className="text-muted-foreground" />
@@ -590,7 +526,7 @@ List of Plants to Process:
                                                 <span className="sm:hidden">Import</span>
                                             </Button>
                                         </TooltipTrigger>
-                                        <TooltipContent>Import plants from CSV file or get AI prompt</TooltipContent>
+                                        <TooltipContent>Import plants from a CSV file</TooltipContent>
                                     </Tooltip>
                                 </div>
                             </div>
@@ -1154,113 +1090,6 @@ List of Plants to Process:
                             >
                                 {addPlantsToProjectMutation.isPending ? <><Loader2 size={13} className="animate-spin" /> Adding…</> : 'Add Plants'}
                             </Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
-
-                {/* ── Import CSV Dialog ────────────────────────────────────── */}
-                <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
-                    <DialogContent className="max-w-2xl max-h-[95vh] flex flex-col p-0 overflow-hidden">
-                        <DialogHeader className="p-6 pb-4">
-                            <DialogTitle className="flex items-center gap-2">
-                                <FileUp size={18} className="text-primary" />
-                                Import Plants from CSV
-                            </DialogTitle>
-                        </DialogHeader>
-
-                        <div className="flex-1 overflow-y-auto p-6 pt-0 space-y-6">
-                            {/* AI Prompt Section */}
-                            <section className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <Terminal size={16} className="text-primary" />
-                                    <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">Step 1: Generate your CSV</h4>
-                                </div>
-                                <p className="text-xs text-muted-foreground leading-relaxed">
-                                    Use this prompt to generate a perfectly formatted CSV. Paste it into an AI like ChatGPT or Claude along with your plant list.
-                                </p>
-
-                                <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
-                                    <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b border-border">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Prompt Template</span>
-                                        <Button
-                                            size="sm"
-                                            variant={copied ? "default" : "secondary"}
-                                            onClick={handleCopyPrompt}
-                                            className={cn(
-                                                "h-7 px-3 text-[11px] gap-1.5 transition-all shadow-sm",
-                                                copied ? "bg-green-600 hover:bg-green-600 text-white" : ""
-                                            )}
-                                        >
-                                            {copied ? (
-                                                <><Check size={12} /> Copied!</>
-                                            ) : (
-                                                <><Copy size={12} /> Copy Prompt</>
-                                            )}
-                                        </Button>
-                                    </div>
-                                    <div className="p-3 bg-background/50">
-                                        <pre className="text-[10px] font-mono overflow-x-auto max-h-[150px] whitespace-pre-wrap leading-relaxed text-foreground/80">
-                                            {bulkImportPrompt}
-                                        </pre>
-                                    </div>
-                                </div>
-                                <div className="bg-emerald-50/50 border border-emerald-100 rounded-lg p-3 flex gap-3">
-                                    <Info size={14} className="text-emerald-600 shrink-0 mt-0.5" />
-                                    <div className="text-[10px] text-emerald-800 leading-relaxed">
-                                        Tip: The AI researches taxonomy and care data automatically. You only need to provide plant names.
-                                    </div>
-                                </div>
-                            </section>
-
-                            <Separator />
-
-                            {/* Upload Section */}
-                            <section className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <Upload size={16} className="text-primary" />
-                                    <h4 className="text-sm font-bold uppercase tracking-wider text-foreground">Step 2: Upload CSV</h4>
-                                </div>
-
-                                <label
-                                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                                    onDragLeave={() => setIsDragOver(false)}
-                                    onDrop={handleDrop}
-                                    className={cn(
-                                        "flex flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-10 text-center transition-all duration-200 cursor-pointer",
-                                        isDragOver
-                                            ? "border-primary bg-primary/5 scale-[1.01]"
-                                            : "border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/60"
-                                    )}
-                                >
-                                    <input
-                                        type="file"
-                                        accept=".csv"
-                                        onChange={handleFileUpload}
-                                        className="hidden"
-                                    />
-                                    <div className={cn(
-                                        "flex items-center justify-center w-12 h-12 rounded-full transition-colors",
-                                        isDragOver ? "bg-primary/15" : "bg-muted"
-                                    )}>
-                                        <FileUp size={24} className={isDragOver ? "text-primary" : "text-muted-foreground"} />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className={cn("text-sm font-semibold", isDragOver ? "text-primary" : "text-foreground")}>
-                                            {isDragOver ? "Drop CSV here to upload" : "Drag & drop your CSV file here"}
-                                        </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            or click to <span className="text-primary font-medium">browse files</span> from your computer
-                                        </p>
-                                    </div>
-                                    <p className="text-[10px] text-muted-foreground/70 font-medium uppercase tracking-wider bg-background/50 px-2 py-0.5 rounded border border-border/50">
-                                        .csv files only
-                                    </p>
-                                </label>
-                            </section>
-                        </div>
-
-                        <DialogFooter className="p-4 bg-muted/20 border-t">
-                            <Button variant="outline" size="sm" onClick={() => setShowImportModal(false)}>Close</Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

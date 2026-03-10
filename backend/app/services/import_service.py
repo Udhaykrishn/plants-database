@@ -100,6 +100,213 @@ STANDARD_HEADER = (
     "care_water,care_sunlight,care_soil,care_maintenance,icon_url,image_url"
 )
 
+ALL_FIELDS = [
+    "kingdom", "division", "class", "order", "family", "genus", "species",
+    "common_name", "scientific_name", "category", "planting_place",
+    "description", "common_diseases",
+    "care_water", "care_sunlight", "care_soil", "care_maintenance",
+    "icon_url", "image_url",
+]
+
+
+def preview_csv(file_content: bytes) -> Dict[str, Any]:
+    """Parse the CSV and return a full-fidelity preview without touching the DB.
+
+    Returns a dict with:
+      - rows: list of dicts (one per data row, ALL fields)
+      - total: total number of data rows
+      - errors: list of parse-level problems (missing required columns, etc.)
+    """
+    decoded = file_content.decode("utf-8")
+    decoded = _sanitize_csv_text(decoded)
+
+    # Auto-detect missing header
+    peek_reader = csv.reader(io.StringIO(decoded))
+    first_row = next(peek_reader, [])
+    first_row_lower = [c.strip().lower() for c in first_row]
+    required = ["kingdom", "species", "common_name"]
+
+    if not all(r in first_row_lower for r in required):
+        decoded = STANDARD_HEADER + "\n" + decoded
+
+    csv_reader = csv.DictReader(io.StringIO(decoded))
+    headers = [h.strip().lower() for h in csv_reader.fieldnames or []]
+    missing = [r for r in required if r not in headers]
+    if missing:
+        return {
+            "rows": [],
+            "total": 0,
+            "errors": [f"Missing required columns: {', '.join(missing)}"],
+        }
+
+    # Collect all fields
+    rows = []
+    for row in csv_reader:
+        clean = {k.strip().lower(): (v.strip() if v else "") for k, v in row.items()}
+        full_row = {f: clean.get(f, "") for f in ALL_FIELDS}
+        rows.append(full_row)
+
+    return {
+        "rows": rows,
+        "total": len(rows),
+        "errors": [],
+    }
+
+
+
+async def _process_single_row(
+    db: AsyncSession,
+    row: Dict[str, Any],
+    row_idx: int,
+    results: Dict[str, Any],
+    hierarchy_ranks,
+) -> None:
+    """Shared logic: build taxonomy, AI-fill, upload images, create Plant."""
+    try:
+        # 1. Taxonomy hierarchy
+        parent_id = None
+        for rank in hierarchy_ranks:
+            name = row.get(rank.value.lower(), "")
+            if not name:
+                if rank == Rank.KINGDOM:
+                    raise ValueError("Kingdom is mandatory")
+                continue
+            taxon = await _get_or_create_taxon(db, name, rank, parent_id)
+            parent_id = taxon.id
+
+        species_name = row.get("species", "")
+        if not species_name:
+            raise ValueError("Species name mandatory")
+        species_taxon = await _get_or_create_taxon(db, species_name, Rank.SPECIES, parent_id)
+
+        # 2. Duplicate check
+        existing = (
+            await db.execute(select(Plant).where(Plant.taxon_id == species_taxon.id))
+        ).scalars().first()
+        if existing:
+            return  # skip silently
+
+        # 3. Text fields
+        common_name = row.get("common_name", "")
+        if not common_name:
+            raise ValueError("Common name mandatory")
+
+        scientific_name = row.get("scientific_name", "") or None
+        description     = row.get("description", "")     or None
+        common_diseases = row.get("common_diseases", "") or None
+
+        care_water       = row.get("care_water", "")       or None
+        care_sunlight    = row.get("care_sunlight", "")    or None
+        care_soil        = row.get("care_soil", "")        or None
+        care_maintenance = row.get("care_maintenance", "") or None
+
+        csv_icon_url  = row.get("icon_url", "")  or None
+        csv_image_url = row.get("image_url", "") or None
+
+        # 4. AI autofill for missing fields
+        ai_icon_url = ai_image_url = None
+        needs_ai = not all([
+            description, common_diseases,
+            care_water, care_sunlight, care_soil, care_maintenance,
+            csv_icon_url, csv_image_url,
+        ])
+        if needs_ai:
+            try:
+                cat_stmt = select(Category.name)
+                cat_res = await db.execute(cat_stmt)
+                valid_categories = list(cat_res.scalars().all())
+                ai = await generate_plant_details(
+                    common_name=common_name,
+                    scientific_name=scientific_name or species_name,
+                    valid_categories=valid_categories,
+                )
+                if not description and ai.description:
+                    description = ai.description
+                if not common_diseases and ai.common_diseases:
+                    common_diseases = ai.common_diseases
+                ai_care = ai.care_data or {}
+                if not care_water and ai_care.get("water"):
+                    care_water = ai_care["water"]
+                if not care_sunlight and ai_care.get("sunlight"):
+                    care_sunlight = ai_care["sunlight"]
+                if not care_soil and ai_care.get("soil"):
+                    care_soil = ai_care["soil"]
+                if not care_maintenance and ai_care.get("maintenance"):
+                    care_maintenance = ai_care["maintenance"]
+                ai_icon_url  = ai.icon_url  or None
+                ai_image_url = ai.image_url or None
+            except Exception as ai_err:
+                logger.warning("Row %d: AI autofill failed for '%s': %s", row_idx, common_name, ai_err)
+
+        # 5. Cloudinary upload
+        icon_url  = await _cloudinary_url(csv_icon_url  or ai_icon_url)
+        image_url = await _cloudinary_url(csv_image_url or ai_image_url)
+
+        # 6. Category
+        category_str = (row.get("category", "") or "Other").title()
+        cat_result = await db.execute(
+            select(Category).filter(func.lower(Category.name) == category_str.lower())
+        )
+        cat_obj = cat_result.scalars().first()
+        if not cat_obj:
+            cat_obj = Category(name=category_str)
+            db.add(cat_obj)
+            await db.flush()
+        category = cat_obj.name
+
+        # 7. Planting place
+        place_str = (row.get("planting_place", "") or "Indoor & Outdoor").strip()
+        if "&" not in place_str:
+            place_str = place_str.title()
+        try:
+            planting_place = PlantingPlace(place_str)
+        except ValueError:
+            planting_place = PlantingPlace.BOTH
+
+        # 8. Care data
+        care_data = None
+        if any([care_water, care_sunlight, care_soil, care_maintenance]):
+            care_data = {
+                "water":       care_water       or None,
+                "sunlight":    care_sunlight    or None,
+                "soil":        care_soil        or None,
+                "maintenance": care_maintenance or None,
+            }
+
+        # 9. Create plant
+        plant = Plant(
+            taxon_id=species_taxon.id,
+            common_name=common_name,
+            scientific_name=scientific_name,
+            category=category,
+            planting_place=planting_place,
+            description=description,
+            common_diseases=common_diseases,
+            care_data=care_data,
+            icon_url=icon_url,
+            image_url=image_url,
+        )
+        db.add(plant)
+        results["success"] += 1
+
+    except Exception as exc:
+        results["failed"] += 1
+        results["errors"].append(f"Row {row_idx}: {exc}")
+
+
+async def process_rows_import(db: AsyncSession, rows: list) -> Dict[str, Any]:
+    """Import plants from a pre-edited list of row dicts (from the frontend editor)."""
+    hierarchy_ranks = [
+        Rank.KINGDOM, Rank.DIVISION, Rank.CLASS,
+        Rank.ORDER, Rank.FAMILY, Rank.GENUS,
+    ]
+    results: Dict[str, Any] = {"success": 0, "failed": 0, "errors": []}
+    for idx, row in enumerate(rows, start=1):
+        await _process_single_row(db, row, idx, results, hierarchy_ranks)
+    await db.commit()
+    return results
+
+
 async def process_csv_import(db: AsyncSession, file_content: bytes) -> Dict[str, Any]:
     """
     Process CSV content to import plants and build the taxonomy hierarchy.
