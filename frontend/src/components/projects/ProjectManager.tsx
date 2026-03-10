@@ -76,7 +76,7 @@ export const ProjectManager = () => {
 
     const { data: projects, isLoading } = useQuery({
         queryKey: ['projects'],
-        queryFn: projectsApi.getAll,
+        queryFn: () => projectsApi.getAll(),
     });
 
     const createMutation = useMutation({

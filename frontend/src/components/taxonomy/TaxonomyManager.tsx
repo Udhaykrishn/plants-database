@@ -1,8 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    Plus, Pencil, Trash2, Search, ListTree, XCircle,
+    Plus, Pencil, Trash2, Search, ListTree, XCircle, ExternalLink, Leaf
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { plantsApi } from '../../api/plants';
 
 import { taxonomyApi } from '../../api/taxonomy';
 import { Rank } from '../../types/taxon';
@@ -126,6 +128,7 @@ const TreeNode = ({ node, onSelect, selectedId, searchTerm, open, onOpenChange }
 
 /* ─── TaxonomyManager ────────────────────────────────────── */
 export const TaxonomyManager = () => {
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { showAlert } = useAlert();
     const { confirm } = useConfirm();
@@ -143,7 +146,14 @@ export const TaxonomyManager = () => {
 
     const { data: tree, isLoading, error } = useQuery({
         queryKey: ['taxonomy', 'tree'],
-        queryFn: taxonomyApi.getTree,
+        queryFn: () => taxonomyApi.getTree(),
+    });
+
+    const isSpecies = selectedNode?.rank === Rank.SPECIES;
+    const { data: associatedPlants } = useQuery({
+        queryKey: ['plants', 'by-taxon', selectedNode?.id],
+        queryFn: () => plantsApi.getAll({ taxon_id: selectedNode?.id }),
+        enabled: !!selectedNode && isSpecies,
     });
 
     const createMutation = useMutation({
@@ -378,6 +388,40 @@ export const TaxonomyManager = () => {
                         </div>
                     )}
 
+                    {isSpecies && associatedPlants && associatedPlants.length > 0 && (
+                        <div className="mt-2 space-y-3">
+                            <Separator />
+                            <div>
+                                <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Linked Plant</h4>
+                                {associatedPlants.slice(0, 1).map(plant => (
+                                    <div key={plant.id} className="flex gap-4 items-center bg-muted/30 p-3 rounded-xl border border-border/50 shadow-sm transition-all hover:bg-muted/50 group">
+                                        {plant.icon_url ? (
+                                            <img src={plant.icon_url} alt={plant.common_name} className="w-12 h-12 rounded-lg object-cover bg-muted ring-1 ring-border/50" />
+                                        ) : (
+                                            <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center text-muted-foreground/40 ring-1 ring-border/50">
+                                                <Leaf size={20} opacity={0.5} />
+                                            </div>
+                                        )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-bold truncate text-foreground mb-0.5 group-hover:text-primary transition-colors">{plant.common_name}</p>
+                                            {plant.scientific_name && (
+                                                <p className="text-[10px] italic text-muted-foreground mb-1.5 truncate">{plant.scientific_name}</p>
+                                            )}
+                                            <Button
+                                                variant="link"
+                                                size="sm"
+                                                className="h-auto p-0 text-[11px] text-primary gap-1 font-semibold opacity-80 hover:opacity-100"
+                                                onClick={() => navigate(`/plants/${plant.id}`)}
+                                            >
+                                                View Plant Detail <ExternalLink size={10} />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <Separator />
 
                     <div className="flex flex-col gap-2">
@@ -426,11 +470,11 @@ export const TaxonomyManager = () => {
             </div>
 
             {/* Two-column layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 min-h-[500px]">
+            <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
                 {/* Tree Panel */}
                 <div className="lg:col-span-3 rounded-xl border border-border bg-white shadow-sm flex flex-col">
                     {/* Search */}
-                    <div className="p-4 border-b border-border">
+                    <div className="p-4 border-b border-border sticky top-0 bg-white/95 backdrop-blur-md z-30 rounded-t-xl shadow-[0_2px_10px_-4px_rgba(0,0,0,0.1)]">
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
@@ -452,7 +496,7 @@ export const TaxonomyManager = () => {
                     </div>
 
                     {/* Tree */}
-                    <div className="flex-1 overflow-y-auto p-3 space-y-0.5">
+                    <div className="flex-1 p-3 space-y-0.5">
                         {isLoading ? (
                             Array.from({ length: 6 }).map((_, i) => (
                                 <div key={i} className="flex items-center gap-2 px-3 py-2">
@@ -492,9 +536,9 @@ export const TaxonomyManager = () => {
                 {/* Detail Panel — hidden on mobile unless a node is selected */}
                 <div
                     className={cn(
-                        'lg:col-span-2 rounded-xl border border-border bg-white shadow-sm',
-                        !panelOpen && !isCreating && 'hidden lg:flex lg:flex-col',
-                        (panelOpen || isCreating) && 'flex flex-col',
+                        'lg:col-span-2 sticky top-0 rounded-xl border border-border bg-white shadow-sm overflow-hidden flex flex-col h-fit max-h-[calc(100vh-20px)] z-20',
+                        !panelOpen && !isCreating && 'hidden lg:flex',
+                        (panelOpen || isCreating) && 'flex',
                     )}
                 >
                     {(panelOpen || isCreating || selectedNode) && !!(selectedNode || isCreating) && (
