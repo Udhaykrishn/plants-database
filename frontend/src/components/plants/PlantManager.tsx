@@ -906,72 +906,97 @@ export const PlantManager = () => {
                         )
                     ) : viewMode === 'card' ? (
                         /* Card grid */
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4">
                             {displayedPlants.map((plant: Plant) => {
                                 const isSelected = selectedPlantIds.includes(plant.id);
+                                const displayImage = plant.image_url || plant.icon_url;
                                 return (
                                     <Card
                                         key={plant.id}
                                         onClick={(e) => handleRowClick(plant.id, e)}
-                                        className={`cursor-pointer select-none transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}
+                                        className={`group relative overflow-hidden cursor-pointer select-none transition-all duration-200 hover:shadow-lg hover:-translate-y-1 bg-card border-border/60 ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}
                                     >
-                                        <CardContent className="p-4">
-                                            <div className="flex items-start justify-between mb-3">
-                                                <div className="flex items-center gap-3">
-                                                    <input
-                                                        type="checkbox"
-                                                        checked={isSelected}
-                                                        onChange={(e) => { e.stopPropagation(); setSelectedPlantIds(prev => prev.includes(plant.id) ? prev.filter(p => p !== plant.id) : [...prev, plant.id]); }}
-                                                        onClick={e => e.stopPropagation()}
-                                                        className="w-4 h-4 cursor-pointer accent-primary shrink-0"
-                                                    />
-                                                    {plant.icon_url
-                                                        ? <img src={plant.icon_url} alt="" className="w-14 h-14 object-cover rounded-xl shrink-0" />
-                                                        : <div className="w-14 h-14 bg-muted rounded-xl flex items-center justify-center shrink-0"><Leaf size={22} className="text-muted-foreground" /></div>
-                                                    }
-                                                    <div className="min-w-0">
-                                                        <h3 className="font-medium text-foreground text-sm leading-tight">{plant.common_name}</h3>
-                                                        {plant.scientific_name && (
-                                                            <p className="text-xs italic text-muted-foreground mt-0.5 leading-snug">{plant.scientific_name}</p>
-                                                        )}
-                                                    </div>
+                                        {/* Image Header */}
+                                        <div className="relative aspect-video w-full bg-muted overflow-hidden">
+                                            {displayImage ? (
+                                                <img
+                                                    src={displayImage}
+                                                    alt={plant.common_name}
+                                                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                                />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center">
+                                                    <Leaf size={32} className="text-muted-foreground/30" />
                                                 </div>
-                                                {/* Actions dropdown */}
-                                                <div className="actions-menu-container" onClick={e => e.stopPropagation()}>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-7 w-7 text-muted-foreground"
-                                                            >
-                                                                <MoreVertical size={14} />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-40">
-                                                            <DropdownMenuItem onClick={() => openSingleProjectModal(plant.id)}>
-                                                                <FolderOpen className="mr-2 h-4 w-4" />
-                                                                <span>Add to Project</span>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleEdit(plant)}>
-                                                                <Pencil className="mr-2 h-4 w-4" />
-                                                                <span>Edit</span>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                className="text-destructive focus:text-destructive"
-                                                                onClick={() => handleDelete(plant.id, plant.common_name)}
-                                                                disabled={selectedPlantIds.length > 0}
-                                                            >
-                                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                                <span>Delete</span>
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
+                                            )}
+
+                                            {/* Selection Overlay */}
+                                            <div className="absolute top-2 left-2 z-10">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isSelected}
+                                                    onChange={(e) => { e.stopPropagation(); setSelectedPlantIds(prev => prev.includes(plant.id) ? prev.filter(p => p !== plant.id) : [...prev, plant.id]); }}
+                                                    onClick={e => e.stopPropagation()}
+                                                    className="w-5 h-5 cursor-pointer accent-primary rounded-md border-white/20 bg-black/20 backdrop-blur-sm"
+                                                />
                                             </div>
-                                            <div className="flex flex-wrap gap-1.5">
-                                                <Badge variant="secondary" className="text-[10px] uppercase tracking-wide font-bold">{plant.category}</Badge>
-                                                <Badge variant="outline" className="text-[10px] uppercase tracking-wide font-bold">{plant.planting_place}</Badge>
+
+                                            {/* Actions Overlay */}
+                                            <div className="absolute top-2 right-2 z-10 actions-menu-container" onClick={e => e.stopPropagation()}>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="icon"
+                                                            className="h-8 w-8 rounded-full bg-black/20 hover:bg-black/40 border-0 text-white backdrop-blur-md shadow-sm"
+                                                        >
+                                                            <MoreVertical size={16} />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" className="w-40">
+                                                        <DropdownMenuItem onClick={() => openSingleProjectModal(plant.id)}>
+                                                            <FolderOpen className="mr-2 h-4 w-4" />
+                                                            <span>Add to Project</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onClick={() => handleEdit(plant)}>
+                                                            <Pencil className="mr-2 h-4 w-4" />
+                                                            <span>Edit</span>
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            className="text-destructive focus:text-destructive"
+                                                            onClick={() => handleDelete(plant.id, plant.common_name)}
+                                                            disabled={selectedPlantIds.length > 0}
+                                                        >
+                                                            <Trash2 className="mr-2 h-4 w-4" />
+                                                            <span>Delete</span>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </div>
+
+                                            {/* Gradient Scrim */}
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+                                        </div>
+
+                                        <CardContent className="p-4 pt-3">
+                                            <div className="flex flex-col gap-1 mb-3">
+                                                <h3 className="font-semibold text-foreground text-sm tracking-tight leading-snug line-clamp-1">
+                                                    {plant.common_name}
+                                                </h3>
+                                                {plant.scientific_name && (
+                                                    <p className="text-xs italic text-muted-foreground/80 leading-tight line-clamp-1">
+                                                        {plant.scientific_name}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-1.5 mt-auto">
+                                                <Badge variant="secondary" className="px-1.5 py-0 h-5 text-[9px] uppercase tracking-wider font-bold bg-secondary/50 border-secondary/20">
+                                                    {plant.category}
+                                                </Badge>
+                                                <Badge variant="outline" className="px-1.5 py-0 h-5 text-[9px] uppercase tracking-wider font-bold border-muted-foreground/20 text-muted-foreground/90">
+                                                    {plant.planting_place}
+                                                </Badge>
                                             </div>
                                         </CardContent>
                                     </Card>
