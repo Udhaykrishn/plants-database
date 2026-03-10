@@ -2,8 +2,8 @@ import { client } from "./client";
 import type { PlantCreate, PlantResponse } from "../types/plant";
 
 export const plantsApi = {
-    getAll: async (): Promise<PlantResponse[]> => {
-        const response = await client.get<PlantResponse[]>("/plants/");
+    getAll: async (params?: { category?: string; planting_place?: string; search?: string; taxon_id?: string }): Promise<PlantResponse[]> => {
+        const response = await client.get<PlantResponse[]>("/plants/", { params });
         return response.data;
     },
 
