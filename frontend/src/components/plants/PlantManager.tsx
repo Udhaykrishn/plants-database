@@ -80,6 +80,10 @@ import {
     RefreshCw,
     ChevronLeft,
     ChevronRight,
+    Clock,
+    ArrowDownAZ,
+    ArrowUpAZ,
+    History,
 } from 'lucide-react';
 
 export const PlantManager = () => {
@@ -140,7 +144,7 @@ export const PlantManager = () => {
     );
     const [filterIndoor, setFilterIndoor] = useState(false);
     const [filterOutdoor, setFilterOutdoor] = useState(false);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'recent' | 'oldest' | 'sci_asc' | 'sci_desc'>('recent');
 
     // Pagination
     const PAGE_SIZE = 20;
@@ -454,6 +458,18 @@ export const PlantManager = () => {
             else if (filterIndoor && filterOutdoor) matchesPlace = plant.planting_place === PlantingPlace.BOTH;
             return matchesSearch && matchesCategory && matchesPlace;
         }).sort((a, b) => {
+            if (sortOrder === 'recent') {
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+            }
+            if (sortOrder === 'oldest') {
+                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+            }
+            if (sortOrder === 'sci_asc') {
+                return (a.scientific_name || '').toLowerCase().localeCompare((b.scientific_name || '').toLowerCase());
+            }
+            if (sortOrder === 'sci_desc') {
+                return (b.scientific_name || '').toLowerCase().localeCompare((a.scientific_name || '').toLowerCase());
+            }
             return sortOrder === 'asc' ? a.common_name.toLowerCase().localeCompare(b.common_name.toLowerCase()) : b.common_name.toLowerCase().localeCompare(a.common_name.toLowerCase());
         });
     }, [plants, searchTerm, filterCategory, filterIndoor, filterOutdoor, sortOrder]);
@@ -613,13 +629,54 @@ export const PlantManager = () => {
                                 </div>
 
                                 {/* Sort */}
-                                <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as 'asc' | 'desc')}>
-                                    <SelectTrigger className="w-[100px] shrink-0 h-9 bg-background">
-                                        <SelectValue />
+                                <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as any)}>
+                                    <SelectTrigger className="w-[60px] shrink-0 h-9 bg-background px-0 flex justify-center">
+                                        <SelectValue>
+                                            <div className="flex items-center justify-center w-full">
+                                                {sortOrder === 'recent' && <Clock size={16} />}
+                                                {sortOrder === 'oldest' && <History size={16} />}
+                                                {(sortOrder === 'asc' || sortOrder === 'sci_asc') && <ArrowDownAZ size={16} />}
+                                                {(sortOrder === 'desc' || sortOrder === 'sci_desc') && <ArrowUpAZ size={16} />}
+                                            </div>
+                                        </SelectValue>
                                     </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="asc">A → Z</SelectItem>
-                                        <SelectItem value="desc">Z → A</SelectItem>
+                                    <SelectContent align="end">
+                                        <SelectItem value="recent">
+                                            <div className="flex items-center gap-2">
+                                                <Clock size={14} className="text-muted-foreground" />
+                                                <span>Recent First</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="oldest">
+                                            <div className="flex items-center gap-2">
+                                                <History size={14} className="text-muted-foreground" />
+                                                <span>Oldest First</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="asc">
+                                            <div className="flex items-center gap-2">
+                                                <ArrowDownAZ size={14} className="text-muted-foreground" />
+                                                <span>Common A → Z</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="desc">
+                                            <div className="flex items-center gap-2">
+                                                <ArrowUpAZ size={14} className="text-muted-foreground" />
+                                                <span>Common Z → A</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="sci_asc">
+                                            <div className="flex items-center gap-2">
+                                                <ArrowDownAZ size={14} className="text-muted-foreground" />
+                                                <span>Scientific A → Z</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="sci_desc">
+                                            <div className="flex items-center gap-2">
+                                                <ArrowUpAZ size={14} className="text-muted-foreground" />
+                                                <span>Scientific Z → A</span>
+                                            </div>
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -1018,8 +1075,34 @@ export const PlantManager = () => {
                                             />
                                         </TableHead>
                                         <TableHead className="w-11 px-2">Icon</TableHead>
-                                        <TableHead>Common Name</TableHead>
-                                        <TableHead className="hidden sm:table-cell">Scientific Name</TableHead>
+                                        <TableHead
+                                            className="cursor-pointer hover:text-foreground transition-colors group"
+                                            onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                                        >
+                                            <div className="flex items-center gap-1.5">
+                                                Common Name
+                                                <div className={cn(
+                                                    "opacity-0 group-hover:opacity-100 transition-opacity flex items-center shrink-0",
+                                                    (sortOrder === 'asc' || sortOrder === 'desc') && "opacity-100"
+                                                )}>
+                                                    {sortOrder === 'desc' ? <ArrowUpAZ size={13} className="text-primary" /> : <ArrowDownAZ size={13} className={sortOrder === 'asc' ? "text-primary" : "text-muted-foreground/30"} />}
+                                                </div>
+                                            </div>
+                                        </TableHead>
+                                        <TableHead
+                                            className="hidden sm:table-cell cursor-pointer hover:text-foreground transition-colors group"
+                                            onClick={() => setSortOrder(sortOrder === 'sci_asc' ? 'sci_desc' : 'sci_asc')}
+                                        >
+                                            <div className="flex items-center gap-1.5">
+                                                Scientific Name
+                                                <div className={cn(
+                                                    "opacity-0 group-hover:opacity-100 transition-opacity flex items-center shrink-0",
+                                                    (sortOrder === 'sci_asc' || sortOrder === 'sci_desc') && "opacity-100"
+                                                )}>
+                                                    {sortOrder === 'sci_desc' ? <ArrowUpAZ size={13} className="text-primary" /> : <ArrowDownAZ size={13} className={sortOrder === 'sci_asc' ? "text-primary" : "text-muted-foreground/30"} />}
+                                                </div>
+                                            </div>
+                                        </TableHead>
                                         <TableHead className="hidden md:table-cell">Category</TableHead>
                                         <TableHead className="hidden md:table-cell">Place</TableHead>
                                         <TableHead className="w-10" />
