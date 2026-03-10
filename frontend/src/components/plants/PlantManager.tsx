@@ -80,6 +80,7 @@ import {
     RefreshCw,
     ChevronLeft,
     ChevronRight,
+    Check,
     Clock,
     ArrowDownAZ,
     ArrowUpAZ,
@@ -579,12 +580,12 @@ export const PlantManager = () => {
                                     placeholder="Search catalog..."
                                     value={searchTerm}
                                     onChange={e => setSearchTerm(e.target.value)}
-                                    className="h-9 bg-background pr-8 placeholder:text-muted-foreground/60"
+                                    className="h-9 bg-background/50 backdrop-blur-sm pr-8 placeholder:text-muted-foreground/60 border-border/50 focus-visible:ring-1 focus-visible:ring-primary/20 transition-all shadow-sm"
                                 />
                                 {searchTerm && (
                                     <button
                                         onClick={() => setSearchTerm('')}
-                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground"
+                                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
                                     >
                                         <XCircle size={14} />
                                     </button>
@@ -595,7 +596,7 @@ export const PlantManager = () => {
                             <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar -mx-1 px-1">
                                 {/* Category */}
                                 <Select value={filterCategory} onValueChange={setFilterCategory}>
-                                    <SelectTrigger className="w-[140px] shrink-0 h-9 bg-background">
+                                    <SelectTrigger className="w-[140px] shrink-0 h-9 bg-background/50 backdrop-blur-sm border-border/50 focus:ring-0 focus:ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary/20 shadow-sm transition-all">
                                         <SelectValue placeholder="Categories" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -607,36 +608,52 @@ export const PlantManager = () => {
                                 </Select>
 
                                 {/* Indoor/Outdoor Toggle Group Style */}
-                                <div className="flex items-center shrink-0 h-9 p-1 rounded-md border border-input bg-background">
+                                <div className="flex items-center shrink-0 h-9 p-1 rounded-md border border-border/50 bg-background/50 backdrop-blur-sm shadow-sm gap-1">
                                     <button
                                         onClick={() => setFilterIndoor(!filterIndoor)}
                                         className={cn(
-                                            "px-3 h-full rounded text-[10px] font-bold uppercase tracking-wider transition-colors",
-                                            filterIndoor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                                            "pl-2 pr-3 h-full rounded text-[9px] font-bold uppercase tracking-widest transition-all duration-200 flex items-center gap-2",
+                                            filterIndoor ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground/70 hover:bg-muted hover:text-foreground"
                                         )}
                                     >
+                                        <div className={cn(
+                                            "w-3.5 h-3.5 rounded-[3px] border flex items-center justify-center transition-all shrink-0",
+                                            filterIndoor
+                                                ? "bg-white border-white text-primary"
+                                                : "border-muted-foreground/40 bg-white/10"
+                                        )}>
+                                            <Check className={cn("transition-all", filterIndoor ? "scale-100 opacity-100" : "scale-50 opacity-0")} size={10} strokeWidth={4} />
+                                        </div>
                                         Indoor
                                     </button>
                                     <button
                                         onClick={() => setFilterOutdoor(!filterOutdoor)}
                                         className={cn(
-                                            "px-3 h-full rounded text-[10px] font-bold uppercase tracking-wider transition-colors",
-                                            filterOutdoor ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                                            "pl-2 pr-3 h-full rounded text-[9px] font-bold uppercase tracking-widest transition-all duration-200 flex items-center gap-2",
+                                            filterOutdoor ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground/70 hover:bg-muted hover:text-foreground"
                                         )}
                                     >
+                                        <div className={cn(
+                                            "w-3.5 h-3.5 rounded-[3px] border flex items-center justify-center transition-all shrink-0",
+                                            filterOutdoor
+                                                ? "bg-white border-white text-primary"
+                                                : "border-muted-foreground/40 bg-white/10"
+                                        )}>
+                                            <Check className={cn("transition-all", filterOutdoor ? "scale-100 opacity-100" : "scale-50 opacity-0")} size={10} strokeWidth={4} />
+                                        </div>
                                         Outdoor
                                     </button>
                                 </div>
 
                                 {/* Sort */}
                                 <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as any)}>
-                                    <SelectTrigger className="w-[60px] shrink-0 h-9 bg-background px-0 flex justify-center">
+                                    <SelectTrigger className="w-[48px] shrink-0 h-9 bg-background/50 backdrop-blur-sm border-border/50 px-0 flex justify-center focus:ring-0 focus:ring-offset-0 focus-visible:ring-1 focus-visible:ring-primary/20 shadow-sm transition-all">
                                         <SelectValue>
                                             <div className="flex items-center justify-center w-full">
-                                                {sortOrder === 'recent' && <Clock size={16} />}
-                                                {sortOrder === 'oldest' && <History size={16} />}
-                                                {(sortOrder === 'asc' || sortOrder === 'sci_asc') && <ArrowDownAZ size={16} />}
-                                                {(sortOrder === 'desc' || sortOrder === 'sci_desc') && <ArrowUpAZ size={16} />}
+                                                {sortOrder === 'recent' && <Clock size={16} className="text-primary" />}
+                                                {sortOrder === 'oldest' && <History size={16} className="text-primary" />}
+                                                {(sortOrder === 'asc' || sortOrder === 'sci_asc') && <ArrowDownAZ size={16} className="text-primary" />}
+                                                {(sortOrder === 'desc' || sortOrder === 'sci_desc') && <ArrowUpAZ size={16} className="text-primary" />}
                                             </div>
                                         </SelectValue>
                                     </SelectTrigger>
