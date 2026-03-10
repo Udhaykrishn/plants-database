@@ -1,4 +1,5 @@
-from typing import List, Union
+import json
+from typing import List, Union, Any
 
 from pydantic import AnyHttpUrl, PostgresDsn, validator
 from pydantic_settings import BaseSettings
@@ -10,12 +11,12 @@ class Settings(BaseSettings):
     BACKEND_CORS_ORIGINS: List[str] = []
 
     @validator("BACKEND_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
+    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], Any]:
         if isinstance(v, str) and not v.startswith("["):
             return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
-            return v
-        return []
+        elif isinstance(v, str) and v.startswith("["):
+            return json.loads(v)
+        return v
     
     # Database
     POSTGRES_SERVER: str = "localhost"
