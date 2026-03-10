@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class PlantAIDetailsRequest(BaseModel):
     common_name: Optional[str] = None
     scientific_name: Optional[str] = None
+    categories: Optional[List[str]] = None
 
 class TaxonomyDetails(BaseModel):
     kingdom: Optional[str] = None

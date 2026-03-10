@@ -10,6 +10,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Polyfill Buffer for @react-pdf/renderer (uses Node.js Buffer API internally)
+  define: {
+    global: 'globalThis',
+  },
+  optimizeDeps: {
+    include: ['@react-pdf/renderer'],
+  },
   build: {
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
@@ -17,7 +24,7 @@ export default defineConfig({
         manualChunks: {
           'vendor': ['react', 'react-dom', 'react-router-dom'],
           'ui-core': ['@tanstack/react-query', 'axios', 'lucide-react'],
-          'pdf-libs': ['jspdf', 'html2canvas'],
+          'pdf-libs': ['@react-pdf/renderer'],
           'radix': [
             '@radix-ui/react-dialog',
             '@radix-ui/react-dropdown-menu',

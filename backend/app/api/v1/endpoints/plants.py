@@ -24,7 +24,8 @@ async def read_plants(
     limit: int = 100,
     category: Optional[str] = None,
     planting_place: Optional[PlantingPlace] = None,
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    taxon_id: Optional[uuid.UUID] = None
 ) -> Any:
     """
     Retrieve plants with filtering and search.
@@ -37,6 +38,8 @@ async def read_plants(
         query = query.filter(Plant.planting_place == planting_place)
     if search:
         query = query.filter(Plant.common_name.ilike(f"%{search}%"))
+    if taxon_id:
+        query = query.filter(Plant.taxon_id == taxon_id)
         
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)

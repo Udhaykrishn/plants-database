@@ -1,21 +1,25 @@
-from typing import Any, List
+from typing import Any, List, Optional
 import uuid
-from datetime import datetime
+import secrets
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
+from pydantic import BaseModel
 
 from app.db.session import get_db
 from app.models.project import Project, ProjectPlant
 from app.models.plant import Plant
+from app.models.share_link import ProjectShareLink
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectPlantCreate, ProjectUpdate
+from app.core.security import get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=List[ProjectResponse])
+@router.get("/", response_model=List[ProjectResponse], dependencies=[Depends(get_current_user)])
 async def read_projects(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -30,7 +34,7 @@ async def read_projects(
     result = await db.execute(query)
     return result.scalars().all()
 
-@router.post("/", response_model=ProjectResponse)
+@router.post("/", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def create_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -51,7 +55,37 @@ async def create_project(
     result = await db.execute(query)
     return result.scalars().first()
 
-@router.get("/{project_id}", response_model=ProjectResponse)
+
+# ─── Public project view by share token (MUST be before /{project_id}) ───────
+@router.get("/share/{token}", response_model=ProjectResponse)
+async def get_project_by_share_token(
+    token: str,
+    db: AsyncSession = Depends(get_db),
+) -> Any:
+    """
+    Public endpoint: fetch a project via its share token.
+    Returns 404 if not found; 410 Gone if expired.
+    """
+    result = await db.execute(
+        select(ProjectShareLink).filter(ProjectShareLink.token == token)
+    )
+    link = result.scalars().first()
+    if not link:
+        raise HTTPException(status_code=404, detail="Share link not found")
+    if link.expires_at < datetime.utcnow():
+        raise HTTPException(status_code=410, detail="Share link has expired")
+
+    query = select(Project).filter(Project.id == link.project_id).options(
+        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
+    )
+    result = await db.execute(query)
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
+
+
+@router.get("/{project_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def read_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -69,7 +103,7 @@ async def read_project(
         raise HTTPException(status_code=404, detail="Project not found")
     return project
 
-@router.post("/{project_id}/plants", response_model=ProjectResponse)
+@router.post("/{project_id}/plants", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def add_plant_to_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -125,7 +159,7 @@ async def add_plant_to_project(
     result = await db.execute(query)
     return result.scalars().first()
 
-@router.put("/{project_id}/plants/{plant_id}", response_model=ProjectResponse)
+@router.put("/{project_id}/plants/{plant_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def update_plant_in_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -164,7 +198,7 @@ async def update_plant_in_project(
     result = await db.execute(query)
     return result.scalars().first()
 
-@router.delete("/{project_id}/plants/{plant_id}", response_model=ProjectResponse)
+@router.delete("/{project_id}/plants/{plant_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def remove_plant_from_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -200,7 +234,7 @@ async def remove_plant_from_project(
     result = await db.execute(query)
     return result.scalars().first()
 
-@router.put("/{project_id}", response_model=ProjectResponse)
+@router.put("/{project_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def update_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -231,7 +265,7 @@ async def update_project(
     result = await db.execute(query)
     return result.scalars().first()
 
-@router.delete("/{project_id}")
+@router.delete("/{project_id}", dependencies=[Depends(get_current_user)])
 async def delete_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -249,7 +283,7 @@ async def delete_project(
     await db.commit()
     return {"success": True}
 
-@router.post("/{project_id}/duplicate", response_model=ProjectResponse)
+@router.post("/{project_id}/duplicate", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def duplicate_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -296,3 +330,74 @@ async def duplicate_project(
     )
     result = await db.execute(query)
     return result.scalars().first()
+
+
+# ─── Share link schemas ────────────────────────────────────────────────────────
+class ShareLinkResponse(BaseModel):
+    token: str
+    expires_at: datetime
+    url: str
+
+
+# ─── Generate / regenerate share link ─────────────────────────────────────────
+@router.post("/{project_id}/share", response_model=ShareLinkResponse, dependencies=[Depends(get_current_user)])
+async def create_or_regenerate_share_link(
+    *,
+    db: AsyncSession = Depends(get_db),
+    project_id: uuid.UUID,
+) -> Any:
+    """
+    Generate (or regenerate) a 2-day share link for the project.
+    Only one link exists per project; regeneration replaces the old one.
+    """
+    result = await db.execute(select(Project).filter(Project.id == project_id))
+    project = result.scalars().first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    token = secrets.token_urlsafe(32)
+    expires_at = datetime.utcnow() + timedelta(days=2)
+
+    # Upsert: delete any existing link, create fresh
+    existing = await db.execute(
+        select(ProjectShareLink).filter(ProjectShareLink.project_id == project_id)
+    )
+    old = existing.scalars().first()
+    if old:
+        await db.delete(old)
+        await db.flush()
+
+    share_link = ProjectShareLink(
+        project_id=project_id,
+        token=token,
+        expires_at=expires_at,
+    )
+    db.add(share_link)
+    await db.commit()
+
+    return ShareLinkResponse(
+        token=token,
+        expires_at=expires_at,
+        url=f"/share/{token}",
+    )
+
+
+# ─── Get current share link info ──────────────────────────────────────────────
+@router.get("/{project_id}/share", response_model=Optional[ShareLinkResponse], dependencies=[Depends(get_current_user)])
+async def get_share_link(
+    *,
+    db: AsyncSession = Depends(get_db),
+    project_id: uuid.UUID,
+) -> Any:
+    """Return the current share link for a project, or null if none exists / expired."""
+    result = await db.execute(
+        select(ProjectShareLink).filter(ProjectShareLink.project_id == project_id)
+    )
+    link = result.scalars().first()
+    if not link or link.expires_at < datetime.utcnow():
+        return None
+    return ShareLinkResponse(
+        token=link.token,
+        expires_at=link.expires_at,
+        url=f"/share/{link.token}",
+    )
