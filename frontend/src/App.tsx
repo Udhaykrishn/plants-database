@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, NavLink, Link } from 'react-router-dom';
 import {
-  LayoutDashboard, ListTree, Tags, Leaf, FolderKanban, Menu
+  LayoutDashboard, ListTree, Tags, Leaf, FolderKanban, Menu, LogOut
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from './components/ui/sheet';
 import { Separator } from './components/ui/separator';
@@ -19,6 +19,9 @@ import { ProjectPublicView } from './components/projects/ProjectPublicView';
 import { Dashboard } from './components/common/Dashboard';
 import { AlertProvider } from './contexts/AlertContext';
 import { ConfirmProvider } from './contexts/ConfirmContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LoginPage } from './components/auth/LoginPage';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
 import './App.css';
 
@@ -33,10 +36,12 @@ const NAV_ITEMS = [
 ];
 
 function SidebarContent({ onClose }: { onClose?: () => void }) {
+  const { logout } = useAuth();
+
   return (
     <div className="flex flex-col h-full overflow-hidden" style={{ background: 'hsl(var(--sidebar))' }}>
       {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-5">
+      <div className="flex items-center gap-2 px-5 py-5">
         <img
           src="/logo.svg"
           alt="Landschaft"
@@ -72,6 +77,22 @@ function SidebarContent({ onClose }: { onClose?: () => void }) {
           </NavLink>
         ))}
       </nav>
+
+      <Separator className="bg-white/10 mx-4" />
+
+      {/* Logout */}
+      <div className="px-3 py-4">
+        <button
+          onClick={() => {
+            logout();
+            onClose?.();
+          }}
+          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          Logout
+        </button>
+      </div>
 
       {/* Footer */}
       <div className="px-5 py-4">
@@ -136,14 +157,14 @@ function Layout() {
         <main className="flex-1 overflow-y-auto bg-background">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
             <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/taxonomy" element={<TaxonomyManager />} />
-              <Route path="/categories" element={<CategoryManager />} />
-              <Route path="/plants" element={<PlantManager />} />
-              <Route path="/plants/import" element={<CsvImportPage />} />
-              <Route path="/plants/:id" element={<PlantDetails />} />
-              <Route path="/projects" element={<ProjectManager />} />
-              <Route path="/projects/:id" element={<ProjectDetails />} />
+              <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/taxonomy" element={<ProtectedRoute><TaxonomyManager /></ProtectedRoute>} />
+              <Route path="/categories" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
+              <Route path="/plants" element={<ProtectedRoute><PlantManager /></ProtectedRoute>} />
+              <Route path="/plants/import" element={<ProtectedRoute><CsvImportPage /></ProtectedRoute>} />
+              <Route path="/plants/:id" element={<ProtectedRoute><PlantDetails /></ProtectedRoute>} />
+              <Route path="/projects" element={<ProtectedRoute><ProjectManager /></ProtectedRoute>} />
+              <Route path="/projects/:id" element={<ProtectedRoute><ProjectDetails /></ProtectedRoute>} />
             </Routes>
           </div>
         </main>
@@ -156,16 +177,19 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <AlertProvider>
-          <ConfirmProvider>
-            <Routes>
-              {/* Public share page — no sidebar or app chrome */}
-              <Route path="/share/:token" element={<ProjectPublicView />} />
-              {/* All other routes get the full app layout */}
-              <Route path="/*" element={<Layout />} />
-            </Routes>
-          </ConfirmProvider>
-        </AlertProvider>
+        <AuthProvider>
+          <AlertProvider>
+            <ConfirmProvider>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                {/* Public share page — no sidebar or app chrome */}
+                <Route path="/share/:token" element={<ProjectPublicView />} />
+                {/* All other routes get the full app layout */}
+                <Route path="/*" element={<Layout />} />
+              </Routes>
+            </ConfirmProvider>
+          </AlertProvider>
+        </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
   );

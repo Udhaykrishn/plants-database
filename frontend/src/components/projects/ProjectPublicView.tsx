@@ -404,7 +404,7 @@ export function ProjectPublicView() {
                 padding: 18px 32px;
                 display: flex;
                 align-items: flex-end;
-                gap: 14px;
+                gap: 8px;
                 position: sticky;
                 top: 0;
                 z-index: 10;

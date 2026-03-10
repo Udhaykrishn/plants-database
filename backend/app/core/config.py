@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     # Groq AI
     GROQ_API_KEY: str = ""
 
+    # Auth
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str = "password"
+    SECRET_KEY: str = "secret-key"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 1 week
+
     # Neon Postgres
     NEON: str = None
     SQLALCHEMY_DATABASE_URI: Union[PostgresDsn, str] = None
