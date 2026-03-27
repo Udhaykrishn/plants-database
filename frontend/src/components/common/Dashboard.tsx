@@ -2,10 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Leaf, ListTree, Tags, FolderKanban, ArrowRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { plantsApi } from '../../api/plants';
-import { taxonomyApi } from '../../api/taxonomy';
-import { categoriesApi } from '../../api/categories';
-import { projectsApi } from '../../api/projects';
+import { dashboardApi } from '../../api/dashboard';
 
 const StatCard = ({
     title,
@@ -41,19 +38,7 @@ const StatCard = ({
 );
 
 export const Dashboard = () => {
-    const { data: plants } = useQuery({ queryKey: ['plants'], queryFn: () => plantsApi.getAll() });
-    const { data: tree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: () => taxonomyApi.getTree() });
-    const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesApi.getAll() });
-    const { data: projects } = useQuery({ queryKey: ['projects'], queryFn: () => projectsApi.getAll() });
-
-    const taxonCount = tree
-        ? (() => {
-            let count = 0;
-            const walk = (nodes: typeof tree) => nodes.forEach(n => { count++; walk(n.children || []); });
-            walk(tree);
-            return count;
-        })()
-        : undefined;
+    const { data: stats } = useQuery({ queryKey: ['dashboard', 'stats'], queryFn: () => dashboardApi.getStats() });
 
     return (
         <div>
@@ -69,28 +54,28 @@ export const Dashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
                 <StatCard
                     title="Total Plants"
-                    value={plants?.length}
+                    value={stats?.total_plants}
                     icon={Leaf}
                     to="/plants"
                     color="bg-primary"
                 />
                 <StatCard
                     title="Taxonomy Nodes"
-                    value={taxonCount}
+                    value={stats?.total_taxonomy_nodes}
                     icon={ListTree}
                     to="/taxonomy"
                     color="bg-secondary"
                 />
                 <StatCard
                     title="Categories"
-                    value={categories?.length}
+                    value={stats?.total_categories}
                     icon={Tags}
                     to="/categories"
                     color="bg-accent"
                 />
                 <StatCard
                     title="Projects"
-                    value={projects?.length}
+                    value={stats?.total_projects}
                     icon={FolderKanban}
                     to="/projects"
                     color="bg-primary"
