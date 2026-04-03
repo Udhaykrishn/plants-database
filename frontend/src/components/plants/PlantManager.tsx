@@ -111,8 +111,45 @@ export const PlantManager = () => {
     const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
     // Queries
+    const [searchParams] = useSearchParams();
     const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: () => projectsApi.getAll() });
-    const { data: plants, isLoading: plantsLoading } = useQuery({ queryKey: ['plants'], queryFn: () => plantsApi.getAll() });
+    
+    // Pagination state
+    const PAGE_SIZE = 20;
+    const [currentPage, setCurrentPage] = useState(1);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    const [filterCategory, setFilterCategory] = useState<string>(
+        () => searchParams.get('category') ?? '__all__'
+    );
+    const [filterIndoor, setFilterIndoor] = useState(false);
+    const [filterOutdoor, setFilterOutdoor] = useState(false);
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'recent' | 'oldest' | 'sci_asc' | 'sci_desc'>('recent');
+
+    const { data: plantsData, isLoading: plantsLoading } = useQuery({ 
+        queryKey: ['plants', currentPage, debouncedSearch, filterCategory, filterIndoor, filterOutdoor, sortOrder], 
+        queryFn: () => plantsApi.getAll({
+            skip: (currentPage - 1) * PAGE_SIZE,
+            limit: PAGE_SIZE,
+            search: debouncedSearch || undefined,
+            category: filterCategory === '__all__' ? undefined : filterCategory,
+            planting_place: (filterIndoor && filterOutdoor) ? PlantingPlace.BOTH
+                           : filterIndoor ? PlantingPlace.INDOOR
+                           : filterOutdoor ? PlantingPlace.OUTDOOR
+                           : undefined,
+            sort: sortOrder
+        })
+    });
+
+    const plants = plantsData?.items || [];
+    const totalPlantsInDb = plantsData?.total || 0;
+
     const { data: taxonomyTree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: () => taxonomyApi.getTree() });
     const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesApi.getAll() });
 
@@ -137,21 +174,15 @@ export const PlantManager = () => {
     });
 
 
-    // Filters & Sort
-    const [searchParams] = useSearchParams();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterCategory, setFilterCategory] = useState<string>(
-        () => searchParams.get('category') ?? '__all__'
-    );
-    const [filterIndoor, setFilterIndoor] = useState(false);
-    const [filterOutdoor, setFilterOutdoor] = useState(false);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'recent' | 'oldest' | 'sci_asc' | 'sci_desc'>('recent');
-
-    // Pagination
-    const PAGE_SIZE = 20;
-    const [currentPage, setCurrentPage] = useState(1);
 
 
+
+    useEffect(() => {
+        if (location.state?.editPlant && plants && taxonomyTree) {
+            handleEdit(location.state.editPlant);
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, plants, taxonomyTree, navigate]);
 
     // Form State
     const [commonName, setCommonName] = useState('');
@@ -222,7 +253,7 @@ export const PlantManager = () => {
             return aiApi.generatePlantDetails({
                 commonName: commonName.trim() || undefined,
                 scientificName: scientificName.trim() || undefined,
-                categories: categoriesOptions?.map(c => c.name)
+                categories: categoriesOptions?.items?.map(c => c.name)
             });
         },
         onSuccess: (data) => {
@@ -445,41 +476,8 @@ export const PlantManager = () => {
         else { createMutation.mutate(plantData as PlantCreate); }
     };
 
-    const filteredPlants = useMemo(() => {
-        if (!plants) return [];
-        const q = searchTerm.toLowerCase();
-        return [...plants].filter(plant => {
-            const matchesSearch = !q ||
-                plant.common_name.toLowerCase().includes(q) ||
-                (plant.scientific_name && plant.scientific_name.toLowerCase().includes(q));
-            const matchesCategory = filterCategory === '__all__' || plant.category === filterCategory;
-            let matchesPlace = true;
-            if (filterIndoor && !filterOutdoor) matchesPlace = plant.planting_place === PlantingPlace.INDOOR || plant.planting_place === PlantingPlace.BOTH;
-            else if (!filterIndoor && filterOutdoor) matchesPlace = plant.planting_place === PlantingPlace.OUTDOOR || plant.planting_place === PlantingPlace.BOTH;
-            else if (filterIndoor && filterOutdoor) matchesPlace = plant.planting_place === PlantingPlace.BOTH;
-            return matchesSearch && matchesCategory && matchesPlace;
-        }).sort((a, b) => {
-            if (sortOrder === 'recent') {
-                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-            }
-            if (sortOrder === 'oldest') {
-                return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-            }
-            if (sortOrder === 'sci_asc') {
-                return (a.scientific_name || '').toLowerCase().localeCompare((b.scientific_name || '').toLowerCase());
-            }
-            if (sortOrder === 'sci_desc') {
-                return (b.scientific_name || '').toLowerCase().localeCompare((a.scientific_name || '').toLowerCase());
-            }
-            return sortOrder === 'asc' ? a.common_name.toLowerCase().localeCompare(b.common_name.toLowerCase()) : b.common_name.toLowerCase().localeCompare(a.common_name.toLowerCase());
-        });
-    }, [plants, searchTerm, filterCategory, filterIndoor, filterOutdoor, sortOrder]);
-
-    const totalPages = Math.max(1, Math.ceil(filteredPlants.length / PAGE_SIZE));
-    const displayedPlants = useMemo(() => {
-        const start = (currentPage - 1) * PAGE_SIZE;
-        return filteredPlants.slice(start, start + PAGE_SIZE);
-    }, [filteredPlants, currentPage]);
+    const totalPages = Math.max(1, Math.ceil(totalPlantsInDb / PAGE_SIZE));
+    const displayedPlants = plants;
 
     // Reset to page 1 when filters/search change
     useEffect(() => { setCurrentPage(1); }, [searchTerm, filterCategory, filterIndoor, filterOutdoor, sortOrder]);
@@ -498,9 +496,9 @@ export const PlantManager = () => {
                     <div className="flex items-center justify-between gap-4">
                         <h2 className="text-2xl font-bold tracking-tight text-foreground truncate flex items-center gap-2">
                             {isCreating || editingPlantId ? 'Plant Editor' : 'Plant Catalog'}
-                            {!isCreating && !editingPlantId && !!plants && (
+                            {!isCreating && !editingPlantId && !!plantsData && (
                                 <span className="text-xs font-medium text-muted-foreground bg-muted/80 px-2 py-0.5 rounded-full border border-border/50">
-                                    {filteredPlants.length}
+                                    {totalPlantsInDb}
                                 </span>
                             )}
                         </h2>
@@ -601,7 +599,7 @@ export const PlantManager = () => {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="__all__">All Categories</SelectItem>
-                                        {categoriesOptions?.map(c => (
+                                        {categoriesOptions?.items?.map(c => (
                                             <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -773,7 +771,7 @@ export const PlantManager = () => {
                                                 <SelectValue placeholder="Select category…" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {categoriesOptions?.map(c => (
+                                                {categoriesOptions?.items?.map(c => (
                                                     <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
                                                 ))}
                                             </SelectContent>
@@ -1086,8 +1084,8 @@ export const PlantManager = () => {
                                         <TableHead className="w-9 px-4">
                                             <input
                                                 type="checkbox"
-                                                checked={filteredPlants.length > 0 && filteredPlants.every(p => selectedPlantIds.includes(p.id))}
-                                                onChange={(e) => { e.target.checked ? setSelectedPlantIds(filteredPlants.map((p: Plant) => p.id)) : setSelectedPlantIds([]); }}
+                                                checked={plants.length > 0 && plants.every(p => selectedPlantIds.includes(p.id))}
+                                                onChange={(e) => { e.target.checked ? setSelectedPlantIds(plants.map((p: Plant) => p.id)) : setSelectedPlantIds([]); }}
                                                 className="w-4 h-4 cursor-pointer accent-primary"
                                             />
                                         </TableHead>
@@ -1206,7 +1204,7 @@ export const PlantManager = () => {
                 {!isCreating && !editingPlantId && totalPages > 1 && (
                     <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
                         <span>
-                            Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredPlants.length)} of {filteredPlants.length}
+                            Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, totalPlantsInDb)} of {totalPlantsInDb}
                         </span>
                         <div className="flex items-center gap-1">
                             <Button
@@ -1267,7 +1265,7 @@ export const PlantManager = () => {
                                 <SelectValue placeholder="— Choose a Project —" />
                             </SelectTrigger>
                             <SelectContent>
-                                {projectsData?.map(proj => (
+                                {projectsData?.items?.map(proj => (
                                     <SelectItem key={proj.id} value={proj.id}>{proj.name} ({proj.client_name})</SelectItem>
                                 ))}
                             </SelectContent>

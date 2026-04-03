@@ -3,7 +3,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, func
 from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 
@@ -11,13 +11,13 @@ from app.db.session import get_db
 from app.models.plant import Plant
 from app.models.taxon import Taxon
 from app.models.enums import PlantingPlace, Rank
-from app.schemas.plant import PlantCreate, PlantResponse, PlantUpdate
+from app.schemas.plant import PlantCreate, PlantResponse, PlantUpdate, PlantListResponse
 from app.services.cloudinary_service import upload_image, upload_image_from_url
 from pydantic import BaseModel
 
 router = APIRouter()
 
-@router.get("/", response_model=List[PlantResponse])
+@router.get("/", response_model=PlantListResponse)
 async def read_plants(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
@@ -25,7 +25,8 @@ async def read_plants(
     category: Optional[str] = None,
     planting_place: Optional[PlantingPlace] = None,
     search: Optional[str] = None,
-    taxon_id: Optional[uuid.UUID] = None
+    taxon_id: Optional[uuid.UUID] = None,
+    sort: Optional[str] = "recent"
 ) -> Any:
     """
     Retrieve plants with filtering and search.
@@ -37,13 +38,40 @@ async def read_plants(
     if planting_place:
         query = query.filter(Plant.planting_place == planting_place)
     if search:
-        query = query.filter(Plant.common_name.ilike(f"%{search}%"))
+        query = query.filter(or_(
+            Plant.common_name.ilike(f"%{search}%"),
+            Plant.scientific_name.ilike(f"%{search}%")
+        ))
     if taxon_id:
         query = query.filter(Plant.taxon_id == taxon_id)
         
+    # Count total
+    count_stmt = select(func.count()).select_from(query.subquery())
+    count_result = await db.execute(count_stmt)
+    total = count_result.scalar_one()
+
+    # Apply sorting
+    if sort == "recent":
+        query = query.order_by(Plant.created_at.desc())
+    elif sort == "oldest":
+        query = query.order_by(Plant.created_at.asc())
+    elif sort == "asc":
+        query = query.order_by(Plant.common_name.asc())
+    elif sort == "desc":
+        query = query.order_by(Plant.common_name.desc())
+    elif sort == "sci_asc":
+        query = query.order_by(Plant.scientific_name.asc())
+    elif sort == "sci_desc":
+        query = query.order_by(Plant.scientific_name.desc())
+    else:
+        query = query.order_by(Plant.created_at.desc())
+
     query = query.offset(skip).limit(limit)
+    
     result = await db.execute(query)
-    return result.scalars().all()
+    items = result.scalars().all()
+    
+    return {"items": items, "total": total}
 
 @router.post("/upload-image")
 async def handle_upload_image(

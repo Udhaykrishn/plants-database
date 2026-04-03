@@ -16,3 +16,8 @@ export interface CategoryUpdate {
     name?: string;
     description?: string;
 }
+
+export interface CategoryListResponse {
+    items: CategoryResponse[];
+    total: number;
+}

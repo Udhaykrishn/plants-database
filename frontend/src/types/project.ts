@@ -28,3 +28,10 @@ export interface ProjectPlantCreate {
     plant_id: string;
     notes?: string;
 }
+
+export type ProjectResponse = Project;
+
+export interface ProjectListResponse {
+    items: ProjectResponse[];
+    total: number;
+}

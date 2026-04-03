@@ -52,3 +52,8 @@ export interface PlantUpdate {
     icon_url?: string;
     image_url?: string;
 }
+
+export interface PlantListResponse {
+    items: PlantResponse[];
+    total: number;
+}

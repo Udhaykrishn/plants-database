@@ -39,3 +39,7 @@ class ProjectResponse(ProjectBase):
     plants: List[ProjectPlantResponse] = []
     
     model_config = ConfigDict(from_attributes=True)
+
+class ProjectListResponse(BaseModel):
+    items: List[ProjectResponse]
+    total: int

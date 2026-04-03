@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, or_, func
 import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
@@ -14,25 +14,57 @@ from app.db.session import get_db
 from app.models.project import Project, ProjectPlant
 from app.models.plant import Plant
 from app.models.share_link import ProjectShareLink
-from app.schemas.project import ProjectCreate, ProjectResponse, ProjectPlantCreate, ProjectUpdate
+from app.schemas.project import ProjectCreate, ProjectResponse, ProjectPlantCreate, ProjectUpdate, ProjectListResponse
 from app.core.security import get_current_user
 
 router = APIRouter()
 
-@router.get("/", response_model=List[ProjectResponse], dependencies=[Depends(get_current_user)])
+@router.get("/", response_model=ProjectListResponse, dependencies=[Depends(get_current_user)])
 async def read_projects(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
+    search: Optional[str] = None,
+    sort: Optional[str] = "newest"
 ) -> Any:
     """
-    Retrieve projects.
+    Retrieve projects with pagination and search.
     """
     query = select(Project).options(
         selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
-    ).order_by(Project.updated_at.desc()).offset(skip).limit(limit)
+    )
+
+    if search:
+        query = query.filter(or_(
+            Project.name.ilike(f"%{search}%"),
+            Project.client_name.ilike(f"%{search}%"),
+            Project.location.ilike(f"%{search}%"),
+            Project.description.ilike(f"%{search}%")
+        ))
+
+    # Count total
+    count_stmt = select(func.count()).select_from(query.subquery())
+    count_result = await db.execute(count_stmt)
+    total = count_result.scalar_one()
+
+    # Apply ordering
+    if sort == "newest":
+        query = query.order_by(Project.updated_at.desc())
+    elif sort == "oldest":
+        query = query.order_by(Project.updated_at.asc())
+    elif sort == "name-asc":
+        query = query.order_by(Project.name.asc())
+    elif sort == "name-desc":
+        query = query.order_by(Project.name.desc())
+    else:
+        query = query.order_by(Project.updated_at.desc())
+
+    # Apply pagination
+    query = query.offset(skip).limit(limit)
     result = await db.execute(query)
-    return result.scalars().all()
+    items = result.scalars().all()
+    
+    return {"items": items, "total": total}
 
 @router.post("/", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def create_project(

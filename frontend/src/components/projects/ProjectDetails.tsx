@@ -135,10 +135,11 @@ export const ProjectDetails = () => {
         enabled: !!id,
     });
 
-    const { data: allPlants } = useQuery({
-        queryKey: ['plants'],
-        queryFn: () => plantsApi.getAll(),
+    const { data: allPlantsData } = useQuery({
+        queryKey: ['plants', 'all-picker'],
+        queryFn: () => plantsApi.getAll({ limit: 1000 }), // Load more for picker
     });
+    const allPlants = allPlantsData?.items || [];
 
     const { data: taxTree } = useQuery({
         queryKey: ['taxonomy', 'tree'],
@@ -610,7 +611,7 @@ export const ProjectDetails = () => {
                                     <SelectValue placeholder="Select a plant…" />
                                 </SelectTrigger>
                                 <SelectContent className="max-h-60">
-                                    {allPlants?.map((p) => (
+                                    {allPlants.map((p) => (
                                         <SelectItem key={p.id} value={p.id}>
                                             {p.common_name}{p.taxon?.name ? ` (${p.taxon.name})` : ''}
                                         </SelectItem>

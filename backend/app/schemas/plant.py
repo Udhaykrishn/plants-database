@@ -35,3 +35,7 @@ class PlantResponse(PlantBase):
     taxon: Optional[TaxonResponse] = None
     
     model_config = ConfigDict(from_attributes=True)
+
+class PlantListResponse(BaseModel):
+    items: List[PlantResponse]
+    total: int

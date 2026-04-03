@@ -1,9 +1,9 @@
 import { client } from "./client";
-import type { CategoryResponse, CategoryCreate, CategoryUpdate } from "../types/category";
+import type { CategoryResponse, CategoryCreate, CategoryUpdate, CategoryListResponse } from "../types/category";
 
 export const categoriesApi = {
-    getAll: async (): Promise<CategoryResponse[]> => {
-        const response = await client.get<CategoryResponse[]>("/categories/");
+    getAll: async (params?: { skip?: number; limit?: number; search?: string }): Promise<CategoryListResponse> => {
+        const response = await client.get<CategoryListResponse>("/categories/", { params });
         return response.data;
     },
 

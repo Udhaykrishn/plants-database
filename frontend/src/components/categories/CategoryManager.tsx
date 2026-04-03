@@ -41,10 +41,32 @@ export const CategoryManager = () => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
 
-    const { data: categories, isLoading } = useQuery({
-        queryKey: ['categories'],
-        queryFn: () => categoriesApi.getAll(),
+    const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 20;
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
+
+    const { data: categoriesData, isLoading } = useQuery({
+        queryKey: ['categories', currentPage, debouncedSearch],
+        queryFn: () => categoriesApi.getAll({ 
+            skip: (currentPage - 1) * PAGE_SIZE, 
+            limit: PAGE_SIZE,
+            search: debouncedSearch || undefined
+        }),
     });
+
+    const categories = categoriesData?.items || [];
+    const totalCategories = categoriesData?.total || 0;
+    const totalPages = Math.max(1, Math.ceil(totalCategories / PAGE_SIZE));
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearch]);
 
     const createMutation = useMutation({
         mutationFn: categoriesApi.create,
@@ -131,10 +153,21 @@ export const CategoryManager = () => {
                         Organise your plants into custom groups.
                     </p>
                 </div>
-                <Button onClick={openCreate} className="mt-3 sm:mt-0 w-full sm:w-auto">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Category
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                        <Input
+                            placeholder="Search categories..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="h-10 pl-9"
+                        />
+                        <Tags className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                    </div>
+                    <Button onClick={openCreate} className="w-full sm:w-auto">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Category
+                    </Button>
+                </div>
             </div>
 
             {/* Table */}
@@ -218,6 +251,46 @@ export const CategoryManager = () => {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground bg-white p-3 rounded-lg border border-border">
+                    <span>
+                        Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, totalCategories)} of {totalCategories}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(p => p - 1)}
+                        >
+                            Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                <Button
+                                    key={p}
+                                    variant={currentPage === p ? "default" : "ghost"}
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setCurrentPage(p)}
+                                >
+                                    {p}
+                                </Button>
+                            ))}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                        >
+                            Next
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             {/* Dialog */}
             <Dialog open={isOpen} onOpenChange={(o) => !o && closeDialog()}>

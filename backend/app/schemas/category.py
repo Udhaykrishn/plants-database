@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 import uuid
 from pydantic import BaseModel, ConfigDict
 
@@ -18,3 +18,7 @@ class CategoryResponse(CategoryBase):
     plant_count: int = 0
 
     model_config = ConfigDict(from_attributes=True)
+
+class CategoryListResponse(BaseModel):
+    items: List[CategoryResponse]
+    total: int

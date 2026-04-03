@@ -1,9 +1,17 @@
 import { client } from "./client";
-import type { PlantCreate, PlantResponse } from "../types/plant";
+import type { PlantCreate, PlantResponse, PlantListResponse } from "../types/plant";
 
 export const plantsApi = {
-    getAll: async (params?: { category?: string; planting_place?: string; search?: string; taxon_id?: string }): Promise<PlantResponse[]> => {
-        const response = await client.get<PlantResponse[]>("/plants/", { params });
+    getAll: async (params?: { 
+        category?: string; 
+        planting_place?: string; 
+        search?: string; 
+        taxon_id?: string;
+        skip?: number;
+        limit?: number;
+        sort?: string;
+    }): Promise<PlantListResponse> => {
+        const response = await client.get<PlantListResponse>("/plants/", { params });
         return response.data;
     },
 

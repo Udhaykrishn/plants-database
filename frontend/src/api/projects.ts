@@ -1,5 +1,5 @@
 import { client } from "./client";
-import type { Project, ProjectCreate, ProjectPlantCreate } from "../types/project";
+import type { Project, ProjectCreate, ProjectPlantCreate, ProjectListResponse } from "../types/project";
 
 export interface ShareLinkInfo {
     token: string;
@@ -8,8 +8,8 @@ export interface ShareLinkInfo {
 }
 
 export const projectsApi = {
-    getAll: async (): Promise<Project[]> => {
-        const response = await client.get<Project[]>("/projects/");
+    getAll: async (params?: { skip?: number; limit?: number; search?: string; sort?: string }): Promise<ProjectListResponse> => {
+        const response = await client.get<ProjectListResponse>("/projects/", { params });
         return response.data;
     },
 

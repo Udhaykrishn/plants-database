@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
@@ -63,7 +63,15 @@ export const ProjectManager = () => {
 
     const [viewMode, setViewMode] = useState<'card' | 'table'>('table');
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name-asc' | 'name-desc'>('newest');
+    const [currentPage, setCurrentPage] = useState(1);
+    const PAGE_SIZE = 12;
+
+    React.useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchTerm), 500);
+        return () => clearTimeout(timer);
+    }, [searchTerm]);
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingProject, setEditingProject] = useState<Project | null>(null);
@@ -74,10 +82,23 @@ export const ProjectManager = () => {
     const [location, setLocation] = useState('');
     const [description, setDescription] = useState('');
 
-    const { data: projects, isLoading } = useQuery({
-        queryKey: ['projects'],
-        queryFn: () => projectsApi.getAll(),
+    const { data: projectsData, isLoading } = useQuery({
+        queryKey: ['projects', currentPage, debouncedSearch, sortBy],
+        queryFn: () => projectsApi.getAll({
+            skip: (currentPage - 1) * PAGE_SIZE,
+            limit: PAGE_SIZE,
+            search: debouncedSearch || undefined,
+            sort: sortBy
+        }),
     });
+
+    const projects = projectsData?.items || [];
+    const totalProjects = projectsData?.total || 0;
+    const totalPages = Math.max(1, Math.ceil(totalProjects / PAGE_SIZE));
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearch, sortBy]);
 
     const createMutation = useMutation({
         mutationFn: projectsApi.create,
@@ -169,25 +190,7 @@ export const ProjectManager = () => {
 
     const isSaving = createMutation.isPending || updateMutation.isPending;
 
-    const displayedProjects = useMemo(() => {
-        if (!projects) return [];
-        return [...projects]
-            .filter((p) => {
-                const t = searchTerm.toLowerCase();
-                return (
-                    p.name.toLowerCase().includes(t) ||
-                    (p.client_name && p.client_name.toLowerCase().includes(t)) ||
-                    (p.location && p.location.toLowerCase().includes(t))
-                );
-            })
-            .sort((a, b) => {
-                if (sortBy === 'newest') return new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime();
-                if (sortBy === 'oldest') return new Date(a.updated_at || a.created_at).getTime() - new Date(b.updated_at || b.created_at).getTime();
-                if (sortBy === 'name-asc') return a.name.localeCompare(b.name);
-                if (sortBy === 'name-desc') return b.name.localeCompare(a.name);
-                return 0;
-            });
-    }, [projects, searchTerm, sortBy]);
+    const displayedProjects = projects;
 
     /* ── Actions Menu ── */
     const ActionsMenu = ({ project }: { project: Project }) => (
@@ -389,6 +392,48 @@ export const ProjectManager = () => {
                             ))}
                         </TableBody>
                     </Table>
+                </div>
+            )}
+
+            {/* Pagination */}
+            {!isLoading && totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 text-sm text-muted-foreground bg-white p-4 rounded-xl border border-border shadow-sm">
+                    <span>
+                        Showing {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, totalProjects)} of {totalProjects}
+                    </span>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(p => p - 1)}
+                            className="h-8"
+                        >
+                            Previous
+                        </Button>
+                        <div className="flex items-center gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                <Button
+                                    key={p}
+                                    variant={currentPage === p ? "default" : "ghost"}
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setCurrentPage(p)}
+                                >
+                                    {p}
+                                </Button>
+                            ))}
+                        </div>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(p => p + 1)}
+                            className="h-8"
+                        >
+                            Next
+                        </Button>
+                    </div>
                 </div>
             )}
 

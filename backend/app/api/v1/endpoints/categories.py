@@ -1,39 +1,55 @@
 import uuid
-from typing import Any, List
+from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
 from app.models.category import Category
 from app.models.plant import Plant
-from app.schemas.category import CategoryResponse, CategoryCreate, CategoryUpdate
+from app.schemas.category import CategoryResponse, CategoryCreate, CategoryUpdate, CategoryListResponse
 
 router = APIRouter()
 
-@router.get("/", response_model=List[CategoryResponse])
+@router.get("/", response_model=CategoryListResponse)
 async def read_categories(
     db: AsyncSession = Depends(get_db),
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
+    search: Optional[str] = None
 ) -> Any:
-    stmt = (
+    """
+    Retrieve categories with plant counts and pagination.
+    """
+    # Base query for selecting items
+    query = (
         select(Category, func.count(Plant.id))
         .outerjoin(Plant, Category.name == Plant.category)
         .group_by(Category.id, Category.name, Category.description)
-        .order_by(Category.name)
-        .offset(skip)
-        .limit(limit)
     )
-    result = await db.execute(stmt)
+    
+    if search:
+        query = query.filter(or_(
+            Category.name.ilike(f"%{search}%"),
+            Category.description.ilike(f"%{search}%")
+        ))
+
+    # Count total
+    count_stmt = select(func.count()).select_from(query.subquery())
+    count_result = await db.execute(count_stmt)
+    total = count_result.scalar_one()
+
+    # Final items query with ordering and pagination
+    query = query.order_by(Category.name).offset(skip).limit(limit)
+    result = await db.execute(query)
     
     categories = []
     for cat, count in result.all():
         cat.plant_count = count
         categories.append(cat)
         
-    return categories
+    return {"items": categories, "total": total}
 
 @router.post("/", response_model=CategoryResponse)
 async def create_category(
