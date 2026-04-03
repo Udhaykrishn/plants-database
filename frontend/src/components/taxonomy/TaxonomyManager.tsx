@@ -388,12 +388,12 @@ export const TaxonomyManager = () => {
                         </div>
                     )}
 
-                    {isSpecies && associatedPlants && associatedPlants.length > 0 && (
+                    {isSpecies && associatedPlants && associatedPlants.items.length > 0 && (
                         <div className="mt-2 space-y-3">
                             <Separator />
                             <div>
                                 <h4 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3">Linked Plant</h4>
-                                {associatedPlants.slice(0, 1).map(plant => (
+                                {associatedPlants.items.slice(0, 1).map(plant => (
                                     <div key={plant.id} className="flex gap-4 items-center bg-muted/30 p-3 rounded-xl border border-border/50 shadow-sm transition-all hover:bg-muted/50 group">
                                         {plant.icon_url ? (
                                             <img src={plant.icon_url} alt={plant.common_name} className="w-12 h-12 rounded-lg object-cover bg-muted ring-1 ring-border/50" />

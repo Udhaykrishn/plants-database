@@ -228,8 +228,8 @@ export const CsvImportPage = () => {
     const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesApi.getAll() });
 
     const categoriesList = useMemo(() => {
-        if (!categoriesOptions || categoriesOptions.length === 0) return "Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other";
-        return categoriesOptions.map(c => c.name).join(", ");
+        if (!categoriesOptions || categoriesOptions.items.length === 0) return "Tree, Shrub, Palm, Creeper, Groundcover, Climber, Fern, Grass, Succulent, Aquatic, Other";
+        return categoriesOptions.items.map(c => c.name).join(", ");
     }, [categoriesOptions]);
 
     const bulkImportPrompt = useMemo(() => `Act as a botanical data expert. 
