@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Trash2, Plus, Tags } from 'lucide-react';
 
 import { categoriesApi } from '../../api/categories';
+import { categoriesQueryOptions } from '../../api/queryOptions';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import type { Category } from '../../types/category';
@@ -51,18 +52,29 @@ export const CategoryManager = () => {
         return () => clearTimeout(timer);
     }, [searchTerm]);
 
-    const { data: categoriesData, isLoading } = useQuery({
-        queryKey: ['categories', currentPage, debouncedSearch],
-        queryFn: () => categoriesApi.getAll({ 
-            skip: (currentPage - 1) * PAGE_SIZE, 
-            limit: PAGE_SIZE,
-            search: debouncedSearch || undefined
-        }),
-    });
+    const categoriesParams = {
+        skip: (currentPage - 1) * PAGE_SIZE,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined
+    };
+
+    const { data: categoriesData, isLoading } = useQuery(categoriesQueryOptions(categoriesParams));
 
     const categories = categoriesData?.items || [];
     const totalCategories = categoriesData?.total || 0;
     const totalPages = Math.max(1, Math.ceil(totalCategories / PAGE_SIZE));
+
+    // Prefetch logic
+    React.useEffect(() => {
+        if (currentPage < totalPages) {
+            const nextPage = currentPage + 1;
+            const nextParams = {
+                ...categoriesParams,
+                skip: (nextPage - 1) * PAGE_SIZE,
+            };
+            queryClient.prefetchQuery(categoriesQueryOptions(nextParams));
+        }
+    }, [currentPage, totalPages, categoriesParams, queryClient]);
 
     React.useEffect(() => {
         setCurrentPage(1);

@@ -9,7 +9,7 @@ import type { PlantCreate, Plant } from '../../types/plant';
 
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
-import { categoriesApi } from '../../api/categories';
+import { plantsQueryOptions, taxonomyTreeQueryOptions, categoriesQueryOptions } from '../../api/queryOptions';
 import { aiApi } from '../../api/ai';
 import { cn } from '../../lib-frontend/utils';
 import { TaxonomyFormTable } from './TaxonomyFormTable';
@@ -132,26 +132,40 @@ export const PlantManager = () => {
     const [filterOutdoor, setFilterOutdoor] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'recent' | 'oldest' | 'sci_asc' | 'sci_desc'>('recent');
 
-    const { data: plantsData, isLoading: plantsLoading } = useQuery({ 
-        queryKey: ['plants', currentPage, debouncedSearch, filterCategory, filterIndoor, filterOutdoor, sortOrder], 
-        queryFn: () => plantsApi.getAll({
-            skip: (currentPage - 1) * PAGE_SIZE,
-            limit: PAGE_SIZE,
-            search: debouncedSearch || undefined,
-            category: filterCategory === '__all__' ? undefined : filterCategory,
-            planting_place: (filterIndoor && filterOutdoor) ? PlantingPlace.BOTH
-                           : filterIndoor ? PlantingPlace.INDOOR
-                           : filterOutdoor ? PlantingPlace.OUTDOOR
-                           : undefined,
-            sort: sortOrder
-        })
-    });
+    const plantingPlace = (filterIndoor && filterOutdoor) ? PlantingPlace.BOTH
+                            : filterIndoor ? PlantingPlace.INDOOR
+                            : filterOutdoor ? PlantingPlace.OUTDOOR
+                            : undefined;
+
+    const plantsParams = {
+        skip: (currentPage - 1) * PAGE_SIZE,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        category: filterCategory === '__all__' ? undefined : filterCategory,
+        planting_place: plantingPlace,
+        sort: sortOrder
+    };
+
+    const { data: plantsData, isLoading: plantsLoading } = useQuery(plantsQueryOptions(plantsParams));
 
     const plants = plantsData?.items || [];
     const totalPlantsInDb = plantsData?.total || 0;
+    const totalPages = Math.max(1, Math.ceil(totalPlantsInDb / PAGE_SIZE));
 
-    const { data: taxonomyTree } = useQuery({ queryKey: ['taxonomy', 'tree'], queryFn: () => taxonomyApi.getTree() });
-    const { data: categoriesOptions } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesApi.getAll() });
+    // Prefetch functionality
+    useEffect(() => {
+        if (currentPage < totalPages) {
+            const nextPage = currentPage + 1;
+            const nextParams = {
+                ...plantsParams,
+                skip: (nextPage - 1) * PAGE_SIZE,
+            };
+            queryClient.prefetchQuery(plantsQueryOptions(nextParams));
+        }
+    }, [currentPage, totalPages, plantsParams, queryClient]);
+
+    const { data: taxonomyTree } = useQuery(taxonomyTreeQueryOptions());
+    const { data: categoriesOptions } = useQuery(categoriesQueryOptions());
 
 
     // Mutations
@@ -469,7 +483,6 @@ export const PlantManager = () => {
         else { createMutation.mutate(plantData as PlantCreate); }
     };
 
-    const totalPages = Math.max(1, Math.ceil(totalPlantsInDb / PAGE_SIZE));
     const displayedPlants = plants;
 
     // Reset to page 1 when filters/search change

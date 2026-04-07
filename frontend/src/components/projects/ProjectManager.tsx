@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 
 import { projectsApi } from '../../api/projects';
+import { projectsQueryOptions } from '../../api/queryOptions';
 import type { ProjectCreate, Project } from '../../types/project';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
@@ -82,23 +83,34 @@ export const ProjectManager = () => {
     const [location, setLocation] = useState('');
     const [description, setDescription] = useState('');
 
-    const { data: projectsData, isLoading } = useQuery({
-        queryKey: ['projects', currentPage, debouncedSearch, sortBy],
-        queryFn: () => projectsApi.getAll({
-            skip: (currentPage - 1) * PAGE_SIZE,
-            limit: PAGE_SIZE,
-            search: debouncedSearch || undefined,
-            sort: sortBy
-        }),
-    });
+    const projectsParams = {
+        skip: (currentPage - 1) * PAGE_SIZE,
+        limit: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        sort: sortBy
+    };
+
+    const { data: projectsData, isLoading } = useQuery(projectsQueryOptions(projectsParams));
+
+    React.useEffect(() => {
+        setCurrentPage(1);
+    }, [debouncedSearch, sortBy]);
 
     const projects = projectsData?.items || [];
     const totalProjects = projectsData?.total || 0;
     const totalPages = Math.max(1, Math.ceil(totalProjects / PAGE_SIZE));
 
+    // Prefetch functionality
     React.useEffect(() => {
-        setCurrentPage(1);
-    }, [debouncedSearch, sortBy]);
+        if (currentPage < totalPages) {
+            const nextPage = currentPage + 1;
+            const nextParams = {
+                ...projectsParams,
+                skip: (nextPage - 1) * PAGE_SIZE,
+            };
+            queryClient.prefetchQuery(projectsQueryOptions(nextParams));
+        }
+    }, [currentPage, totalPages, projectsParams, queryClient]);
 
     const createMutation = useMutation({
         mutationFn: projectsApi.create,
