@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useNavigate, useLocation, useSearch } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { plantsApi } from '../../api/plants';
 import { taxonomyApi } from '../../api/taxonomy';
@@ -111,7 +111,7 @@ export const PlantManager = () => {
     const [selectedProjectId, setSelectedProjectId] = useState<string>('');
 
     // Queries
-    const [searchParams] = useSearchParams();
+    const searchParams = useSearch({ strict: false }) as { category?: string };
     const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: () => projectsApi.getAll() });
     
     // Pagination state
@@ -126,7 +126,7 @@ export const PlantManager = () => {
     }, [searchTerm]);
 
     const [filterCategory, setFilterCategory] = useState<string>(
-        () => searchParams.get('category') ?? '__all__'
+        () => searchParams.category ?? '__all__'
     );
     const [filterIndoor, setFilterIndoor] = useState(false);
     const [filterOutdoor, setFilterOutdoor] = useState(false);
@@ -177,12 +177,6 @@ export const PlantManager = () => {
 
 
 
-    useEffect(() => {
-        if (location.state?.editPlant && plants && taxonomyTree) {
-            handleEdit(location.state.editPlant);
-            navigate(location.pathname, { replace: true, state: {} });
-        }
-    }, [location.state, plants, taxonomyTree, navigate]);
 
     // Form State
     const [commonName, setCommonName] = useState('');
@@ -206,9 +200,9 @@ export const PlantManager = () => {
     const [mainImagePage, setMainImagePage] = useState(1);
 
     useEffect(() => {
-        if (location.state?.editPlant && plants && taxonomyTree) {
-            handleEdit(location.state.editPlant);
-            navigate(location.pathname, { replace: true, state: {} });
+        if ((location.state as any)?.editPlant && plants && taxonomyTree) {
+            handleEdit((location.state as any).editPlant);
+            navigate({ to: '.', replace: true, state: {} as any });
         }
     }, [location.state, plants, taxonomyTree, navigate]);
 
@@ -219,7 +213,7 @@ export const PlantManager = () => {
             showAlert('Plant created successfully', 'success');
             setIsCreating(false);
             resetForm();
-            navigate('/plants', { replace: true });
+            navigate({ to: '/plants', replace: true });
         },
         onError: (error: any) => {
             showAlert("Error creating plant: " + (error.response?.data?.detail || error.message), 'error');
@@ -234,7 +228,7 @@ export const PlantManager = () => {
             setEditingPlantId(null);
             setIsCreating(false);
             resetForm();
-            navigate('/plants', { replace: true });
+            navigate({ to: '/plants', replace: true });
         },
         onError: (error: any) => {
             showAlert("Error updating plant: " + (error.response?.data?.detail || error.message), 'error');
@@ -391,7 +385,7 @@ export const PlantManager = () => {
         if ((e.target as Element).closest('.actions-menu-container') ||
             (e.target as Element).closest('.dropdown-menu') ||
             (e.target as Element).tagName.toLowerCase() === 'input') return;
-        navigate(`/plants/${id}`);
+        navigate({ to: `/plants/${id}` as any });
     };
 
     const openSingleProjectModal = (plantId: string) => {
@@ -402,8 +396,7 @@ export const PlantManager = () => {
     const cancelEdit = () => {
         setEditingPlantId(null);
         setIsCreating(false);
-        resetForm();
-        navigate('/plants', { replace: true });
+        navigate({ to: '/plants', replace: true });
     };
 
     const toggleCreate = () => {
@@ -559,7 +552,7 @@ export const PlantManager = () => {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                onClick={() => navigate('/plants/import')}
+                                                onClick={() => navigate({ to: '/plants/import' })}
                                                 className="h-8 px-3 text-xs gap-1.5 focus-visible:ring-0 hover:bg-background/50"
                                             >
                                                 <Upload size={13} className="text-muted-foreground" />

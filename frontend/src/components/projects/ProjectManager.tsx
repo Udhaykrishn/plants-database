@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link } from '@tanstack/react-router';
 import {
     Plus, Search, Pencil, Trash2, Copy, MoreVertical,
     LayoutGrid, List, FolderKanban, MapPin, User, CalendarDays, Leaf,
@@ -299,7 +299,7 @@ export const ProjectManager = () => {
                     {displayedProjects.map((project) => (
                         <Link
                             key={project.id}
-                            to={`/projects/${project.id}`}
+                            to={`/projects/${project.id}` as any}
                             className="group relative rounded-xl border border-border bg-white shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-200 flex flex-col overflow-hidden"
                         >
                             <div className="flex items-start justify-between p-5 pb-3">
@@ -361,7 +361,7 @@ export const ProjectManager = () => {
                                 <TableRow key={project.id} className="hover:bg-muted/30 transition-colors group">
                                     <TableCell>
                                         <Link
-                                            to={`/projects/${project.id}`}
+                                            to={`/projects/${project.id}` as any}
                                             className="font-medium text-foreground hover:text-primary flex items-center gap-1 transition-colors"
                                         >
                                             {project.name}

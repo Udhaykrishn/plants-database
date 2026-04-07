@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Trash2, Plus, Tags } from 'lucide-react';
 
@@ -203,7 +203,7 @@ export const CategoryManager = () => {
                                 <TableRow key={cat.id} className="hover:bg-muted/30 transition-colors">
                                     <TableCell className="font-medium">
                                         <button
-                                            onClick={() => navigate(`/plants?category=${encodeURIComponent(cat.name)}`)}
+                                            onClick={() => navigate({ to: '/plants', search: { category: cat.name } })}
                                             className="text-foreground hover:text-primary hover:underline underline-offset-2 transition-colors text-left"
                                             title={`View plants in ${cat.name}`}
                                         >
@@ -215,7 +215,7 @@ export const CategoryManager = () => {
                                     </TableCell>
                                     <TableCell>
                                         <button
-                                            onClick={() => navigate(`/plants?category=${encodeURIComponent(cat.name)}`)}
+                                            onClick={() => navigate({ to: '/plants', search: { category: cat.name } })}
                                             title={`View plants in ${cat.name}`}
                                         >
                                             <Badge variant="secondary" className="text-xs tabular-nums cursor-pointer hover:bg-primary/10 hover:text-primary transition-colors">
