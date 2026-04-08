@@ -72,6 +72,11 @@ export const Dashboard = () => {
                         variant="outline" 
                         size="sm" 
                         onClick={() => refetch()} 
+                        onMouseEnter={() => {
+                            if (!isFetching) {
+                                queryClient.prefetchQuery(dashboardQueryOptions());
+                            }
+                        }}
                         disabled={isFetching}
                         className="h-9 px-3 gap-2 border-border/60 hover:bg-muted font-medium transition-all"
                     >
