@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, memo, useCallback } from 'react';
+import { useState, useMemo, useEffect, memo, useCallback, Fragment } from 'react';
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -201,6 +201,168 @@ const ProjectPlantRowMemo = memo(({ pp, idx, safePage, pageSize, onEdit, onDelet
     );
 });
 
+const ProjectBoqRow = ({
+    pp,
+    idx,
+    onDelete,
+    onUpdate,
+    isSelected,
+    onSelectChange
+}: {
+    pp: any;
+    idx: number;
+    onDelete: (plantId: string, plantName: string) => void;
+    onUpdate: (plantId: string, data: any) => Promise<void>;
+    isSelected: boolean;
+    onSelectChange: (plantId: string, selected: boolean) => void;
+}) => {
+    const [localQty, setLocalQty] = useState(pp.quantity !== undefined && pp.quantity !== null ? String(pp.quantity) : '');
+    const [localUnit, setLocalUnit] = useState(pp.unit ?? '');
+    const [localSize, setLocalSize] = useState(pp.optimum_height_size ?? '');
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        setLocalQty(pp.quantity !== undefined && pp.quantity !== null ? String(pp.quantity) : '');
+        setLocalUnit(pp.unit ?? '');
+        setLocalSize(pp.optimum_height_size ?? '');
+    }, [pp.quantity, pp.unit, pp.optimum_height_size]);
+
+    const handleBlur = async (field: 'quantity' | 'unit' | 'optimum_height_size', value: string) => {
+        const trimmed = value.trim();
+        let hasChanged = false;
+        if (field === 'quantity') {
+            const parsed = trimmed ? parseFloat(trimmed) : null;
+            const original = pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : null;
+            hasChanged = parsed !== original;
+        } else if (field === 'unit') {
+            const original = pp.unit ?? '';
+            hasChanged = trimmed !== original;
+        } else if (field === 'optimum_height_size') {
+            const original = pp.optimum_height_size ?? '';
+            hasChanged = trimmed !== original;
+        }
+
+        if (!hasChanged) return;
+
+        setSaving(true);
+        try {
+            const parsedQty = field === 'quantity' ? (trimmed ? parseFloat(trimmed) : null) : (localQty.trim() ? parseFloat(localQty) : null);
+            const currentUnit = field === 'unit' ? trimmed : localUnit;
+            const currentSize = field === 'optimum_height_size' ? trimmed : localSize;
+            
+            await onUpdate(pp.plant_id, {
+                plant_id: pp.plant_id,
+                notes: pp.notes,
+                quantity: parsedQty === null ? undefined : parsedQty,
+                unit: currentUnit || undefined,
+                optimum_height_size: currentSize || undefined
+            });
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <TableRow className={`hover:bg-muted/10 transition-colors ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
+            {/* # */}
+            <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground w-12">
+                {idx + 1}
+            </TableCell>
+            
+            {/* Checkbox */}
+            <TableCell className="w-10 text-center">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => onSelectChange(pp.plant_id, e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
+                />
+            </TableCell>
+
+            {/* Image */}
+            <TableCell className="w-16">
+                <div className="flex justify-center">
+                    {pp.plant?.icon_url ? (
+                        <img
+                            src={pp.plant.icon_url}
+                            alt=""
+                            className="w-10 h-10 object-cover rounded-lg border border-border/50 shadow-sm"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center border border-border/50">
+                            <Leaf size={16} className="text-muted-foreground/40" />
+                        </div>
+                    )}
+                </div>
+            </TableCell>
+
+            {/* Common Name */}
+            <TableCell className="font-semibold text-foreground max-w-[150px] truncate">
+                {pp.plant?.common_name || '—'}
+            </TableCell>
+
+            {/* Scientific Name */}
+            <TableCell className="italic text-muted-foreground text-xs max-w-[180px] truncate">
+                {pp.plant?.scientific_name || pp.plant?.taxon?.name || '—'}
+            </TableCell>
+
+            {/* Unit */}
+            <TableCell className="w-24">
+                <input
+                    type="text"
+                    value={localUnit}
+                    onChange={(e) => setLocalUnit(e.target.value)}
+                    onBlur={() => handleBlur('unit', localUnit)}
+                    placeholder="—"
+                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none"
+                />
+            </TableCell>
+
+            {/* Quantity */}
+            <TableCell className="w-24">
+                <input
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={localQty}
+                    onChange={(e) => setLocalQty(e.target.value)}
+                    onBlur={() => handleBlur('quantity', localQty)}
+                    placeholder="—"
+                    className="w-full text-sm font-semibold bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums"
+                />
+            </TableCell>
+
+            {/* Height/Size */}
+            <TableCell className="w-36">
+                <input
+                    type="text"
+                    value={localSize}
+                    onChange={(e) => setLocalSize(e.target.value)}
+                    onBlur={() => handleBlur('optimum_height_size', localSize)}
+                    placeholder="—"
+                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none"
+                />
+            </TableCell>
+
+            {/* Actions */}
+            <TableCell className="text-right w-16">
+                <div className="flex items-center justify-end gap-1">
+                    <Button
+                        variant="ghost" size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={() => onDelete(pp.plant_id, pp.plant?.common_name || 'Plant')}
+                        title="Remove plant"
+                    >
+                        <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                </div>
+            </TableCell>
+        </TableRow>
+    );
+};
+
 export const ProjectDetails = () => {
     const { id } = useParams({ strict: false }) as { id: string };
     const queryClient = useQueryClient();
@@ -227,6 +389,15 @@ export const ProjectDetails = () => {
     const [pdfLoading, setPdfLoading] = useState(false);
     const [viewMode, setViewMode] = useState<'standard' | 'boq'>('standard');
     const [pdfBoqLoading, setPdfBoqLoading] = useState(false);
+    const [selectedPlantIds, setSelectedPlantIds] = useState<string[]>([]);
+    const [bulkUpdating, setBulkUpdating] = useState(false);
+    const [bulkUnit, setBulkUnit] = useState('');
+    const [bulkQty, setBulkQty] = useState('');
+    const [bulkSize, setBulkSize] = useState('');
+
+    useEffect(() => {
+        setSelectedPlantIds([]);
+    }, [viewMode]);
 
     /* ── Share link state ── */
     const [shareLink, setShareLink] = useState<ShareLinkInfo | null>(null);
@@ -371,6 +542,72 @@ export const ProjectDetails = () => {
         onError: (e: any) => { showAlert('Failed to remove: ' + (e.response?.data?.detail || e.message), 'error'); },
     });
 
+    const updateBoqFieldsMutation = useMutation({
+        mutationFn: (data: { plantId: string } & Partial<ProjectPlantCreate>) => {
+            const { plantId, ...payload } = data;
+            return projectsApi.updatePlant(id!, plantId, payload as ProjectPlantCreate);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['project', id] });
+        },
+        onError: (e: any) => {
+            showAlert('Failed to update: ' + (e.response?.data?.detail || e.message), 'error');
+        }
+    });
+
+    const handleUpdateBoqFields = useCallback(async (plantId: string, data: any) => {
+        try {
+            await updateBoqFieldsMutation.mutateAsync({ plantId, ...data });
+        } catch (e) {
+            // Error already shown in mutation onError
+        }
+    }, [updateBoqFieldsMutation]);
+
+    const handleBulkEdit = async (data: { quantity?: number; unit?: string; optimum_height_size?: string }) => {
+        if (selectedPlantIds.length === 0) return;
+        setBulkUpdating(true);
+        try {
+            const promises = selectedPlantIds.map(plantId => {
+                const pp = project?.plants.find(item => item.plant_id === plantId);
+                const payload: ProjectPlantCreate = {
+                    plant_id: plantId,
+                    notes: pp?.notes,
+                    quantity: data.quantity !== undefined ? data.quantity : pp?.quantity,
+                    unit: data.unit !== undefined ? data.unit : pp?.unit,
+                    optimum_height_size: data.optimum_height_size !== undefined ? data.optimum_height_size : pp?.optimum_height_size,
+                };
+                return projectsApi.updatePlant(id!, plantId, payload);
+            });
+            await Promise.all(promises);
+            queryClient.invalidateQueries({ queryKey: ['project', id] });
+            showAlert('Bulk update completed successfully', 'success');
+            setSelectedPlantIds([]);
+        } catch (e: any) {
+            showAlert('Bulk update failed: ' + (e.message || 'error'), 'error');
+        } finally {
+            setBulkUpdating(false);
+        }
+    };
+
+    const handleSelectChange = useCallback((plantId: string, selected: boolean) => {
+        setSelectedPlantIds(prev => {
+            if (selected) {
+                return prev.includes(plantId) ? prev : [...prev, plantId];
+            } else {
+                return prev.filter(id => id !== plantId);
+            }
+        });
+    }, []);
+
+    const handleSelectAllChange = useCallback((selected: boolean, visiblePlants: any[]) => {
+        if (selected) {
+            const allIds = visiblePlants.map(pp => pp.plant_id);
+            setSelectedPlantIds(allIds);
+        } else {
+            setSelectedPlantIds([]);
+        }
+    }, []);
+
     /* ── Dialog helpers ── */
     const openAdd = useCallback(() => {
         setEditingPlantId(null);
@@ -466,6 +703,16 @@ export const ProjectDetails = () => {
                 return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
             });
     }, [project, search, categoryFilter, sortKey, sortDir]);
+
+    const boqGroups = useMemo(() => {
+        const groups = new Map<string, typeof filteredSorted>();
+        for (const pp of filteredSorted) {
+            const cat = pp.plant?.category || 'Uncategorized';
+            if (!groups.has(cat)) groups.set(cat, []);
+            groups.get(cat)!.push(pp);
+        }
+        return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+    }, [filteredSorted]);
 
     const totalPages = Math.max(1, Math.ceil(filteredSorted.length / pageSize));
     const safePage = Math.min(page, totalPages);
@@ -664,85 +911,138 @@ export const ProjectDetails = () => {
                             </div>
                         </div>
 
+                        {/* Bulk Edit Toolbar */}
+                        {selectedPlantIds.length > 0 && (
+                            <div className="mx-5 my-3 p-4 bg-primary/5 border border-primary/20 rounded-xl flex flex-col sm:flex-row sm:items-end justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="space-y-1">
+                                    <h4 className="text-sm font-semibold text-primary">Bulk Edit Selected</h4>
+                                    <p className="text-xs text-muted-foreground">
+                                        Modifying <span className="font-semibold text-foreground">{selectedPlantIds.length}</span> plants. Leave fields blank to keep their current values.
+                                    </p>
+                                </div>
+                                <div className="grid grid-cols-3 gap-3 flex-1 max-w-xl">
+                                    <div className="space-y-1">
+                                        <Label htmlFor="bulk-unit" className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Unit</Label>
+                                        <Input
+                                            id="bulk-unit"
+                                            placeholder="e.g. Nos."
+                                            className="h-8 text-xs bg-white"
+                                            value={bulkUnit}
+                                            onChange={(e) => setBulkUnit(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="bulk-qty" className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Quantity</Label>
+                                        <Input
+                                            id="bulk-qty"
+                                            type="number"
+                                            step="any"
+                                            placeholder="e.g. 25"
+                                            className="h-8 text-xs bg-white"
+                                            value={bulkQty}
+                                            onChange={(e) => setBulkQty(e.target.value)}
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <Label htmlFor="bulk-size" className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Height / Size</Label>
+                                        <Input
+                                            id="bulk-size"
+                                            placeholder="e.g. 2m"
+                                            className="h-8 text-xs bg-white"
+                                            value={bulkSize}
+                                            onChange={(e) => setBulkSize(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 text-xs"
+                                        onClick={() => setSelectedPlantIds([])}
+                                        disabled={bulkUpdating}
+                                    >
+                                        Cancel
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        className="h-8 text-xs bg-primary text-white hover:bg-primary/95"
+                                        onClick={async () => {
+                                            const qtyVal = bulkQty.trim() ? parseFloat(bulkQty) : undefined;
+                                            const unitVal = bulkUnit.trim() ? bulkUnit : undefined;
+                                            const sizeVal = bulkSize.trim() ? bulkSize : undefined;
+                                            if (qtyVal === undefined && unitVal === undefined && sizeVal === undefined) {
+                                                showAlert('Please enter at least one value to update', 'warning');
+                                                return;
+                                            }
+                                            await handleBulkEdit({
+                                                quantity: qtyVal,
+                                                unit: unitVal,
+                                                optimum_height_size: sizeVal
+                                            });
+                                            setBulkQty('');
+                                            setBulkUnit('');
+                                            setBulkSize('');
+                                        }}
+                                        disabled={bulkUpdating}
+                                    >
+                                        {bulkUpdating ? 'Applying…' : 'Apply'}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
                         {/* BOQ Table View */}
                         <div className="overflow-x-auto">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/30">
                                         <TableHead className="w-12 font-semibold text-center">#</TableHead>
+                                        <TableHead className="w-10 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={filteredSorted.length > 0 && selectedPlantIds.length === filteredSorted.length}
+                                                onChange={(e) => handleSelectAllChange(e.target.checked, filteredSorted)}
+                                                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
+                                            />
+                                        </TableHead>
                                         <TableHead className="w-16 text-center font-semibold">Image</TableHead>
                                         <TableHead className="font-semibold">Common Name</TableHead>
                                         <TableHead className="font-semibold">Scientific Name</TableHead>
-                                        <TableHead className="font-semibold">Optimum Height/Size</TableHead>
-                                        <TableHead className="font-semibold">Quantity</TableHead>
                                         <TableHead className="font-semibold">Unit</TableHead>
-                                        <TableHead className="text-right font-semibold w-20">Actions</TableHead>
+                                        <TableHead className="font-semibold">Quantity</TableHead>
+                                        <TableHead className="font-semibold">Height / Size</TableHead>
+                                        <TableHead className="text-right font-semibold w-16">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {filteredSorted.length === 0 ? (
                                         <TableRow>
-                                            <TableCell colSpan={8} className="h-24 text-center text-sm text-muted-foreground">
+                                            <TableCell colSpan={9} className="h-24 text-center text-sm text-muted-foreground">
                                                 No plants found.
                                             </TableCell>
                                         </TableRow>
                                     ) : (
-                                        filteredSorted.map((pp, idx) => (
-                                            <TableRow key={pp.plant_id} className="hover:bg-muted/10 transition-colors">
-                                                <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground">
-                                                    {idx + 1}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <div className="flex justify-center">
-                                                        {pp.plant?.icon_url ? (
-                                                            <img
-                                                                src={pp.plant.icon_url}
-                                                                alt=""
-                                                                className="w-10 h-10 object-cover rounded-lg border border-border/50 shadow-sm"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center border border-border/50">
-                                                                <Leaf size={16} className="text-muted-foreground/40" />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="font-semibold text-foreground max-w-[150px] truncate">
-                                                    {pp.plant?.common_name || '—'}
-                                                </TableCell>
-                                                <TableCell className="italic text-muted-foreground text-xs max-w-[180px] truncate">
-                                                    {pp.plant?.scientific_name || pp.plant?.taxon?.name || '—'}
-                                                </TableCell>
-                                                <TableCell className="text-sm font-medium text-foreground">
-                                                    {pp.optimum_height_size || <span className="opacity-30">—</span>}
-                                                </TableCell>
-                                                <TableCell className="text-sm font-semibold tabular-nums text-foreground">
-                                                    {pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : <span className="opacity-30">—</span>}
-                                                </TableCell>
-                                                <TableCell className="text-sm font-medium text-muted-foreground">
-                                                    {pp.unit || <span className="opacity-30">—</span>}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <Button
-                                                            variant="ghost" size="icon"
-                                                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                                                            onClick={() => openEdit(pp.plant_id)}
-                                                            title="Edit BOQ item"
-                                                        >
-                                                            <Pencil className="w-3.5 h-3.5" />
-                                                        </Button>
-                                                        <Button
-                                                            variant="ghost" size="icon"
-                                                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                                            onClick={() => handleDeletePlant(pp.plant_id, pp.plant?.common_name || 'Plant')}
-                                                            title="Remove plant"
-                                                        >
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        </Button>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
+                                        boqGroups.map(([category, pps]) => (
+                                            <Fragment key={category}>
+                                                {/* Group Header Row */}
+                                                <TableRow className="bg-muted/5 hover:bg-muted/5 border-b border-border/80">
+                                                    <TableCell colSpan={9} className="py-2 px-5 font-bold text-primary text-xs uppercase tracking-wider bg-muted/10 border-l-[3px] border-primary/70">
+                                                        {category} ({pps.length})
+                                                    </TableCell>
+                                                </TableRow>
+                                                {pps.map((pp, idx) => (
+                                                    <ProjectBoqRow
+                                                        key={pp.plant_id}
+                                                        pp={pp}
+                                                        idx={idx}
+                                                        onDelete={handleDeletePlant}
+                                                        onUpdate={handleUpdateBoqFields}
+                                                        isSelected={selectedPlantIds.includes(pp.plant_id)}
+                                                        onSelectChange={handleSelectChange}
+                                                    />
+                                                ))}
+                                            </Fragment>
                                         ))
                                     )}
                                 </TableBody>

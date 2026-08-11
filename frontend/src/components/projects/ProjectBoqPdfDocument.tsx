@@ -100,6 +100,23 @@ const s = StyleSheet.create({
         paddingVertical: 6,
         paddingHorizontal: 4,
     },
+    catHeader: {
+        backgroundColor: C.mutedBg,
+        borderBottomWidth: 1,
+        borderBottomColor: C.border,
+        paddingVertical: 6,
+        paddingHorizontal: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 4,
+    },
+    catHeaderText: {
+        fontSize: 8.5,
+        fontFamily: 'Helvetica-Bold',
+        color: C.primary,
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+    },
     tableRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -155,9 +172,9 @@ const COL = {
     img: '8%',
     common: '26%',
     sci: '24%',
-    height: '18%',
-    qty: '9%',
-    unit: '9%',
+    unit: '10%',
+    qty: '10%',
+    height: '16%',
 };
 
 interface BoqPdfProps {
@@ -167,6 +184,17 @@ interface BoqPdfProps {
 }
 
 function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
+    const groups = new Map<string, Project['plants']>();
+    for (const pp of project.plants) {
+        if (!pp.plant) continue;
+        const cat = pp.plant.category || 'Uncategorized';
+        if (!groups.has(cat)) groups.set(cat, []);
+        groups.get(cat)!.push(pp);
+    }
+    const sortedGroups = Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+    let serialIdx = 0;
+
     return (
         <Document title={`${project.name} - Bill of Quantities`} author="Landschaft" creator="Landschaft Plants Database">
             <Page size="A4" style={s.page} wrap>
@@ -207,53 +235,63 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                     <Text style={[s.th, { width: COL.img, textAlign: 'center' }]}>Img</Text>
                     <Text style={[s.th, { width: COL.common }]}>Common Name</Text>
                     <Text style={[s.th, { width: COL.sci }]}>Scientific Name</Text>
-                    <Text style={[s.th, { width: COL.height }]}>Optimum Height/Size</Text>
-                    <Text style={[s.th, { width: COL.qty, textAlign: 'right' }]}>Qty</Text>
                     <Text style={[s.th, { width: COL.unit }]}>Unit</Text>
+                    <Text style={[s.th, { width: COL.qty, textAlign: 'right' }]}>Qty</Text>
+                    <Text style={[s.th, { width: COL.height }]}>Optimum Height/Size</Text>
                 </View>
 
-                {/* Table Rows */}
+                {/* Table Rows Grouped by Category */}
                 {project.plants.length === 0 ? (
                     <View style={{ paddingVertical: 20, alignItems: 'center' }}>
                         <Text style={{ fontSize: 10, color: C.mutedFg }}>No plants added to this project.</Text>
                     </View>
                 ) : (
-                    project.plants.map((pp, rowIdx) => {
-                        const p = pp.plant;
-                        if (!p) return null;
-                        const rowBg = rowIdx % 2 === 0 ? C.white : C.rowAlt;
-                        const imgUrl = imgCache[p.id] || imgCache[`icon_${p.id}`] || p.icon_url;
-
-                        return (
-                            <View key={pp.plant_id} style={[s.tableRow, { backgroundColor: rowBg }]} wrap={false}>
-                                <Text style={[s.td, { width: COL.num, textAlign: 'center', fontSize: 9 }]}>
-                                    {rowIdx + 1}
-                                </Text>
-                                <View style={{ width: COL.img, alignItems: 'center', justifyContent: 'center' }}>
-                                    {imgUrl ? (
-                                        <Image src={imgUrl} style={s.plantImg} />
-                                    ) : (
-                                        <View style={s.fallbackImg} />
-                                    )}
-                                </View>
-                                <Text style={[s.td, { width: COL.common, fontFamily: 'Helvetica-Bold', color: C.primary }]}>
-                                    {p.common_name}
-                                </Text>
-                                <Text style={[s.tdMuted, { width: COL.sci }]}>
-                                    {p.scientific_name || p.taxon?.name || '—'}
-                                </Text>
-                                <Text style={[s.td, { width: COL.height }]}>
-                                    {pp.optimum_height_size || '—'}
-                                </Text>
-                                <Text style={[s.qtyTd, { width: COL.qty, textAlign: 'right' }]}>
-                                    {pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : '—'}
-                                </Text>
-                                <Text style={[s.td, { width: COL.unit, color: C.mutedFg }]}>
-                                    {pp.unit || '—'}
-                                </Text>
+                    sortedGroups.map(([category, pps]) => (
+                        <View key={category} wrap={false}>
+                            {/* Group Header Row */}
+                            <View style={s.catHeader}>
+                                <Text style={s.catHeaderText}>{category} ({pps.length})</Text>
                             </View>
-                        );
-                    })
+
+                            {pps.map((pp, rowIdx) => {
+                                const p = pp.plant;
+                                if (!p) return null;
+                                serialIdx += 1;
+                                const rowBg = rowIdx % 2 === 0 ? C.white : C.rowAlt;
+                                const imgUrl = imgCache[p.id] || imgCache[`icon_${p.id}`] || p.icon_url;
+
+                                return (
+                                    <View key={pp.plant_id} style={[s.tableRow, { backgroundColor: rowBg }]} wrap={false}>
+                                        <Text style={[s.td, { width: COL.num, textAlign: 'center', fontSize: 9 }]}>
+                                            {serialIdx}
+                                        </Text>
+                                        <View style={{ width: COL.img, alignItems: 'center', justifyContent: 'center' }}>
+                                            {imgUrl ? (
+                                                <Image src={imgUrl} style={s.plantImg} />
+                                            ) : (
+                                                <View style={s.fallbackImg} />
+                                            )}
+                                        </View>
+                                        <Text style={[s.td, { width: COL.common, fontFamily: 'Helvetica-Bold', color: C.primary }]}>
+                                            {p.common_name}
+                                        </Text>
+                                        <Text style={[s.tdMuted, { width: COL.sci }]}>
+                                            {p.scientific_name || p.taxon?.name || '—'}
+                                        </Text>
+                                        <Text style={[s.td, { width: COL.unit, color: C.mutedFg }]}>
+                                            {pp.unit || '—'}
+                                        </Text>
+                                        <Text style={[s.qtyTd, { width: COL.qty, textAlign: 'right' }]}>
+                                            {pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : '—'}
+                                        </Text>
+                                        <Text style={[s.td, { width: COL.height }]}>
+                                            {pp.optimum_height_size || '—'}
+                                        </Text>
+                                    </View>
+                                );
+                            })}
+                        </View>
+                    ))
                 )}
             </Page>
         </Document>
