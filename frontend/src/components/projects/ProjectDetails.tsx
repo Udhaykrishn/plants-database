@@ -7,7 +7,7 @@ import {
     ChevronsUpDown, ChevronLeft, ChevronRight,
     Link2, Copy, Check, RefreshCw, FileSpreadsheet
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { exportProjectBoqPdf } from './ProjectBoqPdfDocument';
 
 import { projectsApi } from '../../api/projects';
@@ -479,44 +479,273 @@ export const ProjectDetails = () => {
         }
     };
 
-    const handleExportBoqExcel = () => {
-        if (!project) return;
+    // Helper to render SVG to PNG array buffer in browser
+    const svgToPng = (svgText: string, width: number, height: number): Promise<ArrayBuffer | null> => {
+        return new Promise((resolve) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    resolve(null);
+                    return;
+                }
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        blob.arrayBuffer().then(resolve);
+                    } else {
+                        resolve(null);
+                    }
+                }, 'image/png');
+            };
+            img.onerror = () => resolve(null);
+            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
+        });
+    };
+
+    // Helper to fetch remote image as array buffer for Excel insertion
+    const fetchImageAsBuffer = async (url: string): Promise<{ buffer: ArrayBuffer; extension: string } | null> => {
         try {
-            const rows = project.plants.map((pp, idx) => ({
-                "S. No.": idx + 1,
-                "Common Name": pp.plant?.common_name || '—',
-                "Scientific Name": pp.plant?.scientific_name || pp.plant?.taxon?.name || '—',
-                "Optimum Height / Size": pp.optimum_height_size || '—',
-                "Quantity": pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : '—',
-                "Unit": pp.unit || '—',
-                "Notes": pp.notes || '—'
-            }));
+            let fetchUrl = url;
+            if (url.startsWith('//')) {
+                fetchUrl = 'https:' + url;
+            }
+            const res = await fetch(fetchUrl, { mode: 'cors' });
+            if (!res.ok) return null;
+            const buffer = await res.arrayBuffer();
+            let ext = 'png';
+            if (url.toLowerCase().includes('.jpg') || url.toLowerCase().includes('.jpeg')) {
+                ext = 'jpeg';
+            } else if (url.toLowerCase().includes('.gif')) {
+                ext = 'gif';
+            }
+            return { buffer, extension: ext };
+        } catch (e) {
+            console.warn('CORS or fetch error for Excel image:', url, e);
+            return null;
+        }
+    };
 
-            const worksheet = XLSX.utils.json_to_sheet([]);
-            
-            // Add header info (Landschaft BOQ)
-            XLSX.utils.sheet_add_aoa(worksheet, [
-                ["LANDSCHAFT - BILL OF QUANTITIES"],
-                [],
-                [`Project Name:`, project.name],
-                [`Client:`, project.client_name || '—'],
-                [`Location:`, project.location || '—'],
-                [`Date:`, new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })],
-                [],
-            ], { origin: "A1" });
+    const handleExportBoqExcel = async () => {
+        if (!project) return;
+        showAlert('Generating BOQ Excel with images...', 'info');
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('BOQ');
 
-            // Add table headers and data
-            XLSX.utils.sheet_add_json(worksheet, rows, { origin: "A8", skipHeader: false });
+            // Set gridlines visible
+            worksheet.views = [{ showGridLines: true }];
 
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "BOQ");
+            // Set Column widths
+            worksheet.columns = [
+                { key: 'serial', width: 13 },
+                { key: 'img', width: 14 },
+                { key: 'common', width: 28 },
+                { key: 'sci', width: 28 },
+                { key: 'unit', width: 12 },
+                { key: 'qty', width: 12 },
+                { key: 'height', width: 22 },
+                { key: 'notes', width: 32 }
+            ];
 
-            // Set column widths
-            const maxLens = [10, 25, 25, 25, 12, 10, 30];
-            worksheet["!cols"] = maxLens.map(w => ({ wch: w }));
+            // Set row heights for spacious header
+            worksheet.getRow(1).height = 24;
+            worksheet.getRow(2).height = 15;
+            worksheet.getRow(3).height = 18;
+            worksheet.getRow(4).height = 18;
+            worksheet.getRow(5).height = 18;
+            worksheet.getRow(6).height = 18;
+            worksheet.getRow(7).height = 15;
 
-            XLSX.writeFile(workbook, `${project.name}_BOQ.xlsx`);
-            showAlert('Excel exported successfully', 'success');
+            // 1. Add Landschaft Logo (Top Right in Column H)
+            try {
+                const logoRes = await fetch('/logo-color.svg');
+                if (logoRes.ok) {
+                    const svgText = await logoRes.text();
+                    const logoBuffer = await svgToPng(svgText, 120, 120);
+                    if (logoBuffer) {
+                        const logoId = workbook.addImage({
+                            buffer: logoBuffer,
+                            extension: 'png',
+                        });
+                        worksheet.addImage(logoId, {
+                            tl: { col: 7.3, row: 0.3 }, // Center in Column H
+                            ext: { width: 56, height: 56 }
+                        });
+                        
+                        // Add LANDSCHAFT wordmark text directly under logo in Column H
+                        const logoTextCell = worksheet.getCell('H5');
+                        logoTextCell.value = 'LANDSCHAFT';
+                        logoTextCell.font = { name: 'Arial', size: 7.5, bold: true, color: { argb: 'FF1B3B2B' } };
+                        logoTextCell.alignment = { horizontal: 'center', vertical: 'middle' };
+                    }
+                }
+            } catch (err) {
+                console.warn('Failed to embed logo in Excel:', err);
+            }
+
+            // 2. Add Header Titles and Metadata
+            const titleCell = worksheet.getCell('A1');
+            titleCell.value = 'BILL OF QUANTITIES';
+            titleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FF1B3B2B' } };
+
+            const metaRows = [
+                ['Project:', project.name],
+                ['Client:', project.client_name || '—'],
+                ['Location:', project.location || '—'],
+                ['Date:', new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })]
+            ];
+
+            metaRows.forEach((row, i) => {
+                const r = worksheet.getRow(i + 3);
+                r.getCell(1).value = row[0];
+                r.getCell(1).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF666666' } };
+                r.getCell(2).value = row[1];
+                r.getCell(2).font = { name: 'Arial', size: 10, color: { argb: 'FF1A1A1A' } };
+            });
+
+            // 3. Add Table Headers (Row 8)
+            const headerRow = worksheet.getRow(8);
+            headerRow.height = 28;
+            const headers = ['#', 'Img', 'Common Name', 'Scientific Name', 'Unit', 'Qty', 'Optimum Height/Size', 'Notes'];
+            headers.forEach((h, colIdx) => {
+                const cell = headerRow.getCell(colIdx + 1);
+                cell.value = h;
+                cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FF1B3B2B' }
+                };
+                cell.alignment = {
+                    vertical: 'middle',
+                    horizontal: colIdx === 0 || colIdx === 1 || colIdx === 4 || colIdx === 5 || colIdx === 6 ? 'center' : 'left'
+                };
+                cell.border = {
+                    bottom: { style: 'medium', color: { argb: 'FF1B3B2B' } }
+                };
+            });
+
+            // Group by Category
+            const groups = new Map<string, typeof project.plants>();
+            for (const pp of project.plants) {
+                if (!pp.plant) continue;
+                const cat = pp.plant.category || 'Uncategorized';
+                if (!groups.has(cat)) groups.set(cat, []);
+                groups.get(cat)!.push(pp);
+            }
+            const sortedGroups = Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]));
+
+            let currentRowIdx = 9;
+            let serialIdx = 0;
+
+            for (const [category, pps] of sortedGroups) {
+                // Category Header Row
+                const catRow = worksheet.getRow(currentRowIdx);
+                catRow.height = 24;
+                
+                // Merge category header cells A-H
+                worksheet.mergeCells(`A${currentRowIdx}:H${currentRowIdx}`);
+                const catCell = catRow.getCell(1);
+                catCell.value = `${category.toUpperCase()} (${pps.length})`;
+                catCell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF1B3B2B' } };
+                catCell.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFF0EDE8' }
+                };
+                catCell.alignment = { vertical: 'middle', indent: 1 };
+                catCell.border = {
+                    top: { style: 'thin', color: { argb: 'FFE5E1D8' } },
+                    bottom: { style: 'thin', color: { argb: 'FFE5E1D8' } }
+                };
+
+                currentRowIdx += 1;
+
+                // Add plant rows
+                for (let i = 0; i < pps.length; i++) {
+                    const pp = pps[i];
+                    const p = pp.plant!;
+                    serialIdx += 1;
+                    
+                    const row = worksheet.getRow(currentRowIdx);
+                    row.height = 42; // Height to fit image
+
+                    const isAlt = i % 2 === 1;
+                    const rowBgColor = isAlt ? 'FFF6F4F1' : 'FFFFFFFF';
+
+                    // Set values
+                    row.getCell(1).value = serialIdx;
+                    row.getCell(3).value = p.common_name;
+                    row.getCell(4).value = p.scientific_name || p.taxon?.name || '—';
+                    row.getCell(5).value = pp.unit || '—';
+                    row.getCell(6).value = pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : '—';
+                    row.getCell(7).value = pp.optimum_height_size || '—';
+                    row.getCell(8).value = pp.notes || '—';
+
+                    // Stylings & alignments
+                    for (let col = 1; col <= 8; col++) {
+                        const cell = row.getCell(col);
+                        cell.font = {
+                            name: 'Arial',
+                            size: 10,
+                            bold: col === 3 || col === 6, // bold common name and quantity
+                            italic: col === 4, // italic scientific name
+                            color: { argb: col === 3 ? 'FF1B3B2B' : 'FF1A1A1A' }
+                        };
+                        cell.alignment = {
+                            vertical: 'middle',
+                            horizontal: col === 1 || col === 2 || col === 5 || col === 6 || col === 7 ? 'center' : 'left',
+                            wrapText: col === 8 || col === 3 || col === 4
+                        };
+                        cell.fill = {
+                            type: 'pattern',
+                            pattern: 'solid',
+                            fgColor: { argb: rowBgColor }
+                        };
+                        cell.border = {
+                            bottom: { style: 'thin', color: { argb: 'FFE5E1D8' } }
+                        };
+                    }
+
+                    // Add Image in Column 2 (B)
+                    const imgUrl = p.icon_url || p.image_url;
+                    if (imgUrl) {
+                        try {
+                            const imgData = await fetchImageAsBuffer(imgUrl);
+                            if (imgData) {
+                                const imageId = workbook.addImage({
+                                    buffer: imgData.buffer,
+                                    extension: imgData.extension as any,
+                                });
+                                worksheet.addImage(imageId, {
+                                    tl: { col: 1.1, row: currentRowIdx - 0.9 },
+                                    ext: { width: 38, height: 38 }
+                                });
+                            }
+                        } catch (err) {
+                            console.warn('Failed to embed plant image in Excel:', imgUrl, err);
+                        }
+                    }
+
+                    currentRowIdx += 1;
+                }
+            }
+
+            // Write and Download Workbook
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = window.URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `${project.name}_BOQ.xlsx`;
+            anchor.click();
+            window.URL.revokeObjectURL(url);
+
+            showAlert('BOQ Excel exported successfully', 'success');
         } catch (e) {
             console.error(e);
             showAlert('Excel export failed', 'error');
