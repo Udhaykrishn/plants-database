@@ -21,8 +21,8 @@ import type { Project } from '../../types/project';
 const C = {
     bg: '#fbfaf8',
     dark: '#1a1a1a',
-    primary: '#2d5a27',
-    sage: '#5a7a4f',
+    primary: '#1B3B2B',
+    sage: '#758C73',
     mutedBg: '#f0ede8',
     mutedFg: '#666666',
     border: '#e5e1d8',
@@ -63,9 +63,8 @@ const s = StyleSheet.create({
         gap: 4,
     },
     metaItem: {
-        fontSize: 10,
-        color: C.mutedFg,
-        lineHeight: 1.3,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     metaBold: {
         fontFamily: 'Helvetica-Bold',
@@ -203,27 +202,39 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                     <View style={s.headerLeft}>
                         <Text style={s.title}>BILL OF QUANTITIES</Text>
                         <View style={s.metaGrid}>
-                            <Text style={s.metaItem}>
-                                <Text style={s.metaBold}>Project: </Text>{project.name}
-                            </Text>
-                            <Text style={s.metaItem}>
-                                <Text style={s.metaBold}>Client: </Text>{project.client_name || '—'}
-                            </Text>
-                            <Text style={s.metaItem}>
-                                <Text style={s.metaBold}>Location: </Text>{project.location || '—'}
-                            </Text>
-                            <Text style={s.metaItem}>
-                                <Text style={s.metaBold}>Date: </Text>{dateStr}
-                            </Text>
+                            <View style={s.metaItem}>
+                                <Svg width="10" height="10" viewBox="0 0 12 12" style={{ marginRight: 5 }}>
+                                    <Path fill={C.mutedFg} d="M1 2.5A1.5 1.5 0 0 1 2.5 1h2.2a1.5 1.5 0 0 1 1.06.44l1.06 1.06H10.5A1.5 1.5 0 0 1 12 4v5.5A1.5 1.5 0 0 1 10.5 11h-8A1.5 1.5 0 0 1 1-9.5v-7ZM2.5 2a.5.5 0 0 0-.5.5V3h8v-.5a.5.5 0 0 0-.5-.5H6.56a.5.5 0 0 0-.35-.15L5.15 2H2.5ZM11 4H1v5.5a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5V4Z" />
+                                </Svg>
+                                <Text style={{ fontSize: 9.5, color: C.dark }}>{project.name}</Text>
+                            </View>
+                            <View style={s.metaItem}>
+                                <Svg width="10" height="10" viewBox="0 0 12 12" style={{ marginRight: 5 }}>
+                                    <Path fill={C.mutedFg} d="M6 6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-4.5 5A4.5 4.5 0 0 1 6 6.5a4.5 4.5 0 0 1 4.5 4.5.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5Z" />
+                                </Svg>
+                                <Text style={{ fontSize: 9.5, color: C.dark }}>{project.client_name || '—'}</Text>
+                            </View>
+                            <View style={s.metaItem}>
+                                <Svg width="10" height="10" viewBox="0 0 12 12" style={{ marginRight: 5 }}>
+                                    <Path fill={C.mutedFg} d="M6 0a4 4 0 0 0-4 4c0 3 4 8 4 8s4-5 4-4a4 4 0 0 0-4-4Zm0 5.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z" />
+                                </Svg>
+                                <Text style={{ fontSize: 9.5, color: C.dark }}>{project.location || '—'}</Text>
+                            </View>
+                            <View style={s.metaItem}>
+                                <Svg width="10" height="10" viewBox="0 0 12 12" style={{ marginRight: 5 }}>
+                                    <Path fill={C.mutedFg} d="M3.5 0a.5.5 0 0 1 .5.5V2h4V.5a.5.5 0 0 1 1 0V2h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5ZM1 5v5a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5H1Z" />
+                                </Svg>
+                                <Text style={{ fontSize: 9.5, color: C.dark }}>{dateStr}</Text>
+                            </View>
                         </View>
                     </View>
                     
                     {/* Landschaft Logo */}
                     <View style={s.logoContainer}>
                         <Svg width="42" height="42" viewBox="0 0 400 400">
-                            <Path fill="#2d5a27" d="M125 70 Q125 40 155 40 H245 Q275 40 275 70 V190 H125 Z" />
-                            <Path fill="#8aa87f" d="M125 210 H275 V360 H155 Q125 360 125 330 V210 Z" />
-                            <Path fill="#c8b8a2" d="M295 210 H415 Q445 210 445 240 V330 Q445 360 415 360 H295 V210 Z" />
+                            <Path fill="#1B3B2B" d="M125 70 Q125 40 155 40 H245 Q275 40 275 70 V190 H125 Z" />
+                            <Path fill="#758C73" d="M125 210 H275 V360 H155 Q125 360 125 330 V210 Z" />
+                            <Path fill="#C8B8A2" d="M295 210 H415 Q445 210 445 240 V330 Q445 360 415 360 H295 V210 Z" />
                         </Svg>
                         <Text style={s.logoText}>LANDSCHAFT</Text>
                     </View>
