@@ -282,17 +282,17 @@ const ProjectBoqRow = ({
             </TableCell>
 
             {/* Image */}
-            <TableCell className="w-16">
+            <TableCell className="w-20">
                 <div className="flex justify-center">
                     {pp.plant?.icon_url ? (
                         <img
                             src={pp.plant.icon_url}
                             alt=""
-                            className="w-10 h-10 object-cover rounded-lg border border-border/50 shadow-sm"
+                            className="w-12 h-12 object-cover rounded-lg border border-border/50 shadow-sm"
                         />
                     ) : (
-                        <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center border border-border/50">
-                            <Leaf size={16} className="text-muted-foreground/40" />
+                        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center border border-border/50">
+                            <Leaf size={18} className="text-muted-foreground/40" />
                         </div>
                     )}
                 </div>
@@ -309,19 +309,19 @@ const ProjectBoqRow = ({
             </TableCell>
 
             {/* Unit */}
-            <TableCell className="w-24">
+            <TableCell className="w-28">
                 <input
                     type="text"
                     value={localUnit}
                     onChange={(e) => setLocalUnit(e.target.value)}
                     onBlur={() => handleBlur('unit', localUnit)}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none"
+                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
                 />
             </TableCell>
 
             {/* Quantity */}
-            <TableCell className="w-24">
+            <TableCell className="w-28">
                 <input
                     type="number"
                     step="any"
@@ -330,19 +330,19 @@ const ProjectBoqRow = ({
                     onChange={(e) => setLocalQty(e.target.value)}
                     onBlur={() => handleBlur('quantity', localQty)}
                     placeholder="—"
-                    className="w-full text-sm font-semibold bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums"
+                    className="w-full text-sm font-semibold bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
                 />
             </TableCell>
 
             {/* Height/Size */}
-            <TableCell className="w-36">
+            <TableCell className="w-40">
                 <input
                     type="text"
                     value={localSize}
                     onChange={(e) => setLocalSize(e.target.value)}
                     onBlur={() => handleBlur('optimum_height_size', localSize)}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none"
+                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none text-center"
                 />
             </TableCell>
 
@@ -893,7 +893,7 @@ export const ProjectDetails = () => {
                                             <g transform="translate(-85,0)">
                                                 <path fill="#2d5a27" d="M125 70 Q125 40 155 40 H245 Q275 40 275 70 V190 H125 Z" />
                                                 <path fill="#8aa87f" d="M125 210 H275 V360 H155 Q125 360 125 330 V210 Z" />
-                                                <path fill="#e4ddd1" d="M295 210 H415 Q445 210 445 240 V330 Q445 360 415 360 H295 V210 Z" />
+                                                <path fill="#c8b8a2" d="M295 210 H415 Q445 210 445 240 V330 Q445 360 415 360 H295 V210 Z" />
                                             </g>
                                         </svg>
                                         <span className="text-[10px] font-bold tracking-[0.25em] text-[#2d5a27] leading-none">LANDSCHAFT</span>
@@ -1009,9 +1009,9 @@ export const ProjectDetails = () => {
                                         <TableHead className="w-16 text-center font-semibold">Image</TableHead>
                                         <TableHead className="font-semibold">Common Name</TableHead>
                                         <TableHead className="font-semibold">Scientific Name</TableHead>
-                                        <TableHead className="font-semibold">Unit</TableHead>
-                                        <TableHead className="font-semibold">Quantity</TableHead>
-                                        <TableHead className="font-semibold">Height / Size</TableHead>
+                                        <TableHead className="font-semibold text-center">Unit</TableHead>
+                                        <TableHead className="font-semibold text-center">Quantity</TableHead>
+                                        <TableHead className="font-semibold text-center">Height / Size</TableHead>
                                         <TableHead className="text-right font-semibold w-16">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>

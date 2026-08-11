@@ -138,9 +138,9 @@ const s = StyleSheet.create({
         paddingHorizontal: 4,
     },
     plantImg: {
-        width: 26,
-        height: 26,
-        borderRadius: 5,
+        width: 32,
+        height: 32,
+        borderRadius: 6,
         objectFit: 'cover',
         borderWidth: 0.5,
         borderColor: C.border,
@@ -148,9 +148,9 @@ const s = StyleSheet.create({
         marginHorizontal: 4,
     },
     fallbackImg: {
-        width: 26,
-        height: 26,
-        borderRadius: 5,
+        width: 32,
+        height: 32,
+        borderRadius: 6,
         backgroundColor: '#e5e7eb',
         borderWidth: 0.5,
         borderColor: C.border,
@@ -168,13 +168,13 @@ const s = StyleSheet.create({
 
 // ─── Column widths percentages (total must be 100%) ──────────────────────────
 const COL = {
-    num: '6%',
-    img: '8%',
-    common: '26%',
+    num: '5%',
+    img: '12%',
+    common: '25%',
     sci: '24%',
     unit: '10%',
     qty: '10%',
-    height: '16%',
+    height: '14%',
 };
 
 interface BoqPdfProps {
@@ -222,8 +222,8 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                     <View style={s.logoContainer}>
                         <Svg width="42" height="42" viewBox="0 0 400 400">
                             <Path fill="#2d5a27" d="M125 70 Q125 40 155 40 H245 Q275 40 275 70 V190 H125 Z" />
-                            <Path fill="#5a7a4f" d="M125 210 H275 V360 H155 Q125 360 125 330 V210 Z" />
-                            <Path fill="#e5e1d8" d="M295 210 H415 Q445 210 445 240 V330 Q445 360 415 360 H295 V210 Z" />
+                            <Path fill="#8aa87f" d="M125 210 H275 V360 H155 Q125 360 125 330 V210 Z" />
+                            <Path fill="#c8b8a2" d="M295 210 H415 Q445 210 445 240 V330 Q445 360 415 360 H295 V210 Z" />
                         </Svg>
                         <Text style={s.logoText}>LANDSCHAFT</Text>
                     </View>
@@ -235,9 +235,9 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                     <Text style={[s.th, { width: COL.img, textAlign: 'center' }]}>Img</Text>
                     <Text style={[s.th, { width: COL.common }]}>Common Name</Text>
                     <Text style={[s.th, { width: COL.sci }]}>Scientific Name</Text>
-                    <Text style={[s.th, { width: COL.unit }]}>Unit</Text>
-                    <Text style={[s.th, { width: COL.qty, textAlign: 'right' }]}>Qty</Text>
-                    <Text style={[s.th, { width: COL.height }]}>Optimum Height/Size</Text>
+                    <Text style={[s.th, { width: COL.unit, textAlign: 'center' }]}>Unit</Text>
+                    <Text style={[s.th, { width: COL.qty, textAlign: 'center' }]}>Qty</Text>
+                    <Text style={[s.th, { width: COL.height, textAlign: 'center' }]}>Optimum Height/Size</Text>
                 </View>
 
                 {/* Table Rows Grouped by Category */}
@@ -278,13 +278,13 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                                         <Text style={[s.tdMuted, { width: COL.sci }]}>
                                             {p.scientific_name || p.taxon?.name || '—'}
                                         </Text>
-                                        <Text style={[s.td, { width: COL.unit, color: C.mutedFg }]}>
+                                        <Text style={[s.td, { width: COL.unit, textAlign: 'center', color: C.mutedFg }]}>
                                             {pp.unit || '—'}
                                         </Text>
-                                        <Text style={[s.qtyTd, { width: COL.qty, textAlign: 'right' }]}>
+                                        <Text style={[s.qtyTd, { width: COL.qty, textAlign: 'center' }]}>
                                             {pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : '—'}
                                         </Text>
-                                        <Text style={[s.td, { width: COL.height }]}>
+                                        <Text style={[s.td, { width: COL.height, textAlign: 'center' }]}>
                                             {pp.optimum_height_size || '—'}
                                         </Text>
                                     </View>
