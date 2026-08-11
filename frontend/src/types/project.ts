@@ -4,6 +4,9 @@ export interface ProjectPlant {
     plant_id: string;
     notes?: string;
     plant?: Plant;
+    quantity?: number;
+    unit?: string;
+    optimum_height_size?: string;
 }
 
 export interface Project {
@@ -27,6 +30,9 @@ export interface ProjectCreate {
 export interface ProjectPlantCreate {
     plant_id: string;
     notes?: string;
+    quantity?: number;
+    unit?: string;
+    optimum_height_size?: string;
 }
 
 export type ProjectResponse = Project;

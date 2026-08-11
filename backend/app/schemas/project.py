@@ -8,12 +8,18 @@ from app.schemas.plant import PlantResponse
 class ProjectPlantBase(BaseModel):
     plant_id: uuid.UUID
     notes: Optional[str] = None
+    quantity: Optional[float] = None
+    unit: Optional[str] = None
+    optimum_height_size: Optional[str] = None
 
 class ProjectPlantCreate(ProjectPlantBase):
     pass
 
 class ProjectPlantUpdate(BaseModel):
     notes: Optional[str] = None
+    quantity: Optional[float] = None
+    unit: Optional[str] = None
+    optimum_height_size: Optional[str] = None
 
 class ProjectPlantResponse(ProjectPlantBase):
     plant: Optional[PlantResponse] = None # Nested plant details

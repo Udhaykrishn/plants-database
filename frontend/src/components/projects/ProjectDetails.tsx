@@ -5,8 +5,10 @@ import {
     ArrowLeft, Download, Plus, Pencil, Trash2, Leaf,
     User, MapPin, ExternalLink, Search, ChevronUp, ChevronDown,
     ChevronsUpDown, ChevronLeft, ChevronRight,
-    Link2, Copy, Check, RefreshCw,
+    Link2, Copy, Check, RefreshCw, FileSpreadsheet
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { exportProjectBoqPdf } from './ProjectBoqPdfDocument';
 
 import { projectsApi } from '../../api/projects';
 import type { ShareLinkInfo } from '../../api/projects';
@@ -210,6 +212,9 @@ export const ProjectDetails = () => {
     const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
     const [selectedPlantId, setSelectedPlantId] = useState('');
     const [notes, setNotes] = useState('');
+    const [quantity, setQuantity] = useState('');
+    const [unit, setUnit] = useState('');
+    const [optimumHeightSize, setOptimumHeightSize] = useState('');
 
     /* ── Table state ── */
     const [search, setSearch] = useState('');
@@ -220,6 +225,8 @@ export const ProjectDetails = () => {
     const [pageSize, setPageSize] = useState(10);
 
     const [pdfLoading, setPdfLoading] = useState(false);
+    const [viewMode, setViewMode] = useState<'standard' | 'boq'>('standard');
+    const [pdfBoqLoading, setPdfBoqLoading] = useState(false);
 
     /* ── Share link state ── */
     const [shareLink, setShareLink] = useState<ShareLinkInfo | null>(null);
@@ -286,6 +293,65 @@ export const ProjectDetails = () => {
         }
     };
 
+    const handleExportBoqPdf = async () => {
+        if (!project) return;
+        setPdfBoqLoading(true);
+        try {
+            const { prepareProjectImageCache } = await import('../../utils/pdf-images');
+            const imgCache = await prepareProjectImageCache(project);
+            await exportProjectBoqPdf(project, imgCache, project.name);
+        } catch (e) {
+            console.error(e);
+            showAlert('BOQ PDF export failed', 'error');
+        } finally {
+            setPdfBoqLoading(false);
+        }
+    };
+
+    const handleExportBoqExcel = () => {
+        if (!project) return;
+        try {
+            const rows = project.plants.map((pp, idx) => ({
+                "S. No.": idx + 1,
+                "Common Name": pp.plant?.common_name || '—',
+                "Scientific Name": pp.plant?.scientific_name || pp.plant?.taxon?.name || '—',
+                "Optimum Height / Size": pp.optimum_height_size || '—',
+                "Quantity": pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : '—',
+                "Unit": pp.unit || '—',
+                "Notes": pp.notes || '—'
+            }));
+
+            const worksheet = XLSX.utils.json_to_sheet([]);
+            
+            // Add header info (Landschaft BOQ)
+            XLSX.utils.sheet_add_aoa(worksheet, [
+                ["LANDSCHAFT - BILL OF QUANTITIES"],
+                [],
+                [`Project Name:`, project.name],
+                [`Client:`, project.client_name || '—'],
+                [`Location:`, project.location || '—'],
+                [`Date:`, new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })],
+                [],
+            ], { origin: "A1" });
+
+            // Add table headers and data
+            XLSX.utils.sheet_add_json(worksheet, rows, { origin: "A8", skipHeader: false });
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "BOQ");
+
+            // Set column widths
+            const maxLens = [10, 25, 25, 25, 12, 10, 30];
+            worksheet["!cols"] = maxLens.map(w => ({ wch: w }));
+
+            XLSX.writeFile(workbook, `${project.name}_BOQ.xlsx`);
+            showAlert('Excel exported successfully', 'success');
+        } catch (e) {
+            console.error(e);
+            showAlert('Excel export failed', 'error');
+        }
+    };
+
     /* ── Mutations ── */
     const addPlantMutation = useMutation({
         mutationFn: (data: ProjectPlantCreate) => projectsApi.addPlant(id!, data),
@@ -306,9 +372,36 @@ export const ProjectDetails = () => {
     });
 
     /* ── Dialog helpers ── */
-    const openAdd = useCallback(() => { setEditingPlantId(null); setSelectedPlantId(''); setNotes(''); setIsDialogOpen(true); }, []);
-    const openEdit = useCallback((plantId: string, currentNotes: string) => { setEditingPlantId(plantId); setSelectedPlantId(plantId); setNotes(currentNotes); setIsDialogOpen(true); }, []);
-    const closeDialog = useCallback(() => { setIsDialogOpen(false); setEditingPlantId(null); setSelectedPlantId(''); setNotes(''); }, []);
+    const openAdd = useCallback(() => {
+        setEditingPlantId(null);
+        setSelectedPlantId('');
+        setNotes('');
+        setQuantity('');
+        setUnit('');
+        setOptimumHeightSize('');
+        setIsDialogOpen(true);
+    }, []);
+    const openEdit = useCallback((plantId: string) => {
+        if (!project) return;
+        const pp = project.plants.find(p => p.plant_id === plantId);
+        if (!pp) return;
+        setEditingPlantId(plantId);
+        setSelectedPlantId(plantId);
+        setNotes(pp.notes ?? '');
+        setQuantity(pp.quantity !== undefined && pp.quantity !== null ? String(pp.quantity) : '');
+        setUnit(pp.unit ?? '');
+        setOptimumHeightSize(pp.optimum_height_size ?? '');
+        setIsDialogOpen(true);
+    }, [project]);
+    const closeDialog = useCallback(() => {
+        setIsDialogOpen(false);
+        setEditingPlantId(null);
+        setSelectedPlantId('');
+        setNotes('');
+        setQuantity('');
+        setUnit('');
+        setOptimumHeightSize('');
+    }, []);
 
     const handleDeletePlant = useCallback((plantId: string, plantName: string) => {
         confirm({ title: 'Remove Plant', message: `Remove "${plantName}" from this project?`, confirmText: 'Remove', cancelText: 'Cancel', onConfirm: () => deletePlantMutation.mutate(plantId) });
@@ -317,7 +410,14 @@ export const ProjectDetails = () => {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (!selectedPlantId) { showAlert('Please select a plant', 'warning'); return; }
-        const payload = { plant_id: selectedPlantId, notes };
+        const parsedQty = quantity.trim() ? parseFloat(quantity) : undefined;
+        const payload = {
+            plant_id: selectedPlantId,
+            notes: notes.trim() || undefined,
+            quantity: parsedQty,
+            unit: unit.trim() || undefined,
+            optimum_height_size: optimumHeightSize.trim() || undefined
+        };
         editingPlantId ? updatePlantMutation.mutate(payload) : addPlantMutation.mutate(payload);
     };
 
@@ -481,11 +581,29 @@ export const ProjectDetails = () => {
                         <h2 className="font-semibold text-foreground">Plants List</h2>
                         <Badge variant="secondary" className="tabular-nums">{project.plants.length}</Badge>
                     </div>
-                    <Button size="sm" onClick={openAdd}>
-                        <Plus className="w-4 h-4 mr-2" />
-                        <span className="hidden sm:inline">Add Plant</span>
-                        <span className="sm:hidden">Add</span>
-                    </Button>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1 border border-border rounded-lg p-0.5 bg-muted/20">
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('standard')}
+                                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'standard' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                Standard List
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('boq')}
+                                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'boq' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                            >
+                                BOQ View
+                            </button>
+                        </div>
+                        <Button size="sm" onClick={openAdd}>
+                            <Plus className="w-4 h-4 mr-2" />
+                            <span className="hidden sm:inline">Add Plant</span>
+                            <span className="sm:hidden">Add</span>
+                        </Button>
+                    </div>
                 </div>
 
                 {project.plants.length === 0 ? (
@@ -494,6 +612,143 @@ export const ProjectDetails = () => {
                         <p className="text-sm">No plants added yet.</p>
                         <Button variant="link" size="sm" className="mt-1" onClick={openAdd}>Add the first plant</Button>
                     </div>
+                ) : viewMode === 'boq' ? (
+                    <>
+                        {/* BOQ Header Document Section */}
+                        <div className="p-5 border-b border-border bg-gradient-to-r from-background to-[#fdfcfb]">
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                                <div className="flex-1 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant="outline" className="text-[10px] tracking-wider uppercase font-semibold text-primary border-primary/20 bg-primary/5">
+                                            Landscape BOQ
+                                        </Badge>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm text-muted-foreground">
+                                        <div>
+                                            <span className="font-semibold text-foreground mr-1.5">Client Name:</span>
+                                            {project.client_name || <span className="opacity-40 italic">Not Specified</span>}
+                                        </div>
+                                        <div>
+                                            <span className="font-semibold text-foreground mr-1.5">Date:</span>
+                                            {new Date().toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                                        </div>
+                                        <div className="sm:col-span-2">
+                                            <span className="font-semibold text-foreground mr-1.5">Location:</span>
+                                            {project.location || <span className="opacity-40 italic">Not Specified</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex flex-col items-end gap-2 shrink-0 md:border-l md:border-border md:pl-6">
+                                    {/* Landschaft Logo */}
+                                    <div className="flex flex-col items-center gap-1.5">
+                                        <svg viewBox="0 0 400 400" className="w-14 h-14" xmlns="http://www.w3.org/2000/svg">
+                                            <g transform="translate(-85,0)">
+                                                <path fill="#2d5a27" d="M125 70 Q125 40 155 40 H245 Q275 40 275 70 V190 H125 Z" />
+                                                <path fill="#8aa87f" d="M125 210 H275 V360 H155 Q125 360 125 330 V210 Z" />
+                                                <path fill="#e4ddd1" d="M295 210 H415 Q445 210 445 240 V330 Q445 360 415 360 H295 V210 Z" />
+                                            </g>
+                                        </svg>
+                                        <span className="text-[10px] font-bold tracking-[0.25em] text-[#2d5a27] leading-none">LANDSCHAFT</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="flex items-center justify-end gap-2 mt-5 pt-4 border-t border-border/50">
+                                <Button variant="outline" size="sm" className="h-8.5 font-medium border-green-600/30 hover:border-green-600/50 hover:bg-green-50/50 text-green-700 transition-colors" onClick={handleExportBoqExcel}>
+                                    <FileSpreadsheet className="w-3.5 h-3.5 mr-1.5" /> Export Excel
+                                </Button>
+                                <Button variant="outline" size="sm" className="h-8.5 font-medium border-red-600/30 hover:border-red-600/50 hover:bg-red-50/50 text-red-700 transition-colors" onClick={handleExportBoqPdf} disabled={pdfBoqLoading}>
+                                    {pdfBoqLoading ? 'Generating PDF…' : <><Download className="w-3.5 h-3.5 mr-1.5" /> Export PDF</>}
+                                </Button>
+                            </div>
+                        </div>
+
+                        {/* BOQ Table View */}
+                        <div className="overflow-x-auto">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/30">
+                                        <TableHead className="w-12 font-semibold text-center">#</TableHead>
+                                        <TableHead className="w-16 text-center font-semibold">Image</TableHead>
+                                        <TableHead className="font-semibold">Common Name</TableHead>
+                                        <TableHead className="font-semibold">Scientific Name</TableHead>
+                                        <TableHead className="font-semibold">Optimum Height/Size</TableHead>
+                                        <TableHead className="font-semibold">Quantity</TableHead>
+                                        <TableHead className="font-semibold">Unit</TableHead>
+                                        <TableHead className="text-right font-semibold w-20">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredSorted.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={8} className="h-24 text-center text-sm text-muted-foreground">
+                                                No plants found.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        filteredSorted.map((pp, idx) => (
+                                            <TableRow key={pp.plant_id} className="hover:bg-muted/10 transition-colors">
+                                                <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground">
+                                                    {idx + 1}
+                                                </TableCell>
+                                                <TableCell className="text-center">
+                                                    <div className="flex justify-center">
+                                                        {pp.plant?.icon_url ? (
+                                                            <img
+                                                                src={pp.plant.icon_url}
+                                                                alt=""
+                                                                className="w-10 h-10 object-cover rounded-lg border border-border/50 shadow-sm"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center border border-border/50">
+                                                                <Leaf size={16} className="text-muted-foreground/40" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell className="font-semibold text-foreground max-w-[150px] truncate">
+                                                    {pp.plant?.common_name || '—'}
+                                                </TableCell>
+                                                <TableCell className="italic text-muted-foreground text-xs max-w-[180px] truncate">
+                                                    {pp.plant?.scientific_name || pp.plant?.taxon?.name || '—'}
+                                                </TableCell>
+                                                <TableCell className="text-sm font-medium text-foreground">
+                                                    {pp.optimum_height_size || <span className="opacity-30">—</span>}
+                                                </TableCell>
+                                                <TableCell className="text-sm font-semibold tabular-nums text-foreground">
+                                                    {pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : <span className="opacity-30">—</span>}
+                                                </TableCell>
+                                                <TableCell className="text-sm font-medium text-muted-foreground">
+                                                    {pp.unit || <span className="opacity-30">—</span>}
+                                                </TableCell>
+                                                <TableCell className="text-right">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <Button
+                                                            variant="ghost" size="icon"
+                                                            className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                                            onClick={() => openEdit(pp.plant_id)}
+                                                            title="Edit BOQ item"
+                                                        >
+                                                            <Pencil className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost" size="icon"
+                                                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                            onClick={() => handleDeletePlant(pp.plant_id, pp.plant?.common_name || 'Plant')}
+                                                            title="Remove plant"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </>
                 ) : (
                     <>
                         {/* ── Toolbar ── */}
@@ -649,13 +904,45 @@ export const ProjectDetails = () => {
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="pp-quantity">Quantity</Label>
+                                <Input
+                                    id="pp-quantity"
+                                    type="number"
+                                    step="any"
+                                    min="0"
+                                    value={quantity}
+                                    onChange={(e) => setQuantity(e.target.value)}
+                                    placeholder="e.g. 15"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="pp-unit">Unit</Label>
+                                <Input
+                                    id="pp-unit"
+                                    value={unit}
+                                    onChange={(e) => setUnit(e.target.value)}
+                                    placeholder="e.g. Nos."
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="pp-height-size">Optimum Height / Size</Label>
+                            <Input
+                                id="pp-height-size"
+                                value={optimumHeightSize}
+                                onChange={(e) => setOptimumHeightSize(e.target.value)}
+                                placeholder="e.g. 1.5 - 2.0 m"
+                            />
+                        </div>
                         <div className="space-y-1.5">
                             <Label htmlFor="pp-notes">Notes</Label>
                             <Input
                                 id="pp-notes"
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Location, sizes, quantities…"
+                                placeholder="Special instructions, placement..."
                             />
                         </div>
                         <DialogFooter className="gap-2 sm:gap-0">
