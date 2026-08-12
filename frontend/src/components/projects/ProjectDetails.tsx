@@ -479,30 +479,78 @@ export const ProjectDetails = () => {
         }
     };
 
-    // Helper to render SVG to PNG array buffer in browser
-    const svgToPng = (svgText: string, width: number, height: number): Promise<ArrayBuffer | null> => {
+    // Helper to auto-crop whitespace from an HTMLImageElement
+    const cropImage = (imageElement: HTMLImageElement): Promise<{ buffer: ArrayBuffer; width: number; height: number } | null> => {
         return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                if (!ctx) {
-                    resolve(null);
-                    return;
-                }
-                ctx.drawImage(img, 0, 0, width, height);
-                canvas.toBlob((blob) => {
-                    if (blob) {
-                        blob.arrayBuffer().then(resolve);
-                    } else {
-                        resolve(null);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                resolve(null);
+                return;
+            }
+            canvas.width = imageElement.naturalWidth;
+            canvas.height = imageElement.naturalHeight;
+            ctx.drawImage(imageElement, 0, 0);
+            
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            let minX = canvas.width, minY = canvas.height, maxX = 0, maxY = 0;
+            
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const idx = (y * canvas.width + x) * 4;
+                    const r = data[idx];
+                    const g = data[idx + 1];
+                    const b = data[idx + 2];
+                    const alpha = data[idx + 3];
+                    
+                    // Consider pixel non-empty if it has alpha > 10 and is not pure white
+                    const isWhite = r > 248 && g > 248 && b > 248;
+                    const isEmpty = alpha < 10 || isWhite;
+                    if (!isEmpty) {
+                        if (x < minX) minX = x;
+                        if (y < minY) minY = y;
+                        if (x > maxX) maxX = x;
+                        if (y > maxY) maxY = y;
                     }
-                }, 'image/png');
-            };
-            img.onerror = () => resolve(null);
-            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgText);
+                }
+            }
+            
+            // Add a small safety padding
+            const padding = 15;
+            minX = Math.max(0, minX - padding);
+            minY = Math.max(0, minY - padding);
+            maxX = Math.min(canvas.width, maxX + padding);
+            maxY = Math.min(canvas.height, maxY + padding);
+            
+            const cropWidth = maxX - minX;
+            const cropHeight = maxY - minY;
+            
+            if (cropWidth <= 0 || cropHeight <= 0) {
+                resolve(null);
+                return;
+            }
+            
+            const cropCanvas = document.createElement('canvas');
+            cropCanvas.width = cropWidth;
+            cropCanvas.height = cropHeight;
+            const cropCtx = cropCanvas.getContext('2d');
+            if (!cropCtx) {
+                resolve(null);
+                return;
+            }
+            cropCtx.drawImage(imageElement, minX, minY, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+            
+            cropCanvas.toBlob((blob) => {
+                if (blob) {
+                    blob.arrayBuffer().then((buf) => {
+                        resolve({ buffer: buf, width: cropWidth, height: cropHeight });
+                    });
+                } else {
+                    resolve(null);
+                }
+            }, 'image/png');
         });
     };
 
@@ -539,9 +587,9 @@ export const ProjectDetails = () => {
             // Set gridlines visible
             worksheet.views = [{ showGridLines: true }];
 
-            // Set Column widths
+            // Set Column widths (first column reduced to 6)
             worksheet.columns = [
-                { key: 'serial', width: 13 },
+                { key: 'serial', width: 6 },
                 { key: 'img', width: 14 },
                 { key: 'common', width: 28 },
                 { key: 'sci', width: 28 },
@@ -560,31 +608,36 @@ export const ProjectDetails = () => {
             worksheet.getRow(6).height = 18;
             worksheet.getRow(7).height = 15;
 
-            // 1. Add Landschaft Logo (Top Right in Column H)
+            // 1. Add Landschaft Logo PNG (Top Right in Column H)
             try {
-                const logoRes = await fetch('/logo-color.svg');
-                if (logoRes.ok) {
-                    const svgText = await logoRes.text();
-                    const logoBuffer = await svgToPng(svgText, 120, 120);
-                    if (logoBuffer) {
+                const logoImg = new Image();
+                logoImg.crossOrigin = 'anonymous';
+                const logoLoaded = new Promise<boolean>((resolve) => {
+                    logoImg.onload = () => resolve(true);
+                    logoImg.onerror = () => resolve(false);
+                });
+                logoImg.src = '/logo-color.png';
+                const loaded = await logoLoaded;
+                if (loaded) {
+                    const cropResult = await cropImage(logoImg);
+                    if (cropResult) {
                         const logoId = workbook.addImage({
-                            buffer: logoBuffer,
+                            buffer: cropResult.buffer,
                             extension: 'png',
                         });
-                        worksheet.addImage(logoId, {
-                            tl: { col: 7.3, row: 0.3 }, // Center in Column H
-                            ext: { width: 56, height: 56 }
-                        });
                         
-                        // Add LANDSCHAFT wordmark text directly under logo in Column H
-                        const logoTextCell = worksheet.getCell('H5');
-                        logoTextCell.value = 'LANDSCHAFT';
-                        logoTextCell.font = { name: 'Arial', size: 7.5, bold: true, color: { argb: 'FF1B3B2B' } };
-                        logoTextCell.alignment = { horizontal: 'center', vertical: 'middle' };
+                        // Scale proportionally: width of 175 makes it larger.
+                        const targetWidth = 175;
+                        const targetHeight = (cropResult.height / cropResult.width) * targetWidth;
+                        
+                        worksheet.addImage(logoId, {
+                            tl: { col: 7.15, row: 1.2 }, // Center in Column H, bottom-aligned sitting lower
+                            ext: { width: targetWidth, height: targetHeight }
+                        });
                     }
                 }
             } catch (err) {
-                console.warn('Failed to embed logo in Excel:', err);
+                console.warn('Failed to embed cropped logo in Excel:', err);
             }
 
             // 2. Add Header Titles and Metadata
@@ -600,11 +653,16 @@ export const ProjectDetails = () => {
             ];
 
             metaRows.forEach((row, i) => {
-                const r = worksheet.getRow(i + 3);
-                r.getCell(1).value = row[0];
-                r.getCell(1).font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF666666' } };
-                r.getCell(2).value = row[1];
-                r.getCell(2).font = { name: 'Arial', size: 10, color: { argb: 'FF1A1A1A' } };
+                const rowIdx = i + 3;
+                worksheet.mergeCells(`A${rowIdx}:C${rowIdx}`);
+                const cell = worksheet.getCell(`A${rowIdx}`);
+                cell.value = {
+                    richText: [
+                        { text: row[0] + ' ', font: { name: 'Arial', size: 10, bold: true, color: { argb: 'FF666666' } } },
+                        { text: row[1], font: { name: 'Arial', size: 10, color: { argb: 'FF1A1A1A' } } }
+                    ]
+                };
+                cell.alignment = { vertical: 'middle', horizontal: 'left' };
             });
 
             // 3. Add Table Headers (Row 8)
