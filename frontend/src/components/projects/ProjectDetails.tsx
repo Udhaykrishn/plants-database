@@ -285,7 +285,9 @@ const ProjectBoqRow = ({
                 const targetInput = targetRow.cells[cellIndex]?.querySelector('input') as HTMLInputElement | null;
                 if (targetInput && !targetInput.disabled) {
                     targetInput.focus();
-                    targetInput.select();
+                    if (targetInput.type !== 'checkbox') {
+                        targetInput.select();
+                    }
                     break;
                 }
                 targetRow = direction === 'up' 
@@ -310,7 +312,7 @@ const ProjectBoqRow = ({
             }
 
             if (isAtEdge) {
-                const rowInputs = Array.from(currentRow.querySelectorAll('input:not([type="checkbox"])')) as HTMLInputElement[];
+                const rowInputs = Array.from(currentRow.querySelectorAll('input')) as HTMLInputElement[];
                 const currentInputIdx = rowInputs.indexOf(input);
                 const targetInput = e.key === 'ArrowLeft' 
                     ? rowInputs[currentInputIdx - 1] 
@@ -319,14 +321,16 @@ const ProjectBoqRow = ({
                 if (targetInput) {
                     e.preventDefault();
                     targetInput.focus();
-                    targetInput.select();
+                    if (targetInput.type !== 'checkbox') {
+                        targetInput.select();
+                    }
                 }
             }
         }
     };
 
     return (
-        <TableRow className={`hover:bg-muted/10 transition-colors ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
+        <TableRow className={`hover:bg-muted/10 transition-colors focus-within:bg-primary/[0.04] ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
             {/* # */}
             <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground w-8">
                 {idx + 1}
@@ -337,8 +341,12 @@ const ProjectBoqRow = ({
                 <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={(e) => onSelectChange(pp.plant_id, e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
+                    onChange={(e) => {
+                        onSelectChange(pp.plant_id, e.target.checked);
+                        e.target.focus();
+                    }}
+                    onKeyDown={handleKeyDown}
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none accent-primary"
                 />
             </TableCell>
 
@@ -518,7 +526,9 @@ const ProjectQuotationRow = ({
                 const targetInput = targetRow.cells[cellIndex]?.querySelector('input') as HTMLInputElement | null;
                 if (targetInput && !targetInput.disabled) {
                     targetInput.focus();
-                    targetInput.select();
+                    if (targetInput.type !== 'checkbox') {
+                        targetInput.select();
+                    }
                     break;
                 }
                 targetRow = direction === 'up' 
@@ -543,7 +553,7 @@ const ProjectQuotationRow = ({
             }
 
             if (isAtEdge) {
-                const rowInputs = Array.from(currentRow.querySelectorAll('input:not([type="checkbox"])')) as HTMLInputElement[];
+                const rowInputs = Array.from(currentRow.querySelectorAll('input')) as HTMLInputElement[];
                 const currentInputIdx = rowInputs.indexOf(input);
                 const targetInput = e.key === 'ArrowLeft' 
                     ? rowInputs[currentInputIdx - 1] 
@@ -552,7 +562,9 @@ const ProjectQuotationRow = ({
                 if (targetInput) {
                     e.preventDefault();
                     targetInput.focus();
-                    targetInput.select();
+                    if (targetInput.type !== 'checkbox') {
+                        targetInput.select();
+                    }
                 }
             }
         }
@@ -563,7 +575,7 @@ const ProjectQuotationRow = ({
         : null;
 
     return (
-        <TableRow className={`hover:bg-muted/10 transition-colors ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
+        <TableRow className={`hover:bg-muted/10 transition-colors focus-within:bg-primary/[0.04] ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
             <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground w-8">
                 {idx + 1}
             </TableCell>
@@ -572,8 +584,12 @@ const ProjectQuotationRow = ({
                 <input
                     type="checkbox"
                     checked={isSelected}
-                    onChange={(e) => onSelectChange(pp.plant_id, e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
+                    onChange={(e) => {
+                        onSelectChange(pp.plant_id, e.target.checked);
+                        e.target.focus();
+                    }}
+                    onKeyDown={handleKeyDown}
+                    className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none accent-primary"
                 />
             </TableCell>
 
@@ -1996,7 +2012,7 @@ export const ProjectDetails = () => {
                                                 type="checkbox"
                                                 checked={filteredSorted.length > 0 && selectedPlantIds.length === filteredSorted.length}
                                                 onChange={(e) => handleSelectAllChange(e.target.checked, filteredSorted)}
-                                                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
+                                                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:outline-none accent-primary"
                                             />
                                         </TableHead>
                                         <TableHead className="w-14 text-center font-semibold">Image</TableHead>
