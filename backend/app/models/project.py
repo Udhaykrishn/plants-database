@@ -31,6 +31,7 @@ class ProjectPlant(Base):
     quantity: Mapped[Optional[float]] = mapped_column(sa.Float, nullable=True)
     unit: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     optimum_height_size: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    rate: Mapped[Optional[float]] = mapped_column(sa.Float, nullable=True)
 
     # Relationships
     project: Mapped["Project"] = relationship("Project", back_populates="plants")

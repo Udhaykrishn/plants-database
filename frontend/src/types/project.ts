@@ -7,6 +7,7 @@ export interface ProjectPlant {
     quantity?: number;
     unit?: string;
     optimum_height_size?: string;
+    rate?: number;
 }
 
 export interface Project {
@@ -33,6 +34,7 @@ export interface ProjectPlantCreate {
     quantity?: number;
     unit?: string;
     optimum_height_size?: string;
+    rate?: number;
 }
 
 export type ProjectResponse = Project;

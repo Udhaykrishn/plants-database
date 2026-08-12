@@ -11,6 +11,7 @@ class ProjectPlantBase(BaseModel):
     quantity: Optional[float] = None
     unit: Optional[str] = None
     optimum_height_size: Optional[str] = None
+    rate: Optional[float] = None
 
 class ProjectPlantCreate(ProjectPlantBase):
     pass
@@ -20,6 +21,7 @@ class ProjectPlantUpdate(BaseModel):
     quantity: Optional[float] = None
     unit: Optional[str] = None
     optimum_height_size: Optional[str] = None
+    rate: Optional[float] = None
 
 class ProjectPlantResponse(ProjectPlantBase):
     plant: Optional[PlantResponse] = None # Nested plant details

@@ -171,6 +171,7 @@ async def add_plant_to_project(
         existing.quantity = plant_in.quantity
         existing.unit = plant_in.unit
         existing.optimum_height_size = plant_in.optimum_height_size
+        existing.rate = plant_in.rate
         db.add(existing)
     else:
         # Create new association
@@ -180,7 +181,8 @@ async def add_plant_to_project(
             notes=plant_in.notes,
             quantity=plant_in.quantity,
             unit=plant_in.unit,
-            optimum_height_size=plant_in.optimum_height_size
+            optimum_height_size=plant_in.optimum_height_size,
+            rate=plant_in.rate
         )
         db.add(new_association)
         
@@ -226,6 +228,7 @@ async def update_plant_in_project(
     existing.quantity = plant_in.quantity
     existing.unit = plant_in.unit
     existing.optimum_height_size = plant_in.optimum_height_size
+    existing.rate = plant_in.rate
 
     project.updated_at = datetime.utcnow()
     await db.commit()
@@ -357,7 +360,11 @@ async def duplicate_project(
         new_pp = ProjectPlant(
             project_id=new_project.id,
             plant_id=pp.plant_id,
-            notes=pp.notes
+            notes=pp.notes,
+            quantity=pp.quantity,
+            unit=pp.unit,
+            optimum_height_size=pp.optimum_height_size,
+            rate=pp.rate
         )
         db.add(new_pp)
     
