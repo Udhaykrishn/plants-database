@@ -9,7 +9,7 @@ import type { PlantCreate, Plant } from '../../types/plant';
 
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
-import { plantsQueryOptions, taxonomyTreeQueryOptions, categoriesQueryOptions } from '../../api/queryOptions';
+import { plantsQueryOptions, taxonomyTreeQueryOptions, categoriesQueryOptions, projectsQueryOptions } from '../../api/queryOptions';
 import { aiApi } from '../../api/ai';
 import { cn } from '../../lib-frontend/utils';
 import { TaxonomyFormTable } from './TaxonomyFormTable';
@@ -342,7 +342,11 @@ export const PlantManager = () => {
 
     // Queries
     const searchParams = useSearch({ strict: false }) as { category?: string };
-    const { data: projectsData } = useQuery({ queryKey: ['projects'], queryFn: () => projectsApi.getAll() });
+    const { 
+        data: projectsData, 
+        isLoading: isProjectsLoading, 
+        error: projectsError 
+    } = useQuery(projectsQueryOptions());
     
     // Pagination state
     const PAGE_SIZE = 20;
@@ -406,7 +410,9 @@ export const PlantManager = () => {
             );
             return Promise.all(promises);
         },
-        onSuccess: () => {
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            queryClient.invalidateQueries({ queryKey: ['project', variables.projectId] });
             showAlert(`Successfully added ${selectedPlantIds.length} plant(s) to project.`, 'success');
             setSelectedPlantIds([]);
             setShowProjectModal(false);
@@ -1378,9 +1384,26 @@ export const PlantManager = () => {
                                 <SelectValue placeholder="— Choose a Project —" />
                             </SelectTrigger>
                             <SelectContent>
-                                {projectsData?.items?.map(proj => (
-                                    <SelectItem key={proj.id} value={proj.id}>{proj.name} ({proj.client_name})</SelectItem>
-                                ))}
+                                {isProjectsLoading ? (
+                                    <div className="py-2 px-3 text-sm text-muted-foreground flex items-center gap-2">
+                                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                        Loading projects...
+                                    </div>
+                                ) : projectsError ? (
+                                    <div className="py-2 px-3 text-sm text-destructive">
+                                        Failed to load projects
+                                    </div>
+                                ) : !projectsData?.items || projectsData.items.length === 0 ? (
+                                    <div className="py-2 px-3 text-sm text-muted-foreground">
+                                        No projects found
+                                    </div>
+                                ) : (
+                                    projectsData.items.map(proj => (
+                                        <SelectItem key={proj.id} value={proj.id}>
+                                            {proj.name} {proj.client_name ? `(${proj.client_name})` : ''}
+                                        </SelectItem>
+                                    ))
+                                )}
                             </SelectContent>
                         </Select>
                         <DialogFooter className="mt-2">
