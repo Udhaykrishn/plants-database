@@ -14,17 +14,8 @@ import {
     pdf,
     Svg,
     Path,
-    Font,
 } from '@react-pdf/renderer';
 import type { Project } from '../../types/project';
-
-// Register Montserrat Font
-Font.register({
-    family: 'Montserrat',
-    fonts: [
-        { src: window.location.origin + '/Montserrat-Regular.ttf' }
-    ]
-});
 
 // ─── Brand palette ────────────────────────────────────────────────────────────
 const C = {
@@ -82,13 +73,6 @@ const s = StyleSheet.create({
     logoContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    logoText: {
-        fontSize: 7.5,
-        fontFamily: 'Montserrat',
-        color: C.primary,
-        letterSpacing: 4.5,
-        marginTop: 8,
     },
     // Table
     tableHead: {
@@ -240,12 +224,7 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                     
                     {/* Landschaft Logo */}
                     <View style={s.logoContainer}>
-                        <Svg width="42" height="42" viewBox="85 20 360 360">
-                            <Path fill="#1B3B2B" d="M125 70 Q125 40 155 40 H245 Q275 40 275 70 V190 H125 Z" />
-                            <Path fill="#758C73" d="M125 210 H275 V360 H155 Q125 360 125 330 V210 Z" />
-                            <Path fill="#C8B8A2" d="M295 210 H415 Q445 210 445 240 V330 Q445 360 415 360 H295 V210 Z" />
-                        </Svg>
-                        <Text style={s.logoText}>LANDSCHAFT</Text>
+                        <Image src={window.location.origin + '/logo-color.png'} style={{ width: 130, height: 130, marginRight: -20, marginTop: -15, marginBottom: -15 }} />
                     </View>
                 </View>
 
