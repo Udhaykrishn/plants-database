@@ -310,7 +310,7 @@ const ProjectBoqRow = ({
             </TableCell>
 
             {/* Quantity */}
-            <TableCell className="w-28">
+            <TableCell className="w-20 min-w-[70px]">
                 <input
                     type="number"
                     step="any"
@@ -324,7 +324,7 @@ const ProjectBoqRow = ({
             </TableCell>
 
             {/* Unit */}
-            <TableCell className="w-28">
+            <TableCell className="w-24 min-w-[80px]">
                 <input
                     type="text"
                     value={localUnit}
@@ -336,7 +336,7 @@ const ProjectBoqRow = ({
             </TableCell>
 
             {/* Height/Size */}
-            <TableCell className="w-40">
+            <TableCell className="w-24 min-w-[90px]">
                 <input
                     type="text"
                     value={localSize}
@@ -478,7 +478,7 @@ const ProjectQuotationRow = ({
                 {pp.plant?.scientific_name || pp.plant?.taxon?.name || '—'}
             </TableCell>
 
-            <TableCell className="w-28">
+            <TableCell className="w-20 min-w-[70px]">
                 <input
                     type="number"
                     step="any"
@@ -491,7 +491,7 @@ const ProjectQuotationRow = ({
                 />
             </TableCell>
 
-            <TableCell className="w-28">
+            <TableCell className="w-24 min-w-[80px]">
                 <input
                     type="text"
                     value={localUnit}
@@ -502,7 +502,7 @@ const ProjectQuotationRow = ({
                 />
             </TableCell>
 
-            <TableCell className="w-40">
+            <TableCell className="w-24 min-w-[90px]">
                 <input
                     type="text"
                     value={localSize}
@@ -513,7 +513,7 @@ const ProjectQuotationRow = ({
                 />
             </TableCell>
 
-            <TableCell className="w-32">
+            <TableCell className="w-24 min-w-[90px]">
                 <input
                     type="number"
                     step="any"
@@ -526,7 +526,7 @@ const ProjectQuotationRow = ({
                 />
             </TableCell>
 
-            <TableCell className="w-36 text-center font-bold text-sm text-primary tabular-nums">
+            <TableCell className="w-28 min-w-[110px] text-center font-bold text-sm text-primary tabular-nums">
                 {amount !== null ? `${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
             </TableCell>
 
@@ -1875,13 +1875,13 @@ export const ProjectDetails = () => {
                                         <TableHead className="w-16 text-center font-semibold">Image</TableHead>
                                         <TableHead className="font-semibold">Common Name</TableHead>
                                         <TableHead className="font-semibold">Scientific Name</TableHead>
-                                        <TableHead className="font-semibold text-center">Quantity</TableHead>
-                                        <TableHead className="font-semibold text-center">Unit</TableHead>
-                                        <TableHead className="font-semibold text-center">Height / Size (ft)</TableHead>
+                                        <TableHead className="font-semibold text-center w-20 min-w-[70px]">Quantity</TableHead>
+                                        <TableHead className="font-semibold text-center w-24 min-w-[80px]">Unit</TableHead>
+                                        <TableHead className="font-semibold text-center w-24 min-w-[90px]">Height / Size (ft)</TableHead>
                                         {viewMode === 'quotation' && (
                                             <>
-                                                <TableHead className="font-semibold text-center">Rate</TableHead>
-                                                <TableHead className="font-semibold text-center">Amount</TableHead>
+                                                <TableHead className="font-semibold text-center w-24 min-w-[90px]">Rate</TableHead>
+                                                <TableHead className="font-semibold text-center w-28 min-w-[110px]">Amount</TableHead>
                                             </>
                                         )}
                                         <TableHead className="text-right font-semibold w-16">Actions</TableHead>
