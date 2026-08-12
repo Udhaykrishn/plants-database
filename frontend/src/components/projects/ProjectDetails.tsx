@@ -1788,40 +1788,50 @@ export const ProjectDetails = () => {
             <div className="rounded-xl border border-border bg-white shadow-sm overflow-hidden">
 
                 {/* Section header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-                    <div className="flex items-center gap-2">
-                        <Leaf className="w-4 h-4 text-primary" />
-                        <h2 className="font-semibold text-foreground">Plants List</h2>
-                        <Badge variant="secondary" className="tabular-nums">{project.plants.length}</Badge>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-5 py-4 border-b border-border">
+                    {/* Left side / Top row in mobile: Title and Add Button */}
+                    <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+                        <div className="flex items-center gap-2">
+                            <Leaf className="w-4 h-4 text-primary" />
+                            <h2 className="font-semibold text-foreground">Plants List</h2>
+                            <Badge variant="secondary" className="tabular-nums">{project.plants.length}</Badge>
+                        </div>
+                        {/* Only show Add button here on mobile */}
+                        <Button size="sm" onClick={openAdd} className="sm:hidden shrink-0">
+                            <Plus className="w-4 h-4 mr-1.5" />
+                            Add Plant
+                        </Button>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1 border border-border rounded-lg p-0.5 bg-muted/20">
+
+                    {/* Right side / Bottom row in mobile: View toggles and Add Button on desktop */}
+                    <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+                        <div className="flex items-center gap-1 border border-border rounded-lg p-0.5 bg-muted/20 w-full sm:w-auto">
                             <button
                                 type="button"
                                 onClick={() => setViewMode('standard')}
-                                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'standard' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`flex-1 sm:flex-initial px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap text-center ${viewMode === 'standard' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                             >
                                 Standard List
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setViewMode('boq')}
-                                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'boq' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`flex-1 sm:flex-initial px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap text-center ${viewMode === 'boq' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                             >
                                 BOQ View
                             </button>
                             <button
                                 type="button"
                                 onClick={() => setViewMode('quotation')}
-                                className={`px-2.5 py-1 text-xs font-medium rounded-md transition-colors ${viewMode === 'quotation' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                                className={`flex-1 sm:flex-initial px-3 py-1.5 sm:px-2.5 sm:py-1 text-xs font-medium rounded-md transition-colors whitespace-nowrap text-center ${viewMode === 'quotation' ? 'bg-white shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
                             >
                                 Quotation View
                             </button>
                         </div>
-                        <Button size="sm" onClick={openAdd}>
+                        {/* Show Add button here on desktop */}
+                        <Button size="sm" onClick={openAdd} className="hidden sm:flex shrink-0">
                             <Plus className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Add Plant</span>
-                            <span className="sm:hidden">Add</span>
+                            Add Plant
                         </Button>
                     </div>
                 </div>
