@@ -268,7 +268,7 @@ const ProjectBoqRow = ({
     return (
         <TableRow className={`hover:bg-muted/10 transition-colors ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
             {/* # */}
-            <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground w-12">
+            <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground w-8">
                 {idx + 1}
             </TableCell>
             
@@ -283,7 +283,7 @@ const ProjectBoqRow = ({
             </TableCell>
 
             {/* Image */}
-            <TableCell className="w-20">
+            <TableCell className="w-14">
                 <div className="flex justify-center">
                     {pp.plant?.icon_url ? (
                         <img
@@ -300,12 +300,12 @@ const ProjectBoqRow = ({
             </TableCell>
 
             {/* Common Name */}
-            <TableCell className="font-semibold text-foreground max-w-[150px] truncate">
+            <TableCell className="font-semibold text-foreground w-36 max-w-[144px] truncate">
                 {pp.plant?.common_name || '—'}
             </TableCell>
 
             {/* Scientific Name */}
-            <TableCell className="italic text-muted-foreground text-xs max-w-[180px] truncate">
+            <TableCell className="italic text-muted-foreground text-xs w-40 max-w-[160px] truncate">
                 {pp.plant?.scientific_name || pp.plant?.taxon?.name || '—'}
             </TableCell>
 
@@ -319,19 +319,19 @@ const ProjectBoqRow = ({
                     onChange={(e) => setLocalQty(e.target.value)}
                     onBlur={() => handleBlur('quantity', localQty)}
                     placeholder="—"
-                    className="w-full text-sm font-semibold bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
+                    className="w-full text-sm font-semibold bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
                 />
             </TableCell>
 
             {/* Unit */}
-            <TableCell className="w-24 min-w-[80px]">
+            <TableCell className="w-20 min-w-[70px]">
                 <input
                     type="text"
                     value={localUnit}
                     onChange={(e) => setLocalUnit(e.target.value)}
                     onBlur={() => handleBlur('unit', localUnit)}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
+                    className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
                 />
             </TableCell>
 
@@ -343,12 +343,12 @@ const ProjectBoqRow = ({
                     onChange={(e) => setLocalSize(e.target.value)}
                     onBlur={() => handleBlur('optimum_height_size', localSize)}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none text-center"
+                    className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center"
                 />
             </TableCell>
 
             {/* Actions */}
-            <TableCell className="text-right w-16">
+            <TableCell className="text-right w-10">
                 <div className="flex items-center justify-end gap-1">
                     <Button
                         variant="ghost" size="icon"
@@ -441,7 +441,7 @@ const ProjectQuotationRow = ({
 
     return (
         <TableRow className={`hover:bg-muted/10 transition-colors ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
-            <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground w-12">
+            <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground w-8">
                 {idx + 1}
             </TableCell>
             
@@ -454,7 +454,7 @@ const ProjectQuotationRow = ({
                 />
             </TableCell>
 
-            <TableCell className="w-20">
+            <TableCell className="w-14">
                 <div className="flex justify-center">
                     {pp.plant?.icon_url ? (
                         <img
@@ -470,11 +470,11 @@ const ProjectQuotationRow = ({
                 </div>
             </TableCell>
 
-            <TableCell className="font-semibold text-foreground max-w-[150px] truncate">
+            <TableCell className="font-semibold text-foreground w-36 max-w-[144px] truncate">
                 {pp.plant?.common_name || '—'}
             </TableCell>
 
-            <TableCell className="italic text-muted-foreground text-xs max-w-[180px] truncate">
+            <TableCell className="italic text-muted-foreground text-xs w-40 max-w-[160px] truncate">
                 {pp.plant?.scientific_name || pp.plant?.taxon?.name || '—'}
             </TableCell>
 
@@ -487,18 +487,18 @@ const ProjectQuotationRow = ({
                     onChange={(e) => setLocalQty(e.target.value)}
                     onBlur={() => handleBlur('quantity', localQty)}
                     placeholder="—"
-                    className="w-full text-sm font-semibold bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
+                    className="w-full text-sm font-semibold bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
                 />
             </TableCell>
 
-            <TableCell className="w-24 min-w-[80px]">
+            <TableCell className="w-20 min-w-[70px]">
                 <input
                     type="text"
                     value={localUnit}
                     onChange={(e) => setLocalUnit(e.target.value)}
                     onBlur={() => handleBlur('unit', localUnit)}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
+                    className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
                 />
             </TableCell>
 
@@ -509,7 +509,7 @@ const ProjectQuotationRow = ({
                     onChange={(e) => setLocalSize(e.target.value)}
                     onBlur={() => handleBlur('optimum_height_size', localSize)}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none text-center"
+                    className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center"
                 />
             </TableCell>
 
@@ -522,7 +522,7 @@ const ProjectQuotationRow = ({
                     onChange={(e) => setLocalRate(e.target.value)}
                     onBlur={() => handleBlur('rate', localRate)}
                     placeholder="0.00"
-                    className="w-full text-sm font-semibold bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
+                    className="w-full text-sm font-semibold bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
                 />
             </TableCell>
 
@@ -530,7 +530,7 @@ const ProjectQuotationRow = ({
                 {amount !== null ? `${amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '—'}
             </TableCell>
 
-            <TableCell className="text-right w-16">
+            <TableCell className="text-right w-10">
                 <div className="flex items-center justify-end gap-1">
                     <Button
                         variant="ghost" size="icon"
@@ -1863,7 +1863,7 @@ export const ProjectDetails = () => {
                             <Table>
                                 <TableHeader>
                                     <TableRow className="bg-muted/30">
-                                        <TableHead className="w-12 font-semibold text-center">#</TableHead>
+                                        <TableHead className="w-8 font-semibold text-center">#</TableHead>
                                         <TableHead className="w-10 text-center">
                                             <input
                                                 type="checkbox"
@@ -1872,11 +1872,11 @@ export const ProjectDetails = () => {
                                                 className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary accent-primary"
                                             />
                                         </TableHead>
-                                        <TableHead className="w-16 text-center font-semibold">Image</TableHead>
-                                        <TableHead className="font-semibold">Common Name</TableHead>
-                                        <TableHead className="font-semibold">Scientific Name</TableHead>
+                                        <TableHead className="w-14 text-center font-semibold">Image</TableHead>
+                                        <TableHead className="font-semibold w-36 max-w-[144px] truncate">Common Name</TableHead>
+                                        <TableHead className="font-semibold w-40 max-w-[160px] truncate">Scientific Name</TableHead>
                                         <TableHead className="font-semibold text-center w-20 min-w-[70px]">Quantity</TableHead>
-                                        <TableHead className="font-semibold text-center w-24 min-w-[80px]">Unit</TableHead>
+                                        <TableHead className="font-semibold text-center w-20 min-w-[70px]">Unit</TableHead>
                                         <TableHead className="font-semibold text-center w-24 min-w-[90px]">Height / Size (ft)</TableHead>
                                         {viewMode === 'quotation' && (
                                             <>
@@ -1884,7 +1884,7 @@ export const ProjectDetails = () => {
                                                 <TableHead className="font-semibold text-center w-28 min-w-[110px]">Amount</TableHead>
                                             </>
                                         )}
-                                        <TableHead className="text-right font-semibold w-16">Actions</TableHead>
+                                        <TableHead className="text-right font-semibold w-10">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
