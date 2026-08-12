@@ -234,8 +234,8 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                     <Text style={[s.th, { width: COL.img, textAlign: 'center' }]}>Img</Text>
                     <Text style={[s.th, { width: COL.common }]}>Common Name</Text>
                     <Text style={[s.th, { width: COL.sci }]}>Scientific Name</Text>
-                    <Text style={[s.th, { width: COL.unit, textAlign: 'center' }]}>Unit</Text>
                     <Text style={[s.th, { width: COL.qty, textAlign: 'center' }]}>Qty</Text>
+                    <Text style={[s.th, { width: COL.unit, textAlign: 'center' }]}>Unit</Text>
                     <Text style={[s.th, { width: COL.height, textAlign: 'center' }]}>Optimum Height/Size</Text>
                 </View>
 
@@ -277,11 +277,11 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                                         <Text style={[s.tdMuted, { width: COL.sci }]}>
                                             {p.scientific_name || p.taxon?.name || '—'}
                                         </Text>
-                                        <Text style={[s.td, { width: COL.unit, textAlign: 'center', color: C.mutedFg }]}>
-                                            {pp.unit || '—'}
-                                        </Text>
                                         <Text style={[s.qtyTd, { width: COL.qty, textAlign: 'center' }]}>
                                             {pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : '—'}
+                                        </Text>
+                                        <Text style={[s.td, { width: COL.unit, textAlign: 'center', color: C.mutedFg }]}>
+                                            {pp.unit || '—'}
                                         </Text>
                                         <Text style={[s.td, { width: COL.height, textAlign: 'center' }]}>
                                             {pp.optimum_height_size || '—'}

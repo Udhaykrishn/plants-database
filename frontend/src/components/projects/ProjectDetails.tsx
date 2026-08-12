@@ -308,18 +308,6 @@ const ProjectBoqRow = ({
                 {pp.plant?.scientific_name || pp.plant?.taxon?.name || '—'}
             </TableCell>
 
-            {/* Unit */}
-            <TableCell className="w-28">
-                <input
-                    type="text"
-                    value={localUnit}
-                    onChange={(e) => setLocalUnit(e.target.value)}
-                    onBlur={() => handleBlur('unit', localUnit)}
-                    placeholder="—"
-                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
-                />
-            </TableCell>
-
             {/* Quantity */}
             <TableCell className="w-28">
                 <input
@@ -331,6 +319,18 @@ const ProjectBoqRow = ({
                     onBlur={() => handleBlur('quantity', localQty)}
                     placeholder="—"
                     className="w-full text-sm font-semibold bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
+                />
+            </TableCell>
+
+            {/* Unit */}
+            <TableCell className="w-28">
+                <input
+                    type="text"
+                    value={localUnit}
+                    onChange={(e) => setLocalUnit(e.target.value)}
+                    onBlur={() => handleBlur('unit', localUnit)}
+                    placeholder="—"
+                    className="w-full text-sm font-medium bg-transparent hover:bg-muted/20 focus:bg-white focus:border-border border border-transparent rounded px-2 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
                 />
             </TableCell>
 
@@ -593,8 +593,8 @@ export const ProjectDetails = () => {
                 { key: 'img', width: 14 },
                 { key: 'common', width: 28 },
                 { key: 'sci', width: 28 },
-                { key: 'unit', width: 12 },
                 { key: 'qty', width: 12 },
+                { key: 'unit', width: 12 },
                 { key: 'height', width: 22 },
                 { key: 'notes', width: 32 }
             ];
@@ -681,7 +681,7 @@ export const ProjectDetails = () => {
             // 3. Add Table Headers (Row 8)
             const headerRow = worksheet.getRow(8);
             headerRow.height = 28;
-            const headers = ['#', 'Img', 'Common Name', 'Scientific Name', 'Unit', 'Qty', 'Optimum Height/Size', 'Notes'];
+            const headers = ['#', 'Img', 'Common Name', 'Scientific Name', 'Qty', 'Unit', 'Optimum Height/Size', 'Notes'];
             headers.forEach((h, colIdx) => {
                 const cell = headerRow.getCell(colIdx + 1);
                 cell.value = h;
@@ -752,8 +752,8 @@ export const ProjectDetails = () => {
                     row.getCell(1).value = serialIdx;
                     row.getCell(3).value = p.common_name;
                     row.getCell(4).value = p.scientific_name || p.taxon?.name || '—';
-                    row.getCell(5).value = pp.unit || '—';
-                    row.getCell(6).value = pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : '—';
+                    row.getCell(5).value = pp.quantity !== undefined && pp.quantity !== null ? pp.quantity : '—';
+                    row.getCell(6).value = pp.unit || '—';
                     row.getCell(7).value = pp.optimum_height_size || '—';
                     row.getCell(8).value = pp.notes || '—';
 
@@ -763,7 +763,7 @@ export const ProjectDetails = () => {
                         cell.font = {
                             name: 'Arial',
                             size: 10,
-                            bold: col === 3 || col === 6, // bold common name and quantity
+                            bold: col === 3 || col === 5, // bold common name and quantity
                             italic: col === 4, // italic scientific name
                             color: { argb: col === 3 ? 'FF1B3B2B' : 'FF1A1A1A' }
                         };
@@ -1309,8 +1309,8 @@ export const ProjectDetails = () => {
                                         <TableHead className="w-16 text-center font-semibold">Image</TableHead>
                                         <TableHead className="font-semibold">Common Name</TableHead>
                                         <TableHead className="font-semibold">Scientific Name</TableHead>
-                                        <TableHead className="font-semibold text-center">Unit</TableHead>
                                         <TableHead className="font-semibold text-center">Quantity</TableHead>
+                                        <TableHead className="font-semibold text-center">Unit</TableHead>
                                         <TableHead className="font-semibold text-center">Height / Size</TableHead>
                                         <TableHead className="text-right font-semibold w-16">Actions</TableHead>
                                     </TableRow>
