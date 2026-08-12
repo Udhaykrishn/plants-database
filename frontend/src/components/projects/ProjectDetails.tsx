@@ -330,7 +330,7 @@ const ProjectBoqRow = ({
     };
 
     return (
-        <TableRow className={`hover:bg-muted/10 transition-colors focus-within:bg-primary/[0.04] ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
+        <TableRow className={`bg-muted/10 hover:bg-muted/18 focus-within:bg-muted/25 transition-colors ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
             {/* # */}
             <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground w-8">
                 {idx + 1}
@@ -388,7 +388,7 @@ const ProjectBoqRow = ({
                     onBlur={() => handleBlur('quantity', localQty)}
                     onKeyDown={handleKeyDown}
                     placeholder="—"
-                    className="w-full text-sm font-semibold bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
+                    className="w-full text-sm font-semibold bg-white border border-border shadow-sm hover:border-muted-foreground/30 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center placeholder:text-muted-foreground/40"
                 />
             </TableCell>
 
@@ -401,7 +401,7 @@ const ProjectBoqRow = ({
                     onBlur={() => handleBlur('unit', localUnit)}
                     onKeyDown={handleKeyDown}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
+                    className="w-full text-sm font-medium bg-white border border-border shadow-sm hover:border-muted-foreground/30 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center placeholder:text-muted-foreground/40"
                 />
             </TableCell>
 
@@ -414,7 +414,7 @@ const ProjectBoqRow = ({
                     onBlur={() => handleBlur('optimum_height_size', localSize)}
                     onKeyDown={handleKeyDown}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center"
+                    className="w-full text-sm font-medium bg-white border border-border shadow-sm hover:border-muted-foreground/30 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center placeholder:text-muted-foreground/40"
                 />
             </TableCell>
 
@@ -575,7 +575,7 @@ const ProjectQuotationRow = ({
         : null;
 
     return (
-        <TableRow className={`hover:bg-muted/10 transition-colors focus-within:bg-primary/[0.04] ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
+        <TableRow className={`bg-muted/10 hover:bg-muted/18 focus-within:bg-muted/25 transition-colors ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
             <TableCell className="text-center font-medium text-xs tabular-nums text-muted-foreground w-8">
                 {idx + 1}
             </TableCell>
@@ -627,7 +627,7 @@ const ProjectQuotationRow = ({
                     onBlur={() => handleBlur('quantity', localQty)}
                     onKeyDown={handleKeyDown}
                     placeholder="—"
-                    className="w-full text-sm font-semibold bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
+                    className="w-full text-sm font-semibold bg-white border border-border shadow-sm hover:border-muted-foreground/30 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center placeholder:text-muted-foreground/40"
                 />
             </TableCell>
 
@@ -639,7 +639,7 @@ const ProjectQuotationRow = ({
                     onBlur={() => handleBlur('unit', localUnit)}
                     onKeyDown={handleKeyDown}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
+                    className="w-full text-sm font-medium bg-white border border-border shadow-sm hover:border-muted-foreground/30 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center placeholder:text-muted-foreground/40"
                 />
             </TableCell>
 
@@ -651,7 +651,7 @@ const ProjectQuotationRow = ({
                     onBlur={() => handleBlur('optimum_height_size', localSize)}
                     onKeyDown={handleKeyDown}
                     placeholder="—"
-                    className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center"
+                    className="w-full text-sm font-medium bg-white border border-border shadow-sm hover:border-muted-foreground/30 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center placeholder:text-muted-foreground/40"
                 />
             </TableCell>
 
@@ -665,7 +665,7 @@ const ProjectQuotationRow = ({
                     onBlur={() => handleBlur('rate', localRate)}
                     onKeyDown={handleKeyDown}
                     placeholder="0.00"
-                    className="w-full text-sm font-semibold bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
+                    className="w-full text-sm font-semibold bg-white border border-border shadow-sm hover:border-muted-foreground/30 focus:border-primary/60 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center placeholder:text-muted-foreground/40"
                 />
             </TableCell>
 
@@ -2051,8 +2051,8 @@ export const ProjectDetails = () => {
                                         boqGroups.map(([category, pps]) => (
                                             <Fragment key={category}>
                                                 {/* Group Header Row */}
-                                                <TableRow className="bg-muted/5 hover:bg-muted/5 border-b border-border/80">
-                                                    <TableCell colSpan={viewMode === 'quotation' ? 11 : 9} className="py-2 px-5 font-bold text-primary text-xs uppercase tracking-wider bg-muted/10 border-l-[3px] border-primary/70">
+                                                <TableRow className="bg-muted/20 hover:bg-muted/20 border-y border-border/60">
+                                                    <TableCell colSpan={viewMode === 'quotation' ? 11 : 9} className="py-2.5 px-5 font-bold text-primary text-xs uppercase tracking-wider bg-muted/15 border-l-[3px] border-primary">
                                                         {category} ({pps.length})
                                                     </TableCell>
                                                 </TableRow>
