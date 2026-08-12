@@ -608,6 +608,19 @@ export const ProjectDetails = () => {
             worksheet.getRow(6).height = 18;
             worksheet.getRow(7).height = 15;
 
+            // Hide gridlines in the header area by applying solid white fill to cells A1:H7
+            for (let r = 1; r <= 7; r++) {
+                const row = worksheet.getRow(r);
+                for (let c = 1; c <= 8; c++) {
+                    const cell = row.getCell(c);
+                    cell.fill = {
+                        type: 'pattern',
+                        pattern: 'solid',
+                        fgColor: { argb: 'FFFFFFFF' }
+                    };
+                }
+            }
+
             // 1. Add Landschaft Logo PNG (Top Right in Column H)
             try {
                 const logoImg = new Image();
