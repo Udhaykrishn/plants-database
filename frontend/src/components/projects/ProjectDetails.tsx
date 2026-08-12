@@ -265,6 +265,66 @@ const ProjectBoqRow = ({
         }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        const input = e.currentTarget;
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter') {
+            const currentCell = input.closest('td');
+            const currentRow = input.closest('tr');
+            if (!currentCell || !currentRow) return;
+
+            const cellIndex = Array.from(currentRow.children).indexOf(currentCell);
+            const direction = e.key === 'ArrowUp' ? 'up' : 'down';
+            
+            e.preventDefault();
+
+            let targetRow = direction === 'up' 
+                ? currentRow.previousElementSibling as HTMLTableRowElement | null 
+                : currentRow.nextElementSibling as HTMLTableRowElement | null;
+
+            while (targetRow) {
+                const targetInput = targetRow.cells[cellIndex]?.querySelector('input') as HTMLInputElement | null;
+                if (targetInput && !targetInput.disabled) {
+                    targetInput.focus();
+                    targetInput.select();
+                    break;
+                }
+                targetRow = direction === 'up' 
+                    ? targetRow.previousElementSibling as HTMLTableRowElement | null 
+                    : targetRow.nextElementSibling as HTMLTableRowElement | null;
+            }
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            const currentRow = input.closest('tr');
+            if (!currentRow) return;
+
+            let isAtEdge = true;
+            try {
+                if (input.selectionStart !== null && input.selectionEnd !== null) {
+                    if (e.key === 'ArrowLeft') {
+                        isAtEdge = input.selectionStart === 0;
+                    } else {
+                        isAtEdge = input.selectionEnd === input.value.length;
+                    }
+                }
+            } catch (err) {
+                isAtEdge = true;
+            }
+
+            if (isAtEdge) {
+                const rowInputs = Array.from(currentRow.querySelectorAll('input:not([type="checkbox"])')) as HTMLInputElement[];
+                const currentInputIdx = rowInputs.indexOf(input);
+                const targetInput = e.key === 'ArrowLeft' 
+                    ? rowInputs[currentInputIdx - 1] 
+                    : rowInputs[currentInputIdx + 1];
+
+                if (targetInput) {
+                    e.preventDefault();
+                    targetInput.focus();
+                    targetInput.select();
+                }
+            }
+        }
+    };
+
     return (
         <TableRow className={`hover:bg-muted/10 transition-colors ${saving ? 'opacity-70 bg-muted/5' : ''}`}>
             {/* # */}
@@ -318,6 +378,7 @@ const ProjectBoqRow = ({
                     value={localQty}
                     onChange={(e) => setLocalQty(e.target.value)}
                     onBlur={() => handleBlur('quantity', localQty)}
+                    onKeyDown={handleKeyDown}
                     placeholder="—"
                     className="w-full text-sm font-semibold bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
                 />
@@ -330,6 +391,7 @@ const ProjectBoqRow = ({
                     value={localUnit}
                     onChange={(e) => setLocalUnit(e.target.value)}
                     onBlur={() => handleBlur('unit', localUnit)}
+                    onKeyDown={handleKeyDown}
                     placeholder="—"
                     className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
                 />
@@ -342,6 +404,7 @@ const ProjectBoqRow = ({
                     value={localSize}
                     onChange={(e) => setLocalSize(e.target.value)}
                     onBlur={() => handleBlur('optimum_height_size', localSize)}
+                    onKeyDown={handleKeyDown}
                     placeholder="—"
                     className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center"
                 />
@@ -435,6 +498,66 @@ const ProjectQuotationRow = ({
         }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        const input = e.currentTarget;
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter') {
+            const currentCell = input.closest('td');
+            const currentRow = input.closest('tr');
+            if (!currentCell || !currentRow) return;
+
+            const cellIndex = Array.from(currentRow.children).indexOf(currentCell);
+            const direction = e.key === 'ArrowUp' ? 'up' : 'down';
+            
+            e.preventDefault();
+
+            let targetRow = direction === 'up' 
+                ? currentRow.previousElementSibling as HTMLTableRowElement | null 
+                : currentRow.nextElementSibling as HTMLTableRowElement | null;
+
+            while (targetRow) {
+                const targetInput = targetRow.cells[cellIndex]?.querySelector('input') as HTMLInputElement | null;
+                if (targetInput && !targetInput.disabled) {
+                    targetInput.focus();
+                    targetInput.select();
+                    break;
+                }
+                targetRow = direction === 'up' 
+                    ? targetRow.previousElementSibling as HTMLTableRowElement | null 
+                    : targetRow.nextElementSibling as HTMLTableRowElement | null;
+            }
+        } else if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+            const currentRow = input.closest('tr');
+            if (!currentRow) return;
+
+            let isAtEdge = true;
+            try {
+                if (input.selectionStart !== null && input.selectionEnd !== null) {
+                    if (e.key === 'ArrowLeft') {
+                        isAtEdge = input.selectionStart === 0;
+                    } else {
+                        isAtEdge = input.selectionEnd === input.value.length;
+                    }
+                }
+            } catch (err) {
+                isAtEdge = true;
+            }
+
+            if (isAtEdge) {
+                const rowInputs = Array.from(currentRow.querySelectorAll('input:not([type="checkbox"])')) as HTMLInputElement[];
+                const currentInputIdx = rowInputs.indexOf(input);
+                const targetInput = e.key === 'ArrowLeft' 
+                    ? rowInputs[currentInputIdx - 1] 
+                    : rowInputs[currentInputIdx + 1];
+
+                if (targetInput) {
+                    e.preventDefault();
+                    targetInput.focus();
+                    targetInput.select();
+                }
+            }
+        }
+    };
+
     const amount = (pp.quantity !== undefined && pp.quantity !== null && pp.rate !== undefined && pp.rate !== null)
         ? pp.quantity * pp.rate
         : null;
@@ -486,6 +609,7 @@ const ProjectQuotationRow = ({
                     value={localQty}
                     onChange={(e) => setLocalQty(e.target.value)}
                     onBlur={() => handleBlur('quantity', localQty)}
+                    onKeyDown={handleKeyDown}
                     placeholder="—"
                     className="w-full text-sm font-semibold bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
                 />
@@ -497,6 +621,7 @@ const ProjectQuotationRow = ({
                     value={localUnit}
                     onChange={(e) => setLocalUnit(e.target.value)}
                     onBlur={() => handleBlur('unit', localUnit)}
+                    onKeyDown={handleKeyDown}
                     placeholder="—"
                     className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-muted-foreground focus:text-foreground focus:outline-none text-center"
                 />
@@ -508,6 +633,7 @@ const ProjectQuotationRow = ({
                     value={localSize}
                     onChange={(e) => setLocalSize(e.target.value)}
                     onBlur={() => handleBlur('optimum_height_size', localSize)}
+                    onKeyDown={handleKeyDown}
                     placeholder="—"
                     className="w-full text-sm font-medium bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none text-center"
                 />
@@ -521,6 +647,7 @@ const ProjectQuotationRow = ({
                     value={localRate}
                     onChange={(e) => setLocalRate(e.target.value)}
                     onBlur={() => handleBlur('rate', localRate)}
+                    onKeyDown={handleKeyDown}
                     placeholder="0.00"
                     className="w-full text-sm font-semibold bg-muted/30 border border-muted/40 hover:bg-muted/50 focus:bg-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded px-1.5 py-1 transition-all h-8 text-foreground focus:outline-none tabular-nums text-center"
                 />
