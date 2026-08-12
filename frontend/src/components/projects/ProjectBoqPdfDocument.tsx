@@ -236,7 +236,7 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                     <Text style={[s.th, { width: COL.sci }]}>Scientific Name</Text>
                     <Text style={[s.th, { width: COL.qty, textAlign: 'center' }]}>Qty</Text>
                     <Text style={[s.th, { width: COL.unit, textAlign: 'center' }]}>Unit</Text>
-                    <Text style={[s.th, { width: COL.height, textAlign: 'center' }]}>Optimum Height/Size</Text>
+                    <Text style={[s.th, { width: COL.height, textAlign: 'center' }]}>Optimum Height/Size (ft)</Text>
                 </View>
 
                 {/* Table Rows Grouped by Category */}

@@ -681,7 +681,7 @@ export const ProjectDetails = () => {
             // 3. Add Table Headers (Row 8)
             const headerRow = worksheet.getRow(8);
             headerRow.height = 28;
-            const headers = ['#', 'Img', 'Common Name', 'Scientific Name', 'Qty', 'Unit', 'Optimum Height/Size', 'Notes'];
+            const headers = ['#', 'Img', 'Common Name', 'Scientific Name', 'Qty', 'Unit', 'Optimum Height/Size (ft)', 'Notes'];
             headers.forEach((h, colIdx) => {
                 const cell = headerRow.getCell(colIdx + 1);
                 cell.value = h;
@@ -1311,7 +1311,7 @@ export const ProjectDetails = () => {
                                         <TableHead className="font-semibold">Scientific Name</TableHead>
                                         <TableHead className="font-semibold text-center">Quantity</TableHead>
                                         <TableHead className="font-semibold text-center">Unit</TableHead>
-                                        <TableHead className="font-semibold text-center">Height / Size</TableHead>
+                                        <TableHead className="font-semibold text-center">Height / Size (ft)</TableHead>
                                         <TableHead className="text-right font-semibold w-16">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
