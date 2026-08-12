@@ -796,7 +796,7 @@ export const ProjectDetails = () => {
                 { key: 'sci', width: 28 },
                 { key: 'qty', width: 12 },
                 { key: 'unit', width: 12 },
-                { key: 'height', width: 22 },
+                { key: 'height', width: 20 },
                 { key: 'notes', width: 32 }
             ];
 
@@ -845,7 +845,7 @@ export const ProjectDetails = () => {
                         const targetHeight = (cropResult.height / cropResult.width) * targetWidth;
                         
                         worksheet.addImage(logoId, {
-                            tl: { col: 7.15, row: 1.2 }, // Center in Column H, bottom-aligned sitting lower
+                            tl: { col: 7.32, row: 1.2 }, // Center in Column H, bottom-aligned sitting lower
                             ext: { width: targetWidth, height: targetHeight }
                         });
                     }
@@ -882,7 +882,7 @@ export const ProjectDetails = () => {
             // 3. Add Table Headers (Row 8)
             const headerRow = worksheet.getRow(8);
             headerRow.height = 28;
-            const headers = ['#', 'Img', 'Common Name', 'Scientific Name', 'Qty', 'Unit', 'Optimum Height/Size (ft)', 'Notes'];
+            const headers = ['#', 'Img', 'Common Name', 'Scientific Name', 'Qty', 'Unit', 'Height/Size (ft)', 'Notes'];
             headers.forEach((h, colIdx) => {
                 const cell = headerRow.getCell(colIdx + 1);
                 cell.value = h;
@@ -1042,10 +1042,9 @@ export const ProjectDetails = () => {
                 { key: 'sci', width: 28 },
                 { key: 'qty', width: 12 },
                 { key: 'unit', width: 12 },
-                { key: 'height', width: 22 },
+                { key: 'height', width: 20 },
                 { key: 'rate', width: 14 },
-                { key: 'amount', width: 16 },
-                { key: 'notes', width: 32 }
+                { key: 'amount', width: 16 }
             ];
 
             // Set row heights for spacious header
@@ -1057,10 +1056,10 @@ export const ProjectDetails = () => {
             worksheet.getRow(6).height = 18;
             worksheet.getRow(7).height = 15;
 
-            // Hide gridlines in the header area by applying solid white fill to cells A1:J7
+            // Hide gridlines in the header area by applying solid white fill to cells A1:I7
             for (let r = 1; r <= 7; r++) {
                 const row = worksheet.getRow(r);
-                for (let c = 1; c <= 10; c++) {
+                for (let c = 1; c <= 9; c++) {
                     const cell = row.getCell(c);
                     cell.fill = {
                         type: 'pattern',
@@ -1070,7 +1069,7 @@ export const ProjectDetails = () => {
                 }
             }
 
-            // 1. Add Landschaft Logo PNG (Top Right in Column J)
+            // 1. Add Landschaft Logo PNG (Top Right in Column I)
             try {
                 const logoImg = new Image();
                 logoImg.crossOrigin = 'anonymous';
@@ -1092,7 +1091,7 @@ export const ProjectDetails = () => {
                         const targetHeight = (cropResult.height / cropResult.width) * targetWidth;
                         
                         worksheet.addImage(logoId, {
-                            tl: { col: 9.15, row: 1.2 }, // Center in Column J
+                            tl: { col: 7.58, row: 1.2 }, // Center in Column I
                             ext: { width: targetWidth, height: targetHeight }
                         });
                     }
@@ -1129,7 +1128,7 @@ export const ProjectDetails = () => {
             // 3. Add Table Headers (Row 8)
             const headerRow = worksheet.getRow(8);
             headerRow.height = 28;
-            const headers = ['#', 'Img', 'Common Name', 'Scientific Name', 'Qty', 'Unit', 'Optimum Height/Size (ft)', 'Rate', 'Amount', 'Notes'];
+            const headers = ['#', 'Img', 'Common Name', 'Scientific Name', 'Qty', 'Unit', 'Height/Size (ft)', 'Rate', 'Amount'];
             headers.forEach((h, colIdx) => {
                 const cell = headerRow.getCell(colIdx + 1);
                 cell.value = h;
@@ -1166,7 +1165,7 @@ export const ProjectDetails = () => {
                 const catRow = worksheet.getRow(currentRowIdx);
                 catRow.height = 24;
                 
-                worksheet.mergeCells(`A${currentRowIdx}:J${currentRowIdx}`);
+                worksheet.mergeCells(`A${currentRowIdx}:I${currentRowIdx}`);
                 const catCell = catRow.getCell(1);
                 catCell.value = `${category.toUpperCase()} (${pps.length})`;
                 catCell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF1B3B2B' } };
@@ -1208,10 +1207,9 @@ export const ProjectDetails = () => {
                     } else {
                         row.getCell(9).value = '—';
                     }
-                    row.getCell(10).value = pp.notes || '—';
 
                     // Stylings & alignments
-                    for (let col = 1; col <= 10; col++) {
+                    for (let col = 1; col <= 9; col++) {
                         const cell = row.getCell(col);
                         cell.font = {
                             name: 'Arial',
@@ -1231,7 +1229,7 @@ export const ProjectDetails = () => {
                         cell.alignment = {
                             vertical: 'middle',
                             horizontal: alignmentHorizontal,
-                            wrapText: col === 10 || col === 3 || col === 4
+                            wrapText: col === 3 || col === 4
                         };
                         
                         if ((col === 8 || col === 9) && typeof cell.value === 'number') {
@@ -1287,7 +1285,7 @@ export const ProjectDetails = () => {
             const totalAmtVal = project.plants.reduce((sum, pp) => sum + ((pp.quantity || 0) * (pp.rate || 0)), 0);
             totalRow.getCell(9).value = totalAmtVal;
             
-            for (let col = 1; col <= 10; col++) {
+            for (let col = 1; col <= 9; col++) {
                 const cell = totalRow.getCell(col);
                 cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF1B3B2B' } };
                 cell.fill = {

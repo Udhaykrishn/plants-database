@@ -77,7 +77,7 @@ const s = StyleSheet.create({
     // Table
     tableHead: {
         flexDirection: 'row',
-        backgroundColor: C.mutedBg,
+        backgroundColor: C.primary,
         borderBottomWidth: 1.5,
         borderBottomColor: C.primary,
         alignItems: 'center',
@@ -86,7 +86,7 @@ const s = StyleSheet.create({
     th: {
         fontSize: 7.5,
         fontFamily: 'Helvetica-Bold',
-        color: C.primary,
+        color: C.white,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         paddingVertical: 6,

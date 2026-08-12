@@ -77,7 +77,7 @@ const s = StyleSheet.create({
     // Table
     tableHead: {
         flexDirection: 'row',
-        backgroundColor: C.mutedBg,
+        backgroundColor: C.primary,
         borderBottomWidth: 1.5,
         borderBottomColor: C.primary,
         alignItems: 'center',
@@ -86,7 +86,7 @@ const s = StyleSheet.create({
     th: {
         fontSize: 8,
         fontFamily: 'Helvetica-Bold',
-        color: C.primary,
+        color: C.white,
         textTransform: 'uppercase',
         letterSpacing: 0.5,
         paddingVertical: 6,
@@ -236,7 +236,7 @@ function ProjectBoqPdfDoc({ project, imgCache, dateStr }: BoqPdfProps) {
                     <Text style={[s.th, { width: COL.sci }]}>Scientific Name</Text>
                     <Text style={[s.th, { width: COL.qty, textAlign: 'center' }]}>Qty</Text>
                     <Text style={[s.th, { width: COL.unit, textAlign: 'center' }]}>Unit</Text>
-                    <Text style={[s.th, { width: COL.height, textAlign: 'center' }]}>Optimum Height/Size (ft)</Text>
+                    <Text style={[s.th, { width: COL.height, textAlign: 'center' }]}>Height/Size (ft)</Text>
                 </View>
 
                 {/* Table Rows Grouped by Category */}
