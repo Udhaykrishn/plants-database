@@ -19,6 +19,8 @@ export interface Project {
     created_at: string;
     updated_at: string;
     plants: ProjectPlant[];
+    /** Present on list/summary DTOs (RIA-14); omit on full detail. */
+    plant_count?: number;
 }
 
 export interface ProjectCreate {
