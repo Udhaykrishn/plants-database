@@ -14,7 +14,10 @@ from app.db.session import get_db
 from app.models.project import Project, ProjectPlant
 from app.models.plant import Plant
 from app.models.share_link import ProjectShareLink
-from app.schemas.project import ProjectCreate, ProjectResponse, ProjectPlantCreate, ProjectUpdate, ProjectListResponse
+from app.schemas.project import (
+    ProjectCreate, ProjectResponse, ProjectPlantCreate, ProjectUpdate,
+    ProjectListResponse, ProjectSummary, ProjectPlantMutationResponse,
+)
 from app.core.security import get_current_user
 
 router = APIRouter()
@@ -28,26 +31,40 @@ async def read_projects(
     sort: Optional[str] = "newest"
 ) -> Any:
     """
-    Retrieve projects with pagination and search.
+    Retrieve project summaries with plant_count (no nested plants).
     """
-    query = select(Project).options(
-        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
-    )
-
+    filters = []
     if search:
-        query = query.filter(or_(
+        filters.append(or_(
             Project.name.ilike(f"%{search}%"),
             Project.client_name.ilike(f"%{search}%"),
             Project.location.ilike(f"%{search}%"),
-            Project.description.ilike(f"%{search}%")
+            Project.description.ilike(f"%{search}%"),
         ))
 
-    # Count total
-    count_stmt = select(func.count()).select_from(query.subquery())
-    count_result = await db.execute(count_stmt)
-    total = count_result.scalar_one()
+    count_stmt = select(func.count()).select_from(Project)
+    if filters:
+        count_stmt = count_stmt.where(*filters)
+    total = (await db.execute(count_stmt)).scalar_one()
 
-    # Apply ordering
+    plant_count_col = func.count(ProjectPlant.plant_id).label("plant_count")
+    query = (
+        select(
+            Project.id,
+            Project.name,
+            Project.client_name,
+            Project.location,
+            Project.description,
+            Project.created_at,
+            Project.updated_at,
+            plant_count_col,
+        )
+        .outerjoin(ProjectPlant, ProjectPlant.project_id == Project.id)
+        .group_by(Project.id)
+    )
+    if filters:
+        query = query.where(*filters)
+
     if sort == "newest":
         query = query.order_by(Project.updated_at.desc())
     elif sort == "oldest":
@@ -59,11 +76,22 @@ async def read_projects(
     else:
         query = query.order_by(Project.updated_at.desc())
 
-    # Apply pagination
     query = query.offset(skip).limit(limit)
-    result = await db.execute(query)
-    items = result.scalars().all()
-    
+    rows = (await db.execute(query)).all()
+
+    items = [
+        ProjectSummary(
+            id=row.id,
+            name=row.name,
+            client_name=row.client_name,
+            location=row.location,
+            description=row.description,
+            created_at=row.created_at,
+            updated_at=row.updated_at,
+            plant_count=int(row.plant_count or 0),
+        )
+        for row in rows
+    ]
     return {"items": items, "total": total}
 
 @router.post("/", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
@@ -135,7 +163,7 @@ async def read_project(
         raise HTTPException(status_code=404, detail="Project not found")
     return project
 
-@router.post("/{project_id}/plants", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
+@router.post("/{project_id}/plants", response_model=ProjectPlantMutationResponse, dependencies=[Depends(get_current_user)])
 async def add_plant_to_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -143,21 +171,18 @@ async def add_plant_to_project(
     plant_in: ProjectPlantCreate
 ) -> Any:
     """
-    Add plant to project.
+    Add plant to project. Returns slim association only (RIA-18).
     """
-    # Check if project exists
     result = await db.execute(select(Project).filter(Project.id == project_id))
     project = result.scalars().first()
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Check if plant exists
     result = await db.execute(select(Plant).filter(Plant.id == plant_in.plant_id))
     plant = result.scalars().first()
     if not plant:
         raise HTTPException(status_code=404, detail="Plant not found")
 
-    # Check if already exists in project
     result = await db.execute(
         select(ProjectPlant).filter(
             ProjectPlant.project_id == project_id,
@@ -172,10 +197,10 @@ async def add_plant_to_project(
         existing.unit = plant_in.unit
         existing.optimum_height_size = plant_in.optimum_height_size
         existing.rate = plant_in.rate
+        association = existing
         db.add(existing)
     else:
-        # Create new association
-        new_association = ProjectPlant(
+        association = ProjectPlant(
             project_id=project_id,
             plant_id=plant_in.plant_id,
             notes=plant_in.notes,
@@ -184,21 +209,15 @@ async def add_plant_to_project(
             optimum_height_size=plant_in.optimum_height_size,
             rate=plant_in.rate
         )
-        db.add(new_association)
+        db.add(association)
         
     project.updated_at = datetime.utcnow()
 
     await db.commit()
-    await db.refresh(project)
-    
-    # Reload project with relationships
-    query = select(Project).filter(Project.id == project_id).options(
-        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
-    )
-    result = await db.execute(query)
-    return result.scalars().first()
+    await db.refresh(association)
+    return association
 
-@router.put("/{project_id}/plants/{plant_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
+@router.put("/{project_id}/plants/{plant_id}", response_model=ProjectPlantMutationResponse, dependencies=[Depends(get_current_user)])
 async def update_plant_in_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -207,7 +226,7 @@ async def update_plant_in_project(
     plant_in: ProjectPlantCreate
 ) -> Any:
     """
-    Update a plant's notes in a project.
+    Update a plant association in a project. Returns slim association (RIA-18).
     """
     result = await db.execute(select(Project).filter(Project.id == project_id))
     project = result.scalars().first()
@@ -232,15 +251,10 @@ async def update_plant_in_project(
 
     project.updated_at = datetime.utcnow()
     await db.commit()
-    await db.refresh(project)
+    await db.refresh(existing)
+    return existing
 
-    query = select(Project).filter(Project.id == project_id).options(
-        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
-    )
-    result = await db.execute(query)
-    return result.scalars().first()
-
-@router.delete("/{project_id}/plants/{plant_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
+@router.delete("/{project_id}/plants/{plant_id}", response_model=ProjectPlantMutationResponse, dependencies=[Depends(get_current_user)])
 async def remove_plant_from_project(
     *,
     db: AsyncSession = Depends(get_db),
@@ -248,7 +262,7 @@ async def remove_plant_from_project(
     plant_id: uuid.UUID
 ) -> Any:
     """
-    Remove a plant from a project.
+    Remove a plant from a project. Returns the deleted slim association (RIA-18).
     """
     result = await db.execute(select(Project).filter(Project.id == project_id))
     project = result.scalars().first()
@@ -265,16 +279,19 @@ async def remove_plant_from_project(
     if not existing:
         raise HTTPException(status_code=404, detail="Plant not found in this project")
 
+    slim = ProjectPlantMutationResponse(
+        project_id=existing.project_id,
+        plant_id=existing.plant_id,
+        notes=existing.notes,
+        quantity=existing.quantity,
+        unit=existing.unit,
+        optimum_height_size=existing.optimum_height_size,
+        rate=existing.rate,
+    )
     await db.delete(existing)
     project.updated_at = datetime.utcnow()
     await db.commit()
-    await db.refresh(project)
-
-    query = select(Project).filter(Project.id == project_id).options(
-        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
-    )
-    result = await db.execute(query)
-    return result.scalars().first()
+    return slim
 
 @router.put("/{project_id}", response_model=ProjectResponse, dependencies=[Depends(get_current_user)])
 async def update_project(

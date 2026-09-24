@@ -36,6 +36,23 @@ class PlantResponse(PlantBase):
     
     model_config = ConfigDict(from_attributes=True)
 
+
+class PlantListItem(BaseModel):
+    """Slim plant list DTO — omits care_data / description blobs (RIA-16)."""
+    id: uuid.UUID
+    common_name: str
+    scientific_name: Optional[str] = None
+    category: str
+    planting_place: PlantingPlace
+    icon_url: Optional[str] = None
+    image_url: Optional[str] = None
+    taxon_id: Optional[uuid.UUID] = None
+    taxon_name: Optional[str] = None
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class PlantListResponse(BaseModel):
-    items: List[PlantResponse]
+    items: List[PlantListItem]
     total: int
