@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func
 import sqlalchemy as sa
 from sqlalchemy.orm import selectinload
+from sqlalchemy.dialects.postgresql import insert
 from pydantic import BaseModel
 
 from app.db.session import get_db
@@ -129,7 +130,7 @@ async def get_project_by_share_token(
         raise HTTPException(status_code=410, detail="Share link has expired")
 
     query = select(Project).filter(Project.id == link.project_id).options(
-        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
+        selectinload(Project.plants).joinedload(ProjectPlant.plant).joinedload(Plant.taxon)
     )
     result = await db.execute(query)
     project = result.scalars().first()
@@ -148,7 +149,7 @@ async def read_project(
     Get project by ID.
     """
     query = select(Project).filter(Project.id == project_id).options(
-        selectinload(Project.plants).selectinload(ProjectPlant.plant).selectinload(Plant.taxon)
+        selectinload(Project.plants).joinedload(ProjectPlant.plant).joinedload(Plant.taxon)
     )
     result = await db.execute(query)
     project = result.scalars().first()
@@ -166,48 +167,34 @@ async def add_plant_to_project(
     """
     Add plant to project. Returns slim association only (RIA-18).
     """
-    result = await db.execute(select(Project).filter(Project.id == project_id))
-    project = result.scalars().first()
-    if not project:
+    # Validate IDs in one round trip without loading either full record.
+    project_exists, plant_exists = (await db.execute(select(
+        sa.exists().where(Project.id == project_id),
+        sa.exists().where(Plant.id == plant_in.plant_id),
+    ))).one()
+    if not project_exists:
         raise HTTPException(status_code=404, detail="Project not found")
-
-    result = await db.execute(select(Plant).filter(Plant.id == plant_in.plant_id))
-    plant = result.scalars().first()
-    if not plant:
+    if not plant_exists:
         raise HTTPException(status_code=404, detail="Plant not found")
 
-    result = await db.execute(
-        select(ProjectPlant).filter(
-            ProjectPlant.project_id == project_id,
-            ProjectPlant.plant_id == plant_in.plant_id
-        )
+    # The existing composite primary key makes concurrent adds atomic. RETURNING
+    # avoids a post-commit refresh (and a second connection checkout/transaction).
+    values = plant_in.model_dump()
+    statement = insert(ProjectPlant).values(project_id=project_id, **values)
+    statement = statement.on_conflict_do_update(
+        index_elements=[ProjectPlant.project_id, ProjectPlant.plant_id],
+        set_={key: getattr(statement.excluded, key) for key in values if key != "plant_id"},
     )
-    existing = result.scalars().first()
-    
-    if existing:
-        existing.notes = plant_in.notes
-        existing.quantity = plant_in.quantity
-        existing.unit = plant_in.unit
-        existing.optimum_height_size = plant_in.optimum_height_size
-        existing.rate = plant_in.rate
-        association = existing
-        db.add(existing)
-    else:
-        association = ProjectPlant(
-            project_id=project_id,
-            plant_id=plant_in.plant_id,
-            notes=plant_in.notes,
-            quantity=plant_in.quantity,
-            unit=plant_in.unit,
-            optimum_height_size=plant_in.optimum_height_size,
-            rate=plant_in.rate
-        )
-        db.add(association)
-        
-    project.updated_at = datetime.utcnow()
-
+    touch_project = (
+        sa.update(Project).where(Project.id == project_id)
+        .values(updated_at=datetime.utcnow()).returning(Project.id)
+        .cte("touch_project")
+    )
+    result = await db.execute(
+        statement.add_cte(touch_project).returning(*ProjectPlant.__table__.columns)
+    )
+    association = dict(result.mappings().one())
     await db.commit()
-    await db.refresh(association)
     return association
 
 @router.put("/{project_id}/plants/{plant_id}", response_model=ProjectPlantMutationResponse, dependencies=[Depends(get_current_user)])

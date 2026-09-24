@@ -1,0 +1,261 @@
+{
+  "results": [
+    {
+      "check": "plant-list parity",
+      "options": {
+        "limit": 20
+      },
+      "passed": true
+    },
+    {
+      "check": "plant-list parity",
+      "options": {
+        "limit": 10,
+        "sort": "asc"
+      },
+      "passed": true
+    },
+    {
+      "check": "plant-list parity",
+      "options": {
+        "limit": 5,
+        "search": "palm"
+      },
+      "passed": true
+    },
+    {
+      "check": "plant-list parity",
+      "options": {
+        "limit": 5,
+        "skip": 99999
+      },
+      "passed": true
+    },
+    {
+      "check": "read_plant response parity",
+      "passed": true
+    },
+    {
+      "check": "read_project response parity",
+      "passed": true
+    }
+  ],
+  "columns": [
+    {
+      "table_name": "categories",
+      "column_name": "id",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "categories",
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "categories",
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "taxon_id",
+      "data_type": "uuid",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "common_name",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "category",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "planting_place",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "care_data",
+      "data_type": "json",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "icon_url",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "image_url",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "scientific_name",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "plants",
+      "column_name": "common_diseases",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projectplants",
+      "column_name": "project_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "projectplants",
+      "column_name": "plant_id",
+      "data_type": "uuid",
+      "is_nullable": "NO"
+    },
+    {
+      "table_name": "projectplants",
+      "column_name": "notes",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projectplants",
+      "column_name": "quantity",
+      "data_type": "integer",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projectplants",
+      "column_name": "unit",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projectplants",
+      "column_name": "optimum_height_size",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projectplants",
+      "column_name": "rate",
+      "data_type": "numeric",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projects",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projects",
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projects",
+      "column_name": "client_name",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projects",
+      "column_name": "location",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projects",
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projects",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "projects",
+      "column_name": "updated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "taxons",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "taxons",
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "taxons",
+      "column_name": "rank",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "taxons",
+      "column_name": "parent_id",
+      "data_type": "uuid",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "taxons",
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "taxons",
+      "column_name": "created_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES"
+    },
+    {
+      "table_name": "taxons",
+      "column_name": "updated_at",
+      "data_type": "timestamp without time zone",
+      "is_nullable": "YES"
+    }
+  ]
+}

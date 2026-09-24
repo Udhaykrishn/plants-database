@@ -38,7 +38,7 @@ export const projectsQueryOptions = (params?: { skip?: number; limit?: number; s
 });
 
 export const projectDetailsQueryOptions = (id: string) => queryOptions({
-    queryKey: ['projects', 'detail', id],
+    queryKey: ['project', id],
     queryFn: () => projectsApi.getById(id),
     staleTime: 5 * 60 * 1000,
 });

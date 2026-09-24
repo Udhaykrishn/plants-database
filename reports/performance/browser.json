@@ -1,0 +1,40 @@
+{
+  "method": "Chrome DevTools Protocol via Codex browser; local Vite development server; sanitized observations",
+  "mutation_after": {
+    "click_to_success_ms": 3032.1,
+    "click_to_request_ms": 3.425,
+    "request_through_body_ms": 2809.281,
+    "post_ttfb_ms": 2770.652,
+    "preflight_ttfb_ms": 18.811,
+    "body_finish_to_success_dom_ms": 219.394,
+    "post_count": 1,
+    "followup_get_count": 0,
+    "response_transfer_bytes": 413
+  },
+  "share_requests_before": {
+    "get_count": 2,
+    "ttfb_ms": [
+      2308.607,
+      4013.982
+    ]
+  },
+  "share_requests_after": {
+    "get_count": 1,
+    "ttfb_ms": 4303.408
+  },
+  "project_detail_after_cache_key_fix": {
+    "get_count": 1,
+    "ttfb_ms": 4126.762
+  },
+  "reload_after_backend_change": {
+    "project_detail_ttfb_ms": 8026.058,
+    "share_link_ttfb_ms": 9097.47,
+    "note": "Cold/reload variability; not a warm speedup comparison."
+  },
+  "plants_development_page_cpu": {
+    "script_ms": 1100.623,
+    "layout_ms": 28.966,
+    "style_ms": 28.072,
+    "note": "Page-wide cumulative CPU, not React-only render time."
+  }
+}

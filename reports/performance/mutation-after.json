@@ -1,0 +1,106 @@
+{
+  "project_id": "50cdb48d-95c2-4729-963c-0782681ab2c7",
+  "plant_ids": [
+    "201f9299-7a0d-4c82-bb79-74161a5cada1",
+    "329e17db-a351-4c66-abf8-fcd501a4dc28",
+    "4056c6b1-a596-4ccb-903c-6371fc9d2eed"
+  ],
+  "samples": [
+    {
+      "kind": "insert",
+      "status": 200,
+      "total_ms": 2876.64,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 822.82,
+          "sql": "SELECT EXISTS (SELECT * \nFROM projects \nWHERE projects.id = $1::UUID) AS anon_1, EXISTS (SELECT * \nFROM plants \nWHERE plants.id = $2::UUID) AS anon_2"
+        },
+        {
+          "ms": 544.24,
+          "sql": "WITH touch_project AS \n(UPDATE projects SET updated_at=$8::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $9::UUID RETURNING projects.id)\n INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT) ON CONFLICT (project_id, plant_id) DO UPDATE SET notes = excluded.notes, quantity = excluded.quantity, unit = excluded.unit, optimum_height_size = excluded.optimum_height_size, rate = excluded.rate RETURNING projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate"
+        }
+      ]
+    },
+    {
+      "kind": "insert",
+      "status": 200,
+      "total_ms": 1940.97,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 544.8,
+          "sql": "SELECT EXISTS (SELECT * \nFROM projects \nWHERE projects.id = $1::UUID) AS anon_1, EXISTS (SELECT * \nFROM plants \nWHERE plants.id = $2::UUID) AS anon_2"
+        },
+        {
+          "ms": 274.34,
+          "sql": "WITH touch_project AS \n(UPDATE projects SET updated_at=$8::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $9::UUID RETURNING projects.id)\n INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT) ON CONFLICT (project_id, plant_id) DO UPDATE SET notes = excluded.notes, quantity = excluded.quantity, unit = excluded.unit, optimum_height_size = excluded.optimum_height_size, rate = excluded.rate RETURNING projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate"
+        }
+      ]
+    },
+    {
+      "kind": "insert",
+      "status": 200,
+      "total_ms": 1922.61,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 545.78,
+          "sql": "SELECT EXISTS (SELECT * \nFROM projects \nWHERE projects.id = $1::UUID) AS anon_1, EXISTS (SELECT * \nFROM plants \nWHERE plants.id = $2::UUID) AS anon_2"
+        },
+        {
+          "ms": 273.04,
+          "sql": "WITH touch_project AS \n(UPDATE projects SET updated_at=$8::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $9::UUID RETURNING projects.id)\n INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT) ON CONFLICT (project_id, plant_id) DO UPDATE SET notes = excluded.notes, quantity = excluded.quantity, unit = excluded.unit, optimum_height_size = excluded.optimum_height_size, rate = excluded.rate RETURNING projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate"
+        }
+      ]
+    },
+    {
+      "kind": "existing",
+      "status": 200,
+      "total_ms": 1921.52,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 547.38,
+          "sql": "SELECT EXISTS (SELECT * \nFROM projects \nWHERE projects.id = $1::UUID) AS anon_1, EXISTS (SELECT * \nFROM plants \nWHERE plants.id = $2::UUID) AS anon_2"
+        },
+        {
+          "ms": 274.3,
+          "sql": "WITH touch_project AS \n(UPDATE projects SET updated_at=$8::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $9::UUID RETURNING projects.id)\n INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT) ON CONFLICT (project_id, plant_id) DO UPDATE SET notes = excluded.notes, quantity = excluded.quantity, unit = excluded.unit, optimum_height_size = excluded.optimum_height_size, rate = excluded.rate RETURNING projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate"
+        }
+      ]
+    },
+    {
+      "kind": "existing",
+      "status": 200,
+      "total_ms": 1915.26,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 545.59,
+          "sql": "SELECT EXISTS (SELECT * \nFROM projects \nWHERE projects.id = $1::UUID) AS anon_1, EXISTS (SELECT * \nFROM plants \nWHERE plants.id = $2::UUID) AS anon_2"
+        },
+        {
+          "ms": 272.84,
+          "sql": "WITH touch_project AS \n(UPDATE projects SET updated_at=$8::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $9::UUID RETURNING projects.id)\n INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT) ON CONFLICT (project_id, plant_id) DO UPDATE SET notes = excluded.notes, quantity = excluded.quantity, unit = excluded.unit, optimum_height_size = excluded.optimum_height_size, rate = excluded.rate RETURNING projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate"
+        }
+      ]
+    },
+    {
+      "kind": "existing",
+      "status": 200,
+      "total_ms": 1921.87,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 545.29,
+          "sql": "SELECT EXISTS (SELECT * \nFROM projects \nWHERE projects.id = $1::UUID) AS anon_1, EXISTS (SELECT * \nFROM plants \nWHERE plants.id = $2::UUID) AS anon_2"
+        },
+        {
+          "ms": 275.77,
+          "sql": "WITH touch_project AS \n(UPDATE projects SET updated_at=$8::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $9::UUID RETURNING projects.id)\n INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT) ON CONFLICT (project_id, plant_id) DO UPDATE SET notes = excluded.notes, quantity = excluded.quantity, unit = excluded.unit, optimum_height_size = excluded.optimum_height_size, rate = excluded.rate RETURNING projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate"
+        }
+      ]
+    }
+  ]
+}

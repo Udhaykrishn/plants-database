@@ -1,0 +1,49 @@
+{
+  "duplicates": [
+    {
+      "t": "plants",
+      "duplicates": 0,
+      "null_ids": 0
+    },
+    {
+      "t": "projects",
+      "duplicates": 0,
+      "null_ids": 0
+    },
+    {
+      "t": "taxons",
+      "duplicates": 0,
+      "null_ids": 0
+    }
+  ],
+  "orphans": [
+    {
+      "association_plants": 0,
+      "association_projects": 0,
+      "plant_taxons": 0
+    }
+  ],
+  "sizes": [
+    {
+      "relname": "categories",
+      "bytes": 16384
+    },
+    {
+      "relname": "projectplants",
+      "bytes": 98304
+    },
+    {
+      "relname": "taxons",
+      "bytes": 73728
+    },
+    {
+      "relname": "plants",
+      "bytes": 475136
+    },
+    {
+      "relname": "projects",
+      "bytes": 49152
+    }
+  ],
+  "triggers": []
+}

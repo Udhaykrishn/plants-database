@@ -1,0 +1,190 @@
+{
+  "project_id": "50cdb48d-95c2-4729-963c-0782681ab2c7",
+  "plant_ids": [
+    "201f9299-7a0d-4c82-bb79-74161a5cada1",
+    "329e17db-a351-4c66-abf8-fcd501a4dc28",
+    "4056c6b1-a596-4ccb-903c-6371fc9d2eed"
+  ],
+  "samples": [
+    {
+      "kind": "insert",
+      "status": 200,
+      "total_ms": 5809.45,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 820.05,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at \nFROM projects \nWHERE projects.id = $1::UUID"
+        },
+        {
+          "ms": 546.87,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants \nWHERE plants.id = $1::UUID"
+        },
+        {
+          "ms": 548.24,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        },
+        {
+          "ms": 550.39,
+          "sql": "UPDATE projects SET updated_at=$1::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $2::UUID"
+        },
+        {
+          "ms": 552.28,
+          "sql": "INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT)"
+        },
+        {
+          "ms": 565.0,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        }
+      ]
+    },
+    {
+      "kind": "insert",
+      "status": 200,
+      "total_ms": 4395.89,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 549.01,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at \nFROM projects \nWHERE projects.id = $1::UUID"
+        },
+        {
+          "ms": 274.18,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants \nWHERE plants.id = $1::UUID"
+        },
+        {
+          "ms": 274.95,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        },
+        {
+          "ms": 274.22,
+          "sql": "UPDATE projects SET updated_at=$1::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $2::UUID"
+        },
+        {
+          "ms": 273.85,
+          "sql": "INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT)"
+        },
+        {
+          "ms": 547.69,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        }
+      ]
+    },
+    {
+      "kind": "insert",
+      "status": 200,
+      "total_ms": 4515.33,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 549.15,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at \nFROM projects \nWHERE projects.id = $1::UUID"
+        },
+        {
+          "ms": 273.65,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants \nWHERE plants.id = $1::UUID"
+        },
+        {
+          "ms": 274.39,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        },
+        {
+          "ms": 274.31,
+          "sql": "UPDATE projects SET updated_at=$1::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $2::UUID"
+        },
+        {
+          "ms": 274.82,
+          "sql": "INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT)"
+        },
+        {
+          "ms": 570.94,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        }
+      ]
+    },
+    {
+      "kind": "existing",
+      "status": 200,
+      "total_ms": 4123.06,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 547.01,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at \nFROM projects \nWHERE projects.id = $1::UUID"
+        },
+        {
+          "ms": 275.77,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants \nWHERE plants.id = $1::UUID"
+        },
+        {
+          "ms": 274.13,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        },
+        {
+          "ms": 273.55,
+          "sql": "UPDATE projects SET updated_at=$1::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $2::UUID"
+        },
+        {
+          "ms": 548.7,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        }
+      ]
+    },
+    {
+      "kind": "existing",
+      "status": 200,
+      "total_ms": 4114.21,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 550.03,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at \nFROM projects \nWHERE projects.id = $1::UUID"
+        },
+        {
+          "ms": 272.68,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants \nWHERE plants.id = $1::UUID"
+        },
+        {
+          "ms": 273.57,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        },
+        {
+          "ms": 272.8,
+          "sql": "UPDATE projects SET updated_at=$1::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $2::UUID"
+        },
+        {
+          "ms": 546.95,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        }
+      ]
+    },
+    {
+      "kind": "existing",
+      "status": 200,
+      "total_ms": 4111.36,
+      "bytes": 198,
+      "queries": [
+        {
+          "ms": 547.39,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at \nFROM projects \nWHERE projects.id = $1::UUID"
+        },
+        {
+          "ms": 274.12,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants \nWHERE plants.id = $1::UUID"
+        },
+        {
+          "ms": 274.06,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        },
+        {
+          "ms": 273.82,
+          "sql": "UPDATE projects SET updated_at=$1::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $2::UUID"
+        },
+        {
+          "ms": 547.8,
+          "sql": "SELECT projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate \nFROM projectplants \nWHERE projectplants.project_id = $1::UUID AND projectplants.plant_id = $2::UUID"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+{
+  "samples": [
+    {
+      "queries": [
+        {
+          "sql": "SELECT count(*) AS count_1 \nFROM plants",
+          "driver_ms": 797.1131690064794
+        },
+        {
+          "sql": "SELECT plants.id, plants.common_name, plants.scientific_name, plants.category, plants.planting_place, plants.icon_url, plants.image_url, plants.taxon_id, taxons.name AS taxon_name, plants.created_at \nFROM plants LEFT OUTER JOIN taxons ON plants.taxon_id = taxons.id ORDER BY plants.created_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER",
+          "driver_ms": 529.328960001294
+        }
+      ],
+      "execute_ms": [
+        1899.1243359996588,
+        533.0268459947547
+      ],
+      "session_close_ms": 263.85807799670147,
+      "run": 0,
+      "path": "/api/v1/plants/?limit=20",
+      "status": 200,
+      "total_ms": 2717.1376190017327,
+      "bytes": 10046
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT count(*) AS count_1 \nFROM projects",
+          "driver_ms": 909.3113649942097
+        },
+        {
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at, (SELECT count(projectplants.plant_id) AS count_1 \nFROM projectplants \nWHERE projectplants.project_id = projects.id) AS plant_count \nFROM projects ORDER BY projects.updated_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER",
+          "driver_ms": 532.5468180017197
+        }
+      ],
+      "execute_ms": [
+        1705.2203799976269,
+        534.8612620000495
+      ],
+      "session_close_ms": 265.7661079938407,
+      "run": 0,
+      "path": "/api/v1/projects/?limit=12",
+      "status": 200,
+      "total_ms": 2508.763327001361,
+      "bytes": 1911
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT (SELECT count(*) AS count_1 \nFROM plants) AS total_plants, (SELECT count(*) AS count_2 \nFROM taxons) AS total_taxonomy_nodes, (SELECT count(*) AS count_3 \nFROM categories) AS total_categories, (SELECT count(*) AS count_4 \nFROM projects) AS total_projects",
+          "driver_ms": 792.1800490003079
+        }
+      ],
+      "execute_ms": [
+        1586.334897998313
+      ],
+      "session_close_ms": 264.21825599391013,
+      "run": 0,
+      "path": "/api/v1/dashboard/stats",
+      "status": 200,
+      "total_ms": 1852.4544089959818,
+      "bytes": 88
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT count(*) AS count_1 \nFROM categories",
+          "driver_ms": 791.615861999162
+        },
+        {
+          "sql": "SELECT categories.id, categories.name, categories.description, count(plants.id) AS count_1 \nFROM categories LEFT OUTER JOIN plants ON categories.name = plants.category GROUP BY categories.id, categories.name, categories.description ORDER BY categories.name \n LIMIT $1::INTEGER OFFSET $2::INTEGER",
+          "driver_ms": 528.0643229998532
+        }
+      ],
+      "execute_ms": [
+        1584.726214998227,
+        529.2070170035004
+      ],
+      "session_close_ms": 263.9892430015607,
+      "run": 0,
+      "path": "/api/v1/categories/",
+      "status": 200,
+      "total_ms": 2380.8038300048793,
+      "bytes": 1277
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT taxons.id, taxons.name, taxons.rank, taxons.parent_id, taxons.description, taxons.created_at, taxons.updated_at \nFROM taxons",
+          "driver_ms": 1322.2806340054376
+        }
+      ],
+      "execute_ms": [
+        2121.8248160002986
+      ],
+      "session_close_ms": 264.50977999775205,
+      "run": 0,
+      "path": "/api/v1/taxonomy/tree",
+      "status": 200,
+      "total_ms": 2407.051791997219,
+      "bytes": 157968
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT EXISTS (SELECT * \nFROM projects \nWHERE projects.id = $1::UUID) AS anon_1, EXISTS (SELECT * \nFROM plants \nWHERE plants.id = $2::UUID) AS anon_2",
+          "driver_ms": 792.9572590001044
+        },
+        {
+          "sql": "WITH touch_project AS \n(UPDATE projects SET updated_at=$8::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $9::UUID RETURNING projects.id)\n INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT) ON CONFLICT (project_id, plant_id) DO UPDATE SET notes = excluded.notes, quantity = excluded.quantity, unit = excluded.unit, optimum_height_size = excluded.optimum_height_size, rate = excluded.rate RETURNING projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate",
+          "driver_ms": 530.6693820020882
+        }
+      ],
+      "execute_ms": [
+        1586.2771420070203,
+        532.5465409987373
+      ],
+      "commit_ms": 265.1783129986143,
+      "session_close_ms": 0.11021200043614954,
+      "run": 0,
+      "path": "/api/v1/projects/b40cc087-9153-4334-9716-5666f2054051/plants",
+      "status": 200,
+      "total_ms": 2387.767000000167,
+      "bytes": 186
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT count(*) AS count_1 \nFROM plants",
+          "driver_ms": 528.823721993831
+        },
+        {
+          "sql": "SELECT plants.id, plants.common_name, plants.scientific_name, plants.category, plants.planting_place, plants.icon_url, plants.image_url, plants.taxon_id, taxons.name AS taxon_name, plants.created_at \nFROM plants LEFT OUTER JOIN taxons ON plants.taxon_id = taxons.id ORDER BY plants.created_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER",
+          "driver_ms": 266.41452700278023
+        }
+      ],
+      "execute_ms": [
+        1320.7635159997153,
+        267.1735059993807
+      ],
+      "session_close_ms": 263.8131709973095,
+      "run": 1,
+      "path": "/api/v1/plants/?limit=20",
+      "status": 200,
+      "total_ms": 1854.455685002904,
+      "bytes": 10046
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT count(*) AS count_1 \nFROM projects",
+          "driver_ms": 546.2155729983351
+        },
+        {
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at, (SELECT count(projectplants.plant_id) AS count_1 \nFROM projectplants \nWHERE projectplants.project_id = projects.id) AS plant_count \nFROM projects ORDER BY projects.updated_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER",
+          "driver_ms": 263.9778589946218
+        }
+      ],
+      "execute_ms": [
+        1339.6091399990837,
+        264.47953800379764
+      ],
+      "session_close_ms": 263.73529600095935,
+      "run": 1,
+      "path": "/api/v1/projects/?limit=12",
+      "status": 200,
+      "total_ms": 1869.9411829948076,
+      "bytes": 1911
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT (SELECT count(*) AS count_1 \nFROM plants) AS total_plants, (SELECT count(*) AS count_2 \nFROM taxons) AS total_taxonomy_nodes, (SELECT count(*) AS count_3 \nFROM categories) AS total_categories, (SELECT count(*) AS count_4 \nFROM projects) AS total_projects",
+          "driver_ms": 527.4381159979384
+        }
+      ],
+      "execute_ms": [
+        1319.4324569994933
+      ],
+      "session_close_ms": 263.54322899715044,
+      "run": 1,
+      "path": "/api/v1/dashboard/stats",
+      "status": 200,
+      "total_ms": 1584.3965639942326,
+      "bytes": 88
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT count(*) AS count_1 \nFROM categories",
+          "driver_ms": 527.8472540012444
+        },
+        {
+          "sql": "SELECT categories.id, categories.name, categories.description, count(plants.id) AS count_1 \nFROM categories LEFT OUTER JOIN plants ON categories.name = plants.category GROUP BY categories.id, categories.name, categories.description ORDER BY categories.name \n LIMIT $1::INTEGER OFFSET $2::INTEGER",
+          "driver_ms": 264.62676800292684
+        }
+      ],
+      "execute_ms": [
+        1347.6875540000037,
+        265.13557100406615
+      ],
+      "session_close_ms": 263.8452289975248,
+      "run": 1,
+      "path": "/api/v1/categories/",
+      "status": 200,
+      "total_ms": 1878.8368250025087,
+      "bytes": 1277
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT taxons.id, taxons.name, taxons.rank, taxons.parent_id, taxons.description, taxons.created_at, taxons.updated_at \nFROM taxons",
+          "driver_ms": 532.4475759989582
+        }
+      ],
+      "execute_ms": [
+        1400.7133699997212
+      ],
+      "session_close_ms": 265.7458549947478,
+      "run": 1,
+      "path": "/api/v1/taxonomy/tree",
+      "status": 200,
+      "total_ms": 1686.0288360039704,
+      "bytes": 157968
+    },
+    {
+      "queries": [
+        {
+          "sql": "SELECT EXISTS (SELECT * \nFROM projects \nWHERE projects.id = $1::UUID) AS anon_1, EXISTS (SELECT * \nFROM plants \nWHERE plants.id = $2::UUID) AS anon_2",
+          "driver_ms": 530.1271959979204
+        },
+        {
+          "sql": "WITH touch_project AS \n(UPDATE projects SET updated_at=$8::TIMESTAMP WITHOUT TIME ZONE WHERE projects.id = $9::UUID RETURNING projects.id)\n INSERT INTO projectplants (project_id, plant_id, notes, quantity, unit, optimum_height_size, rate) VALUES ($1::UUID, $2::UUID, $3::VARCHAR, $4::FLOAT, $5::VARCHAR, $6::VARCHAR, $7::FLOAT) ON CONFLICT (project_id, plant_id) DO UPDATE SET notes = excluded.notes, quantity = excluded.quantity, unit = excluded.unit, optimum_height_size = excluded.optimum_height_size, rate = excluded.rate RETURNING projectplants.project_id, projectplants.plant_id, projectplants.notes, projectplants.quantity, projectplants.unit, projectplants.optimum_height_size, projectplants.rate",
+          "driver_ms": 266.61448699451284
+        }
+      ],
+      "execute_ms": [
+        1325.5867779953405,
+        267.82911899499595
+      ],
+      "commit_ms": 269.4433209981071,
+      "session_close_ms": 0.07151900354074314,
+      "run": 1,
+      "path": "/api/v1/projects/b40cc087-9153-4334-9716-5666f2054051/plants",
+      "status": 200,
+      "total_ms": 1866.3095129959402,
+      "bytes": 186
+    }
+  ]
+}

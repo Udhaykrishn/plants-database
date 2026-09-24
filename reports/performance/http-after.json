@@ -1,0 +1,65 @@
+[
+  {
+    "run": 0,
+    "path": "/api/v1/plants/?limit=20",
+    "ms": 2990.4460450052284,
+    "status": 200,
+    "bytes": 10046
+  },
+  {
+    "run": 0,
+    "path": "/api/v1/projects/?limit=12",
+    "ms": 2857.0378389995312,
+    "status": 200,
+    "bytes": 1669
+  },
+  {
+    "run": 0,
+    "path": "/api/v1/dashboard/stats",
+    "ms": 1842.9375459963921,
+    "status": 200,
+    "bytes": 88
+  },
+  {
+    "run": 1,
+    "path": "/api/v1/plants/?limit=20",
+    "ms": 2450.736217004305,
+    "status": 200,
+    "bytes": 10046
+  },
+  {
+    "run": 1,
+    "path": "/api/v1/projects/?limit=12",
+    "ms": 2377.494744003343,
+    "status": 200,
+    "bytes": 1669
+  },
+  {
+    "run": 1,
+    "path": "/api/v1/dashboard/stats",
+    "ms": 1868.9512580021983,
+    "status": 200,
+    "bytes": 88
+  },
+  {
+    "run": 2,
+    "path": "/api/v1/plants/?limit=20",
+    "ms": 1838.0920810013777,
+    "status": 200,
+    "bytes": 10046
+  },
+  {
+    "run": 2,
+    "path": "/api/v1/projects/?limit=12",
+    "ms": 1868.2904090019292,
+    "status": 200,
+    "bytes": 1669
+  },
+  {
+    "run": 2,
+    "path": "/api/v1/dashboard/stats",
+    "ms": 1573.6903350043576,
+    "status": 200,
+    "bytes": 88
+  }
+]

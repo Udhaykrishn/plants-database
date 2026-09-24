@@ -36,7 +36,12 @@ async def read_categories(
         ))
 
     # Count total
-    count_stmt = select(func.count()).select_from(query.subquery())
+    count_stmt = select(func.count()).select_from(Category)
+    if search:
+        count_stmt = count_stmt.where(or_(
+            Category.name.ilike(f"%{search}%"),
+            Category.description.ilike(f"%{search}%"),
+        ))
     count_result = await db.execute(count_stmt)
     total = count_result.scalar_one()
 

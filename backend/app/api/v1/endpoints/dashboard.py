@@ -21,29 +21,12 @@ async def get_dashboard_stats(
     This replaces several large API calls that were only used for counts.
     """
     
-    # 1. Count Plants
-    plants_count_stmt = select(func.count(Plant.id))
-    plants_count_res = await db.execute(plants_count_stmt)
-    total_plants = plants_count_res.scalar_one()
-
-    # 2. Count Taxonomy Nodes
-    taxon_count_stmt = select(func.count(Taxon.id))
-    taxon_count_res = await db.execute(taxon_count_stmt)
-    total_taxonomy_nodes = taxon_count_res.scalar_one()
-
-    # 3. Count Categories
-    categories_count_stmt = select(func.count(Category.id))
-    categories_count_res = await db.execute(categories_count_stmt)
-    total_categories = categories_count_res.scalar_one()
-
-    # 4. Count Projects
-    projects_count_stmt = select(func.count(Project.id))
-    projects_count_res = await db.execute(projects_count_stmt)
-    total_projects = projects_count_res.scalar_one()
-
-    return {
-        "total_plants": total_plants,
-        "total_taxonomy_nodes": total_taxonomy_nodes,
-        "total_categories": total_categories,
-        "total_projects": total_projects
-    }
+    # Independent scalar aggregates share one network round trip. Do not run
+    # concurrent execute calls against a single AsyncSession.
+    result = await db.execute(select(
+        select(func.count()).select_from(Plant).scalar_subquery().label("total_plants"),
+        select(func.count()).select_from(Taxon).scalar_subquery().label("total_taxonomy_nodes"),
+        select(func.count()).select_from(Category).scalar_subquery().label("total_categories"),
+        select(func.count()).select_from(Project).scalar_subquery().label("total_projects"),
+    ))
+    return dict(result.mappings().one())

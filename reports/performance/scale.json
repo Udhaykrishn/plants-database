@@ -1,0 +1,95 @@
+{
+  "rows": 100000,
+  "note": "Synthetic temporary tables only; same connection; transaction rolled back. Not a production load test.",
+  "before": {
+    "id_lookup": [
+      "Seq Scan on perf_plants  (cost=0.00..26274.00 rows=1 width=4) (actual time=55.061..55.104 rows=1.00 loops=1)",
+      "  Filter: (id = 99999)",
+      "  Rows Removed by Filter: 99999",
+      "  Buffers: local read=25024",
+      "Planning:",
+      "  Buffers: shared hit=10",
+      "Planning Time: 0.091 ms",
+      "Execution Time: 55.131 ms"
+    ],
+    "recent_page": [
+      "Limit  (cost=28684.96..28685.01 rows=20 width=45) (actual time=64.019..64.023 rows=20.00 loops=1)",
+      "  Buffers: local read=25024",
+      "  ->  Sort  (cost=28684.96..28934.96 rows=100000 width=45) (actual time=64.017..64.019 rows=20.00 loops=1)",
+      "        Sort Key: created_at DESC",
+      "        Sort Method: top-N heapsort  Memory: 26kB",
+      "        Buffers: local read=25024",
+      "        ->  Seq Scan on perf_plants  (cost=0.00..26024.00 rows=100000 width=45) (actual time=0.029..50.028 rows=100000.00 loops=1)",
+      "              Buffers: local read=25024",
+      "Planning:",
+      "  Buffers: shared hit=19",
+      "Planning Time: 0.131 ms",
+      "Execution Time: 64.053 ms"
+    ],
+    "deep_offset": [
+      "Limit  (cost=37630.32..37630.37 rows=20 width=45) (actual time=82.911..82.916 rows=20.00 loops=1)",
+      "  Buffers: local read=25024, temp read=710 written=712",
+      "  ->  Sort  (cost=37405.32..37655.32 rows=100000 width=45) (actual time=70.145..78.996 rows=90020.00 loops=1)",
+      "        Sort Key: created_at DESC",
+      "        Sort Method: external merge  Disk: 5680kB",
+      "        Buffers: local read=25024, temp read=710 written=712",
+      "        ->  Seq Scan on perf_plants  (cost=0.00..26024.00 rows=100000 width=45) (actual time=0.032..49.533 rows=100000.00 loops=1)",
+      "              Buffers: local read=25024",
+      "Planning Time: 0.061 ms",
+      "Execution Time: 83.847 ms"
+    ],
+    "contains_search": [
+      "Limit  (cost=0.00..520.28 rows=20 width=4) (actual time=0.179..3.060 rows=20.00 loops=1)",
+      "  Buffers: local read=1023",
+      "  ->  Seq Scan on perf_plants  (cost=0.00..26274.00 rows=1010 width=4) (actual time=0.179..3.054 rows=20.00 loops=1)",
+      "        Filter: (common_name ~~* '%abc%'::text)",
+      "        Rows Removed by Filter: 4069",
+      "        Buffers: local read=1023",
+      "Planning Time: 0.111 ms",
+      "Execution Time: 3.692 ms"
+    ]
+  },
+  "after": {
+    "id_lookup": [
+      "Index Only Scan using perf_plants_id_idx on perf_plants  (cost=0.29..8.31 rows=1 width=4) (actual time=0.016..0.017 rows=1.00 loops=1)",
+      "  Index Cond: (id = 99999)",
+      "  Heap Fetches: 1",
+      "  Index Searches: 1",
+      "  Buffers: local hit=2 read=2",
+      "Planning:",
+      "  Buffers: shared hit=5, local read=2",
+      "Planning Time: 0.158 ms",
+      "Execution Time: 0.040 ms"
+    ],
+    "recent_page": [
+      "Limit  (cost=0.29..5.82 rows=20 width=45) (actual time=0.034..0.073 rows=20.00 loops=1)",
+      "  Buffers: local read=7",
+      "  ->  Index Scan using perf_plants_created_at_idx on perf_plants  (cost=0.29..27631.29 rows=100000 width=45) (actual time=0.034..0.070 rows=20.00 loops=1)",
+      "        Index Searches: 1",
+      "        Buffers: local read=7",
+      "Planning:",
+      "  Buffers: shared hit=10",
+      "Planning Time: 0.121 ms",
+      "Execution Time: 0.094 ms"
+    ],
+    "deep_offset": [
+      "Limit  (cost=24868.19..24873.72 rows=20 width=45) (actual time=124.320..124.334 rows=20.00 loops=1)",
+      "  Buffers: local hit=7 read=22745",
+      "  ->  Index Scan using perf_plants_created_at_idx on perf_plants  (cost=0.29..27631.29 rows=100000 width=45) (actual time=0.018..119.912 rows=90020.00 loops=1)",
+      "        Index Searches: 1",
+      "        Buffers: local hit=7 read=22745",
+      "Planning Time: 0.068 ms",
+      "Execution Time: 124.364 ms"
+    ],
+    "contains_search": [
+      "Limit  (cost=0.00..26274.00 rows=10 width=4) (actual time=0.189..3.108 rows=20.00 loops=1)",
+      "  Buffers: local read=1023",
+      "  ->  Seq Scan on perf_plants  (cost=0.00..26274.00 rows=10 width=4) (actual time=0.188..3.102 rows=20.00 loops=1)",
+      "        Filter: (common_name ~~* '%abc%'::text)",
+      "        Rows Removed by Filter: 4069",
+      "        Buffers: local read=1023",
+      "Planning Time: 0.091 ms",
+      "Execution Time: 3.848 ms"
+    ]
+  }
+}

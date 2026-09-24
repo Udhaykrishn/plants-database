@@ -1,0 +1,11 @@
+{
+  "removed_test_associations": 4,
+  "removed_test_projects": 1,
+  "final_counts": {
+    "plants": 240,
+    "projects": 6,
+    "projectplants": 217,
+    "taxons": 627,
+    "categories": 11
+  }
+}

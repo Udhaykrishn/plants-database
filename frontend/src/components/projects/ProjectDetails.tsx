@@ -733,23 +733,19 @@ export const ProjectDetails = () => {
     }, [viewMode]);
 
     /* ── Share link state ── */
-    const [shareLink, setShareLink] = useState<ShareLinkInfo | null>(null);
-    const [shareLinkLoaded, setShareLinkLoaded] = useState(false);
+    const { data: shareLink, isPending: shareLinkPending } = useQuery<ShareLinkInfo | null>({
+        queryKey: ['project-share-link', id],
+        queryFn: () => projectsApi.getShareLink(id!),
+        enabled: !!id,
+        retry: false,
+    });
+    const shareLinkLoaded = !shareLinkPending;
     const [copied, setCopied] = useState(false);
 
     const generateShareMutation = useMutation({
         mutationFn: () => projectsApi.generateShareLink(id!),
-        onSuccess: (data) => setShareLink(data),
+        onSuccess: (data) => queryClient.setQueryData(['project-share-link', id], data),
     });
-
-    /* ── Fetch existing share link on mount ── */
-    useEffect(() => {
-        if (!id) return;
-        projectsApi.getShareLink(id).then((link) => {
-            setShareLink(link);
-            setShareLinkLoaded(true);
-        }).catch(() => setShareLinkLoaded(true));
-    }, [id]);
 
     const fullShareUrl = shareLink
         ? `${window.location.origin}${shareLink.url}`

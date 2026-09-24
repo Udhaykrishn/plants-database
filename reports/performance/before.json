@@ -1,0 +1,377 @@
+{
+  "samples": [
+    {
+      "run": 0,
+      "path": "/api/v1/plants/?limit=20",
+      "status": 200,
+      "total_ms": 9035.94,
+      "bytes": 10046,
+      "queries": [
+        {
+          "ms": 813.95,
+          "sql": "SELECT count(*) AS count_1 \nFROM plants"
+        },
+        {
+          "ms": 817.4,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants ORDER BY plants.created_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER"
+        },
+        {
+          "ms": 543.85,
+          "sql": "SELECT taxons.id AS taxons_id, taxons.name AS taxons_name, taxons.rank AS taxons_rank, taxons.parent_id AS taxons_parent_id, taxons.description AS taxons_description, taxons.created_at AS taxons_created_at, taxons.updated_at AS taxons_updated_at \nFROM taxons \nWHERE taxons.id IN ($1::UUID, $2::UUID, $3::UUID, $4::UUID, $5::UUID, $6::UUID, $7::UUID, $8::UUID, $9::UUID, $10::UUID, $11::UUID, $12::UUID, $13::UUID, $14::UUID, $15::UUID, $16::UUID, $17::UUID, $18::UUID, $19::UUID)"
+        }
+      ]
+    },
+    {
+      "run": 0,
+      "path": "/api/v1/projects/?limit=12",
+      "status": 200,
+      "total_ms": 2700.13,
+      "bytes": 1414,
+      "queries": [
+        {
+          "ms": 801.98,
+          "sql": "SELECT count(*) AS count_1 \nFROM projects"
+        },
+        {
+          "ms": 542.59,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at, (SELECT count(projectplants.plant_id) AS count_1 \nFROM projectplants \nWHERE projectplants.project_id = projects.id) AS plant_count \nFROM projects ORDER BY projects.updated_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER"
+        }
+      ]
+    },
+    {
+      "run": 0,
+      "path": "/api/v1/dashboard/stats",
+      "status": 200,
+      "total_ms": 3476.83,
+      "bytes": 88,
+      "queries": [
+        {
+          "ms": 797.88,
+          "sql": "SELECT count(plants.id) AS count_1 \nFROM plants"
+        },
+        {
+          "ms": 532.37,
+          "sql": "SELECT count(taxons.id) AS count_1 \nFROM taxons"
+        },
+        {
+          "ms": 542.01,
+          "sql": "SELECT count(categories.id) AS count_1 \nFROM categories"
+        },
+        {
+          "ms": 532.51,
+          "sql": "SELECT count(projects.id) AS count_1 \nFROM projects"
+        }
+      ]
+    },
+    {
+      "run": 0,
+      "path": "/api/v1/categories/",
+      "status": 200,
+      "total_ms": 2491.02,
+      "bytes": 1277,
+      "queries": [
+        {
+          "ms": 886.25,
+          "sql": "SELECT count(*) AS count_1 \nFROM (SELECT categories.id AS id, categories.name AS name, categories.description AS description, count(plants.id) AS count_2 \nFROM categories LEFT OUTER JOIN plants ON categories.name = plants.category GROUP BY categories.id, categories.name, categories.description) AS anon_1"
+        },
+        {
+          "ms": 532.89,
+          "sql": "SELECT categories.id, categories.name, categories.description, count(plants.id) AS count_1 \nFROM categories LEFT OUTER JOIN plants ON categories.name = plants.category GROUP BY categories.id, categories.name, categories.description ORDER BY categories.name \n LIMIT $1::INTEGER OFFSET $2::INTEGER"
+        }
+      ]
+    },
+    {
+      "run": 0,
+      "path": "/api/v1/taxonomy/tree",
+      "status": 200,
+      "total_ms": 2162.47,
+      "bytes": 157968,
+      "queries": [
+        {
+          "ms": 1074.65,
+          "sql": "SELECT taxons.id, taxons.name, taxons.rank, taxons.parent_id, taxons.description, taxons.created_at, taxons.updated_at \nFROM taxons"
+        }
+      ]
+    },
+    {
+      "run": 1,
+      "path": "/api/v1/plants/?limit=20",
+      "status": 200,
+      "total_ms": 2140.39,
+      "bytes": 10046,
+      "queries": [
+        {
+          "ms": 532.28,
+          "sql": "SELECT count(*) AS count_1 \nFROM plants"
+        },
+        {
+          "ms": 268.44,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants ORDER BY plants.created_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER"
+        },
+        {
+          "ms": 266.21,
+          "sql": "SELECT taxons.id AS taxons_id, taxons.name AS taxons_name, taxons.rank AS taxons_rank, taxons.parent_id AS taxons_parent_id, taxons.description AS taxons_description, taxons.created_at AS taxons_created_at, taxons.updated_at AS taxons_updated_at \nFROM taxons \nWHERE taxons.id IN ($1::UUID, $2::UUID, $3::UUID, $4::UUID, $5::UUID, $6::UUID, $7::UUID, $8::UUID, $9::UUID, $10::UUID, $11::UUID, $12::UUID, $13::UUID, $14::UUID, $15::UUID, $16::UUID, $17::UUID, $18::UUID, $19::UUID)"
+        }
+      ]
+    },
+    {
+      "run": 1,
+      "path": "/api/v1/projects/?limit=12",
+      "status": 200,
+      "total_ms": 1870.9,
+      "bytes": 1414,
+      "queries": [
+        {
+          "ms": 535.73,
+          "sql": "SELECT count(*) AS count_1 \nFROM projects"
+        },
+        {
+          "ms": 266.76,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at, (SELECT count(projectplants.plant_id) AS count_1 \nFROM projectplants \nWHERE projectplants.project_id = projects.id) AS plant_count \nFROM projects ORDER BY projects.updated_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER"
+        }
+      ]
+    },
+    {
+      "run": 1,
+      "path": "/api/v1/dashboard/stats",
+      "status": 200,
+      "total_ms": 2506.51,
+      "bytes": 88,
+      "queries": [
+        {
+          "ms": 531.71,
+          "sql": "SELECT count(plants.id) AS count_1 \nFROM plants"
+        },
+        {
+          "ms": 265.91,
+          "sql": "SELECT count(taxons.id) AS count_1 \nFROM taxons"
+        },
+        {
+          "ms": 267.76,
+          "sql": "SELECT count(categories.id) AS count_1 \nFROM categories"
+        },
+        {
+          "ms": 265.87,
+          "sql": "SELECT count(projects.id) AS count_1 \nFROM projects"
+        }
+      ]
+    },
+    {
+      "run": 1,
+      "path": "/api/v1/categories/",
+      "status": 200,
+      "total_ms": 1869.87,
+      "bytes": 1277,
+      "queries": [
+        {
+          "ms": 532.05,
+          "sql": "SELECT count(*) AS count_1 \nFROM (SELECT categories.id AS id, categories.name AS name, categories.description AS description, count(plants.id) AS count_2 \nFROM categories LEFT OUTER JOIN plants ON categories.name = plants.category GROUP BY categories.id, categories.name, categories.description) AS anon_1"
+        },
+        {
+          "ms": 265.82,
+          "sql": "SELECT categories.id, categories.name, categories.description, count(plants.id) AS count_1 \nFROM categories LEFT OUTER JOIN plants ON categories.name = plants.category GROUP BY categories.id, categories.name, categories.description ORDER BY categories.name \n LIMIT $1::INTEGER OFFSET $2::INTEGER"
+        }
+      ]
+    },
+    {
+      "run": 1,
+      "path": "/api/v1/taxonomy/tree",
+      "status": 200,
+      "total_ms": 1769.39,
+      "bytes": 157968,
+      "queries": [
+        {
+          "ms": 680.37,
+          "sql": "SELECT taxons.id, taxons.name, taxons.rank, taxons.parent_id, taxons.description, taxons.created_at, taxons.updated_at \nFROM taxons"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "path": "/api/v1/plants/?limit=20",
+      "status": 200,
+      "total_ms": 2134.38,
+      "bytes": 10046,
+      "queries": [
+        {
+          "ms": 532.37,
+          "sql": "SELECT count(*) AS count_1 \nFROM plants"
+        },
+        {
+          "ms": 266.71,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants ORDER BY plants.created_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER"
+        },
+        {
+          "ms": 266.91,
+          "sql": "SELECT taxons.id AS taxons_id, taxons.name AS taxons_name, taxons.rank AS taxons_rank, taxons.parent_id AS taxons_parent_id, taxons.description AS taxons_description, taxons.created_at AS taxons_created_at, taxons.updated_at AS taxons_updated_at \nFROM taxons \nWHERE taxons.id IN ($1::UUID, $2::UUID, $3::UUID, $4::UUID, $5::UUID, $6::UUID, $7::UUID, $8::UUID, $9::UUID, $10::UUID, $11::UUID, $12::UUID, $13::UUID, $14::UUID, $15::UUID, $16::UUID, $17::UUID, $18::UUID, $19::UUID)"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "path": "/api/v1/projects/?limit=12",
+      "status": 200,
+      "total_ms": 1867.05,
+      "bytes": 1414,
+      "queries": [
+        {
+          "ms": 532.51,
+          "sql": "SELECT count(*) AS count_1 \nFROM projects"
+        },
+        {
+          "ms": 266.88,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at, (SELECT count(projectplants.plant_id) AS count_1 \nFROM projectplants \nWHERE projectplants.project_id = projects.id) AS plant_count \nFROM projects ORDER BY projects.updated_at DESC \n LIMIT $1::INTEGER OFFSET $2::INTEGER"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "path": "/api/v1/dashboard/stats",
+      "status": 200,
+      "total_ms": 2396.47,
+      "bytes": 88,
+      "queries": [
+        {
+          "ms": 530.99,
+          "sql": "SELECT count(plants.id) AS count_1 \nFROM plants"
+        },
+        {
+          "ms": 266.56,
+          "sql": "SELECT count(taxons.id) AS count_1 \nFROM taxons"
+        },
+        {
+          "ms": 265.61,
+          "sql": "SELECT count(categories.id) AS count_1 \nFROM categories"
+        },
+        {
+          "ms": 265.04,
+          "sql": "SELECT count(projects.id) AS count_1 \nFROM projects"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "path": "/api/v1/categories/",
+      "status": 200,
+      "total_ms": 1873.71,
+      "bytes": 1277,
+      "queries": [
+        {
+          "ms": 532.5,
+          "sql": "SELECT count(*) AS count_1 \nFROM (SELECT categories.id AS id, categories.name AS name, categories.description AS description, count(plants.id) AS count_2 \nFROM categories LEFT OUTER JOIN plants ON categories.name = plants.category GROUP BY categories.id, categories.name, categories.description) AS anon_1"
+        },
+        {
+          "ms": 266.97,
+          "sql": "SELECT categories.id, categories.name, categories.description, count(plants.id) AS count_1 \nFROM categories LEFT OUTER JOIN plants ON categories.name = plants.category GROUP BY categories.id, categories.name, categories.description ORDER BY categories.name \n LIMIT $1::INTEGER OFFSET $2::INTEGER"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "path": "/api/v1/taxonomy/tree",
+      "status": 200,
+      "total_ms": 1631.74,
+      "bytes": 157968,
+      "queries": [
+        {
+          "ms": 535.39,
+          "sql": "SELECT taxons.id, taxons.name, taxons.rank, taxons.parent_id, taxons.description, taxons.created_at, taxons.updated_at \nFROM taxons"
+        }
+      ]
+    }
+  ],
+  "counts": {
+    "plants": 240,
+    "projects": 6,
+    "projectplants": 217,
+    "taxons": 627,
+    "categories": 11
+  },
+  "indexes": [
+    {
+      "tablename": "projectplants",
+      "indexdef": "CREATE UNIQUE INDEX projectplants_pkey ON public.projectplants USING btree (project_id, plant_id)"
+    },
+    {
+      "tablename": "uday",
+      "indexdef": "CREATE UNIQUE INDEX uday_pkey ON public.uday USING btree (id)"
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "projectplants",
+      "conname": "projectplants_project_id_not_null",
+      "definition": "NOT NULL project_id"
+    },
+    {
+      "table_name": "projectplants",
+      "conname": "projectplants_plant_id_not_null",
+      "definition": "NOT NULL plant_id"
+    },
+    {
+      "table_name": "projectplants",
+      "conname": "projectplants_pkey",
+      "definition": "PRIMARY KEY (project_id, plant_id)"
+    },
+    {
+      "table_name": "uday",
+      "conname": "uday_id_not_null",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "uday",
+      "conname": "uday_note_not_null",
+      "definition": "NOT NULL note"
+    },
+    {
+      "table_name": "uday",
+      "conname": "uday_created_at_not_null",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "uday",
+      "conname": "uday_pkey",
+      "definition": "PRIMARY KEY (id)"
+    }
+  ],
+  "plans": {
+    "plants": [
+      "Limit  (cost=61.79..61.84 rows=20 width=40) (actual time=0.151..0.154 rows=20.00 loops=1)",
+      "  Buffers: shared hit=53",
+      "  ->  Sort  (cost=61.79..62.39 rows=240 width=40) (actual time=0.150..0.151 rows=20.00 loops=1)",
+      "        Sort Key: created_at DESC",
+      "        Sort Method: top-N heapsort  Memory: 27kB",
+      "        Buffers: shared hit=53",
+      "        ->  Seq Scan on plants  (cost=0.00..55.40 rows=240 width=40) (actual time=0.016..0.105 rows=240.00 loops=1)",
+      "              Buffers: shared hit=53",
+      "Planning Time: 0.057 ms",
+      "Execution Time: 0.176 ms"
+    ],
+    "projects": [
+      "Limit  (cost=1.14..41.58 rows=6 width=32) (actual time=0.067..0.146 rows=6.00 loops=1)",
+      "  Buffers: shared hit=19",
+      "  ->  Result  (cost=1.14..41.58 rows=6 width=32) (actual time=0.066..0.145 rows=6.00 loops=1)",
+      "        Buffers: shared hit=19",
+      "        ->  Sort  (cost=1.14..1.15 rows=6 width=24) (actual time=0.039..0.040 rows=6.00 loops=1)",
+      "              Sort Key: p.updated_at DESC",
+      "              Sort Method: quicksort  Memory: 25kB",
+      "              Buffers: shared hit=1",
+      "              ->  Seq Scan on projects p  (cost=0.00..1.06 rows=6 width=24) (actual time=0.019..0.020 rows=6.00 loops=1)",
+      "                    Buffers: shared hit=1",
+      "        SubPlan 1",
+      "          ->  Aggregate  (cost=6.72..6.73 rows=1 width=8) (actual time=0.016..0.017 rows=1.00 loops=6)",
+      "                Buffers: shared hit=18",
+      "                ->  Seq Scan on projectplants pp  (cost=0.00..6.58 rows=57 width=0) (actual time=0.007..0.014 rows=36.17 loops=6)",
+      "                      Filter: (project_id = p.id)",
+      "                      Rows Removed by Filter: 181",
+      "                      Buffers: shared hit=18",
+      "Planning Time: 0.106 ms",
+      "Execution Time: 0.183 ms"
+    ],
+    "ping": [
+      "Result  (cost=0.00..0.01 rows=1 width=4) (actual time=0.002..0.002 rows=1.00 loops=1)",
+      "Planning Time: 0.019 ms",
+      "Execution Time: 0.021 ms"
+    ]
+  }
+}

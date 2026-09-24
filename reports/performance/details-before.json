@@ -1,0 +1,130 @@
+{
+  "samples": [
+    {
+      "run": 0,
+      "path": "/api/v1/projects/50cdb48d-95c2-4729-963c-0782681ab2c7",
+      "status": 200,
+      "total_ms": 8532.770411999081,
+      "bytes": 5761,
+      "queries": [
+        {
+          "ms": 783.47,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at \nFROM projects \nWHERE projects.id = $1::UUID"
+        },
+        {
+          "ms": 522.02,
+          "sql": "SELECT projectplants.project_id AS projectplants_project_id, projectplants.plant_id AS projectplants_plant_id, projectplants.notes AS projectplants_notes, projectplants.quantity AS projectplants_quantity, projectplants.unit AS projectplants_unit, projectplants.optimum_height_size AS projectplants_optimum_height_size, projectplants.rate AS projectplants_rate \nFROM projectplants \nWHERE projectplants.project_id IN ($1::UUID)"
+        },
+        {
+          "ms": 520.34,
+          "sql": "SELECT plants.id AS plants_id, plants.taxon_id AS plants_taxon_id, plants.scientific_name AS plants_scientific_name, plants.common_name AS plants_common_name, plants.category AS plants_category, plants.planting_place AS plants_planting_place, plants.description AS plants_description, plants.common_diseases AS plants_common_diseases, plants.care_data AS plants_care_data, plants.icon_url AS plants_icon_url, plants.image_url AS plants_image_url, plants.created_at AS plants_created_at \nFROM plants \nWHERE plants.id IN ($1::UUID, $2::UUID, $3::UUID, $4::UUID)"
+        },
+        {
+          "ms": 521.3,
+          "sql": "SELECT taxons.id AS taxons_id, taxons.name AS taxons_name, taxons.rank AS taxons_rank, taxons.parent_id AS taxons_parent_id, taxons.description AS taxons_description, taxons.created_at AS taxons_created_at, taxons.updated_at AS taxons_updated_at \nFROM taxons \nWHERE taxons.id IN ($1::UUID, $2::UUID, $3::UUID, $4::UUID)"
+        }
+      ]
+    },
+    {
+      "run": 0,
+      "path": "/api/v1/plants/201f9299-7a0d-4c82-bb79-74161a5cada1",
+      "status": 200,
+      "total_ms": 2601.0703229985666,
+      "bytes": 1220,
+      "queries": [
+        {
+          "ms": 778.95,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants \nWHERE plants.id = $1::UUID"
+        },
+        {
+          "ms": 520.04,
+          "sql": "SELECT taxons.id AS taxons_id, taxons.name AS taxons_name, taxons.rank AS taxons_rank, taxons.parent_id AS taxons_parent_id, taxons.description AS taxons_description, taxons.created_at AS taxons_created_at, taxons.updated_at AS taxons_updated_at \nFROM taxons \nWHERE taxons.id IN ($1::UUID)"
+        }
+      ]
+    },
+    {
+      "run": 1,
+      "path": "/api/v1/projects/50cdb48d-95c2-4729-963c-0782681ab2c7",
+      "status": 200,
+      "total_ms": 2341.0412299999734,
+      "bytes": 5761,
+      "queries": [
+        {
+          "ms": 518.86,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at \nFROM projects \nWHERE projects.id = $1::UUID"
+        },
+        {
+          "ms": 259.23,
+          "sql": "SELECT projectplants.project_id AS projectplants_project_id, projectplants.plant_id AS projectplants_plant_id, projectplants.notes AS projectplants_notes, projectplants.quantity AS projectplants_quantity, projectplants.unit AS projectplants_unit, projectplants.optimum_height_size AS projectplants_optimum_height_size, projectplants.rate AS projectplants_rate \nFROM projectplants \nWHERE projectplants.project_id IN ($1::UUID)"
+        },
+        {
+          "ms": 260.02,
+          "sql": "SELECT plants.id AS plants_id, plants.taxon_id AS plants_taxon_id, plants.scientific_name AS plants_scientific_name, plants.common_name AS plants_common_name, plants.category AS plants_category, plants.planting_place AS plants_planting_place, plants.description AS plants_description, plants.common_diseases AS plants_common_diseases, plants.care_data AS plants_care_data, plants.icon_url AS plants_icon_url, plants.image_url AS plants_image_url, plants.created_at AS plants_created_at \nFROM plants \nWHERE plants.id IN ($1::UUID, $2::UUID, $3::UUID, $4::UUID)"
+        },
+        {
+          "ms": 259.6,
+          "sql": "SELECT taxons.id AS taxons_id, taxons.name AS taxons_name, taxons.rank AS taxons_rank, taxons.parent_id AS taxons_parent_id, taxons.description AS taxons_description, taxons.created_at AS taxons_created_at, taxons.updated_at AS taxons_updated_at \nFROM taxons \nWHERE taxons.id IN ($1::UUID, $2::UUID, $3::UUID, $4::UUID)"
+        }
+      ]
+    },
+    {
+      "run": 1,
+      "path": "/api/v1/plants/201f9299-7a0d-4c82-bb79-74161a5cada1",
+      "status": 200,
+      "total_ms": 1829.3799349994515,
+      "bytes": 1220,
+      "queries": [
+        {
+          "ms": 522.43,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants \nWHERE plants.id = $1::UUID"
+        },
+        {
+          "ms": 260.1,
+          "sql": "SELECT taxons.id AS taxons_id, taxons.name AS taxons_name, taxons.rank AS taxons_rank, taxons.parent_id AS taxons_parent_id, taxons.description AS taxons_description, taxons.created_at AS taxons_created_at, taxons.updated_at AS taxons_updated_at \nFROM taxons \nWHERE taxons.id IN ($1::UUID)"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "path": "/api/v1/projects/50cdb48d-95c2-4729-963c-0782681ab2c7",
+      "status": 200,
+      "total_ms": 2345.4610129992943,
+      "bytes": 5761,
+      "queries": [
+        {
+          "ms": 521.31,
+          "sql": "SELECT projects.id, projects.name, projects.client_name, projects.location, projects.description, projects.created_at, projects.updated_at \nFROM projects \nWHERE projects.id = $1::UUID"
+        },
+        {
+          "ms": 260.07,
+          "sql": "SELECT projectplants.project_id AS projectplants_project_id, projectplants.plant_id AS projectplants_plant_id, projectplants.notes AS projectplants_notes, projectplants.quantity AS projectplants_quantity, projectplants.unit AS projectplants_unit, projectplants.optimum_height_size AS projectplants_optimum_height_size, projectplants.rate AS projectplants_rate \nFROM projectplants \nWHERE projectplants.project_id IN ($1::UUID)"
+        },
+        {
+          "ms": 259.24,
+          "sql": "SELECT plants.id AS plants_id, plants.taxon_id AS plants_taxon_id, plants.scientific_name AS plants_scientific_name, plants.common_name AS plants_common_name, plants.category AS plants_category, plants.planting_place AS plants_planting_place, plants.description AS plants_description, plants.common_diseases AS plants_common_diseases, plants.care_data AS plants_care_data, plants.icon_url AS plants_icon_url, plants.image_url AS plants_image_url, plants.created_at AS plants_created_at \nFROM plants \nWHERE plants.id IN ($1::UUID, $2::UUID, $3::UUID, $4::UUID)"
+        },
+        {
+          "ms": 260.12,
+          "sql": "SELECT taxons.id AS taxons_id, taxons.name AS taxons_name, taxons.rank AS taxons_rank, taxons.parent_id AS taxons_parent_id, taxons.description AS taxons_description, taxons.created_at AS taxons_created_at, taxons.updated_at AS taxons_updated_at \nFROM taxons \nWHERE taxons.id IN ($1::UUID, $2::UUID, $3::UUID, $4::UUID)"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "path": "/api/v1/plants/201f9299-7a0d-4c82-bb79-74161a5cada1",
+      "status": 200,
+      "total_ms": 1903.371517000778,
+      "bytes": 1220,
+      "queries": [
+        {
+          "ms": 519.3,
+          "sql": "SELECT plants.id, plants.taxon_id, plants.scientific_name, plants.common_name, plants.category, plants.planting_place, plants.description, plants.common_diseases, plants.care_data, plants.icon_url, plants.image_url, plants.created_at \nFROM plants \nWHERE plants.id = $1::UUID"
+        },
+        {
+          "ms": 260.18,
+          "sql": "SELECT taxons.id AS taxons_id, taxons.name AS taxons_name, taxons.rank AS taxons_rank, taxons.parent_id AS taxons_parent_id, taxons.description AS taxons_description, taxons.created_at AS taxons_created_at, taxons.updated_at AS taxons_updated_at \nFROM taxons \nWHERE taxons.id IN ($1::UUID)"
+        }
+      ]
+    }
+  ]
+}

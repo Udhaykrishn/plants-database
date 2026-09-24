@@ -4,7 +4,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, or_, func
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.exc import IntegrityError
 
 from app.db.session import get_db
@@ -54,7 +54,13 @@ async def read_plants(
         count_stmt = count_stmt.where(*filters)
     total = (await db.execute(count_stmt)).scalar_one()
 
-    query = select(Plant).options(selectinload(Plant.taxon))
+    # Select only the list DTO columns; join the optional taxon name in the
+    # same query instead of loading full Plant and Taxon ORM objects.
+    query = select(
+        Plant.id, Plant.common_name, Plant.scientific_name, Plant.category,
+        Plant.planting_place, Plant.icon_url, Plant.image_url, Plant.taxon_id,
+        Taxon.name.label("taxon_name"), Plant.created_at,
+    ).outerjoin(Taxon, Plant.taxon_id == Taxon.id)
     if filters:
         query = query.where(*filters)
 
@@ -74,23 +80,8 @@ async def read_plants(
         query = query.order_by(Plant.created_at.desc())
 
     query = query.offset(skip).limit(limit)
-    plants = (await db.execute(query)).scalars().all()
-
-    items = [
-        PlantListItem(
-            id=p.id,
-            common_name=p.common_name,
-            scientific_name=p.scientific_name,
-            category=p.category,
-            planting_place=p.planting_place,
-            icon_url=p.icon_url,
-            image_url=p.image_url,
-            taxon_id=p.taxon_id,
-            taxon_name=p.taxon.name if p.taxon else None,
-            created_at=p.created_at,
-        )
-        for p in plants
-    ]
+    rows = (await db.execute(query)).mappings().all()
+    items = [PlantListItem(**row) for row in rows]
     return {"items": items, "total": total}
 
 @router.post("/upload-image")
@@ -213,7 +204,7 @@ async def read_plant(
     """
     Get plant by ID.
     """
-    query = select(Plant).filter(Plant.id == plant_id).options(selectinload(Plant.taxon))
+    query = select(Plant).filter(Plant.id == plant_id).options(joinedload(Plant.taxon))
     result = await db.execute(query)
     plant = result.scalars().first()
     if not plant:

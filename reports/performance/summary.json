@@ -1,0 +1,56 @@
+[
+  {
+    "operation": "Plants page API",
+    "before_ms": 2137.385,
+    "after_ms": 1848.24,
+    "improvement_percent": 13.527979283095942
+  },
+  {
+    "operation": "Projects page API",
+    "before_ms": 1868.975,
+    "after_ms": 1860.8000000000002,
+    "improvement_percent": 0.43740552976897645
+  },
+  {
+    "operation": "Dashboard",
+    "before_ms": 2451.49,
+    "after_ms": 1583.95,
+    "improvement_percent": 35.388274070055346
+  },
+  {
+    "operation": "Categories API",
+    "before_ms": 1871.79,
+    "after_ms": 1855.16,
+    "improvement_percent": 0.8884543672099905
+  },
+  {
+    "operation": "Taxonomy tree",
+    "before_ms": 1700.565,
+    "after_ms": 2106.1,
+    "improvement_percent": -23.847074354699753
+  },
+  {
+    "operation": "Add plant (new association)",
+    "before_ms": 4455.610000000001,
+    "after_ms": 1931.79,
+    "improvement_percent": 56.64364699782971
+  },
+  {
+    "operation": "Add plant (existing association)",
+    "before_ms": 4114.21,
+    "after_ms": 1921.52,
+    "improvement_percent": 53.29552939689515
+  },
+  {
+    "operation": "Project detail (4 plants)",
+    "before_ms": 2343.251121499634,
+    "after_ms": 1835.3928934993746,
+    "improvement_percent": 21.673230979837967
+  },
+  {
+    "operation": "Plant detail",
+    "before_ms": 1866.3757260001148,
+    "after_ms": 1568.6581724985444,
+    "improvement_percent": 15.951640891709285
+  }
+]

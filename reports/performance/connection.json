@@ -1,0 +1,58 @@
+{
+  "host_region": "c-6.us-east-2.aws.neon.tech",
+  "pool_class": "AsyncAdaptedQueuePool",
+  "samples": [
+    {
+      "checkout_ms": 6155.820922002022,
+      "queries_ms": [
+        862.7116190036759,
+        265.0119989993982,
+        264.9976809989312
+      ],
+      "close_rollback_ms": 265.11592399765505
+    },
+    {
+      "checkout_ms": 1058.4722780040465,
+      "queries_ms": [
+        528.8644019965432,
+        267.4962989985943,
+        265.6282210009522
+      ],
+      "close_rollback_ms": 264.44536700000754
+    },
+    {
+      "checkout_ms": 796.0187539938488,
+      "queries_ms": [
+        530.486916002701,
+        265.23193399771117,
+        263.6733970066416
+      ],
+      "close_rollback_ms": 265.3008690031129
+    }
+  ],
+  "schema": "public",
+  "indexes": [
+    {
+      "schemaname": "public",
+      "tablename": "projectplants",
+      "indexdef": "CREATE UNIQUE INDEX projectplants_pkey ON public.projectplants USING btree (project_id, plant_id)"
+    }
+  ],
+  "constraints": [
+    {
+      "table_name": "projectplants",
+      "conname": "projectplants_project_id_not_null",
+      "definition": "NOT NULL project_id"
+    },
+    {
+      "table_name": "projectplants",
+      "conname": "projectplants_plant_id_not_null",
+      "definition": "NOT NULL plant_id"
+    },
+    {
+      "table_name": "projectplants",
+      "conname": "projectplants_pkey",
+      "definition": "PRIMARY KEY (project_id, plant_id)"
+    }
+  ]
+}
