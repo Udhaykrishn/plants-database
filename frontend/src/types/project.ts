@@ -43,3 +43,14 @@ export interface ProjectListResponse {
     items: ProjectResponse[];
     total: number;
 }
+
+/** Slim association returned by POST/PUT/DELETE project-plant mutations (RIA-18). */
+export interface ProjectPlantMutationResponse {
+    project_id: string;
+    plant_id: string;
+    notes?: string;
+    quantity?: number;
+    unit?: string;
+    optimum_height_size?: string;
+    rate?: number;
+}

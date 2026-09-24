@@ -15,7 +15,9 @@ import { projectsApi } from '../../api/projects';
 import type { ShareLinkInfo } from '../../api/projects';
 import { plantsApi } from '../../api/plants';
 import { taxonomyTreeQueryOptions } from '../../api/queryOptions';
-import type { ProjectPlantCreate } from '../../types/project';
+import type { Project, ProjectPlantCreate, ProjectPlantMutationResponse } from '../../types/project';
+import type { Plant } from '../../types/plant';
+import { mergeAssociationIntoProject, removeAssociationFromProject } from '../../utils/projectCache';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 
@@ -1481,22 +1483,42 @@ export const ProjectDetails = () => {
         }
     };
 
-    /* ── Mutations ── */
+    /* ── Mutations (merge slim association into project cache — RIA-19) ── */
+    const patchProjectAssociation = useCallback((slim: ProjectPlantMutationResponse, plantHint?: Plant | null) => {
+        queryClient.setQueryData(['project', id], (prev: Project | undefined) =>
+            prev ? mergeAssociationIntoProject(prev, slim, plantHint) : prev
+        );
+    }, [queryClient, id]);
+
     const addPlantMutation = useMutation({
         mutationFn: (data: ProjectPlantCreate) => projectsApi.addPlant(id!, data),
-        onSuccess: (data) => { queryClient.setQueryData(['project', id], data); showAlert('Plant added to project', 'success'); closeDialog(); },
+        onSuccess: (slim) => {
+            const plantHint = pickerPlants.find((p) => p.id === slim.plant_id) ?? null;
+            patchProjectAssociation(slim, plantHint);
+            showAlert('Plant added to project', 'success');
+            closeDialog();
+        },
         onError: (e: any) => { showAlert('Failed to add plant: ' + (e.response?.data?.detail || e.message), 'error'); },
     });
 
     const updatePlantMutation = useMutation({
         mutationFn: (data: ProjectPlantCreate) => projectsApi.updatePlant(id!, editingPlantId!, data),
-        onSuccess: (data) => { queryClient.setQueryData(['project', id], data); showAlert('Plant updated', 'success'); closeDialog(); },
+        onSuccess: (slim) => {
+            patchProjectAssociation(slim);
+            showAlert('Plant updated', 'success');
+            closeDialog();
+        },
         onError: (e: any) => { showAlert('Failed to update plant: ' + (e.response?.data?.detail || e.message), 'error'); },
     });
 
     const deletePlantMutation = useMutation({
         mutationFn: (plantId: string) => projectsApi.removePlant(id!, plantId),
-        onSuccess: (data) => { queryClient.setQueryData(['project', id], data); showAlert('Plant removed', 'success'); },
+        onSuccess: (slim) => {
+            queryClient.setQueryData(['project', id], (prev: Project | undefined) =>
+                prev ? removeAssociationFromProject(prev, slim.plant_id) : prev
+            );
+            showAlert('Plant removed', 'success');
+        },
         onError: (e: any) => { showAlert('Failed to remove: ' + (e.response?.data?.detail || e.message), 'error'); },
     });
 
@@ -1505,8 +1527,8 @@ export const ProjectDetails = () => {
             const { plantId, ...payload } = data;
             return projectsApi.updatePlant(id!, plantId, payload as ProjectPlantCreate);
         },
-        onSuccess: (data) => {
-            queryClient.setQueryData(['project', id], data);
+        onSuccess: (slim) => {
+            patchProjectAssociation(slim);
         },
         onError: (e: any) => {
             showAlert('Failed to update: ' + (e.response?.data?.detail || e.message), 'error');
@@ -1538,8 +1560,13 @@ export const ProjectDetails = () => {
                 return projectsApi.updatePlant(id!, plantId, payload);
             });
             const results = await Promise.all(promises);
-            const last = results[results.length - 1];
-            if (last) queryClient.setQueryData(['project', id], last);
+            queryClient.setQueryData(['project', id], (prev: Project | undefined) => {
+                if (!prev) return prev;
+                return results.reduce(
+                    (acc, slim) => mergeAssociationIntoProject(acc, slim),
+                    prev,
+                );
+            });
             showAlert('Bulk update completed successfully', 'success');
             setSelectedPlantIds([]);
         } catch (e: any) {
