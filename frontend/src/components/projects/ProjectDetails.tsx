@@ -1469,19 +1469,19 @@ export const ProjectDetails = () => {
     /* ── Mutations ── */
     const addPlantMutation = useMutation({
         mutationFn: (data: ProjectPlantCreate) => projectsApi.addPlant(id!, data),
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['project', id] }); showAlert('Plant added to project', 'success'); closeDialog(); },
+        onSuccess: (data) => { queryClient.setQueryData(['project', id], data); showAlert('Plant added to project', 'success'); closeDialog(); },
         onError: (e: any) => { showAlert('Failed to add plant: ' + (e.response?.data?.detail || e.message), 'error'); },
     });
 
     const updatePlantMutation = useMutation({
         mutationFn: (data: ProjectPlantCreate) => projectsApi.updatePlant(id!, editingPlantId!, data),
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['project', id] }); showAlert('Plant updated', 'success'); closeDialog(); },
+        onSuccess: (data) => { queryClient.setQueryData(['project', id], data); showAlert('Plant updated', 'success'); closeDialog(); },
         onError: (e: any) => { showAlert('Failed to update plant: ' + (e.response?.data?.detail || e.message), 'error'); },
     });
 
     const deletePlantMutation = useMutation({
         mutationFn: (plantId: string) => projectsApi.removePlant(id!, plantId),
-        onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['project', id] }); showAlert('Plant removed', 'success'); },
+        onSuccess: (data) => { queryClient.setQueryData(['project', id], data); showAlert('Plant removed', 'success'); },
         onError: (e: any) => { showAlert('Failed to remove: ' + (e.response?.data?.detail || e.message), 'error'); },
     });
 
@@ -1490,8 +1490,8 @@ export const ProjectDetails = () => {
             const { plantId, ...payload } = data;
             return projectsApi.updatePlant(id!, plantId, payload as ProjectPlantCreate);
         },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['project', id] });
+        onSuccess: (data) => {
+            queryClient.setQueryData(['project', id], data);
         },
         onError: (e: any) => {
             showAlert('Failed to update: ' + (e.response?.data?.detail || e.message), 'error');
@@ -1522,8 +1522,9 @@ export const ProjectDetails = () => {
                 };
                 return projectsApi.updatePlant(id!, plantId, payload);
             });
-            await Promise.all(promises);
-            queryClient.invalidateQueries({ queryKey: ['project', id] });
+            const results = await Promise.all(promises);
+            const last = results[results.length - 1];
+            if (last) queryClient.setQueryData(['project', id], last);
             showAlert('Bulk update completed successfully', 'success');
             setSelectedPlantIds([]);
         } catch (e: any) {
