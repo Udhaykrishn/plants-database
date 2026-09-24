@@ -704,6 +704,8 @@ export const ProjectDetails = () => {
     const [unit, setUnit] = useState('');
     const [optimumHeightSize, setOptimumHeightSize] = useState('');
     const [rate, setRate] = useState('');
+    const [pickerSearch, setPickerSearch] = useState('');
+    const [debouncedPickerSearch, setDebouncedPickerSearch] = useState('');
 
     /* ── Table state ── */
     const [search, setSearch] = useState('');
@@ -765,11 +767,27 @@ export const ProjectDetails = () => {
         enabled: !!id,
     });
 
-    const { data: allPlantsData } = useQuery({
-        queryKey: ['plants', 'all-picker'],
-        queryFn: () => plantsApi.getAll({ limit: 1000 }), // Load more for picker
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedPickerSearch(pickerSearch.trim()), 300);
+        return () => clearTimeout(t);
+    }, [pickerSearch]);
+
+    const pickerEnabled = isDialogOpen && !editingPlantId;
+    const { data: pickerPlantsData, isFetching: pickerLoading } = useQuery({
+        queryKey: ['plants', 'picker', debouncedPickerSearch],
+        queryFn: () => plantsApi.getAll({ limit: 50, search: debouncedPickerSearch || undefined }),
+        enabled: pickerEnabled,
     });
-    const allPlants = allPlantsData?.items || [];
+    const pickerPlants = pickerPlantsData?.items || [];
+
+    const editingPlantLabel = useMemo(() => {
+        if (!editingPlantId || !project) return null;
+        const pp = project.plants.find((p) => p.plant_id === editingPlantId);
+        if (!pp?.plant) return 'Selected plant';
+        const name = pp.plant.common_name || 'Selected plant';
+        const taxon = pp.plant.taxon?.name;
+        return taxon ? `${name} (${taxon})` : name;
+    }, [editingPlantId, project]);
 
     const { data: taxTree } = useQuery({
         queryKey: ['taxonomy', 'tree'],
@@ -1562,6 +1580,8 @@ export const ProjectDetails = () => {
         setUnit('');
         setOptimumHeightSize('');
         setRate('');
+        setPickerSearch('');
+        setDebouncedPickerSearch('');
         setIsDialogOpen(true);
     }, []);
     const openEdit = useCallback((plantId: string) => {
@@ -1586,6 +1606,8 @@ export const ProjectDetails = () => {
         setUnit('');
         setOptimumHeightSize('');
         setRate('');
+        setPickerSearch('');
+        setDebouncedPickerSearch('');
     }, []);
 
     const handleDeletePlant = useCallback((plantId: string, plantName: string) => {
@@ -2248,18 +2270,40 @@ export const ProjectDetails = () => {
                     <form onSubmit={handleSubmit} className="space-y-4 pt-2">
                         <div className="space-y-1.5">
                             <Label htmlFor="pp-plant">Plant <span className="text-destructive">*</span></Label>
-                            <Select value={selectedPlantId} onValueChange={setSelectedPlantId} disabled={!!editingPlantId} required>
-                                <SelectTrigger id="pp-plant">
-                                    <SelectValue placeholder="Select a plant…" />
-                                </SelectTrigger>
-                                <SelectContent className="max-h-60">
-                                    {allPlants.map((p) => (
-                                        <SelectItem key={p.id} value={p.id}>
-                                            {p.common_name}{p.taxon?.name ? ` (${p.taxon.name})` : ''}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {editingPlantId ? (
+                                <Input id="pp-plant" value={editingPlantLabel ?? ''} disabled readOnly />
+                            ) : (
+                                <>
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                                        <Input
+                                            value={pickerSearch}
+                                            onChange={(e) => setPickerSearch(e.target.value)}
+                                            placeholder="Search plants…"
+                                            className="pl-8"
+                                            autoComplete="off"
+                                        />
+                                    </div>
+                                    <Select value={selectedPlantId} onValueChange={setSelectedPlantId} required>
+                                        <SelectTrigger id="pp-plant">
+                                            <SelectValue placeholder={pickerLoading ? 'Loading…' : 'Select a plant…'} />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-60">
+                                            {pickerLoading && pickerPlants.length === 0 ? (
+                                                <div className="px-2 py-3 text-xs text-muted-foreground">Searching…</div>
+                                            ) : pickerPlants.length === 0 ? (
+                                                <div className="px-2 py-3 text-xs text-muted-foreground">No plants found</div>
+                                            ) : (
+                                                pickerPlants.map((p) => (
+                                                    <SelectItem key={p.id} value={p.id}>
+                                                        {p.common_name}{p.taxon?.name ? ` (${p.taxon.name})` : ''}
+                                                    </SelectItem>
+                                                ))
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </>
+                            )}
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
