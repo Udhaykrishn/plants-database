@@ -11,6 +11,8 @@ import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
 import { plantsQueryOptions, taxonomyTreeQueryOptions, categoriesQueryOptions, projectsQueryOptions } from '../../api/queryOptions';
 import { aiApi } from '../../api/ai';
+import type { Project, ProjectListResponse, ProjectPlantMutationResponse } from '../../types/project';
+import { bumpListPlantCount, mergeAssociationIntoProject } from '../../utils/projectCache';
 import { cn } from '../../lib-frontend/utils';
 import { TaxonomyFormTable } from './TaxonomyFormTable';
 
@@ -416,10 +418,36 @@ export const PlantManager = () => {
             );
             return Promise.all(promises);
         },
-        onSuccess: (_, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['projects'] });
-            queryClient.invalidateQueries({ queryKey: ['project', variables.projectId] });
-            showAlert(`Successfully added ${selectedPlantIds.length} plant(s) to project.`, 'success');
+        onSuccess: (results: ProjectPlantMutationResponse[], variables) => {
+            // RIA-21: patch caches — no full project / list invalidate+refetch
+            const projectId = variables.projectId;
+            const existingDetail = queryClient.getQueryData<Project>(['project', projectId]);
+            const existingIds = new Set(existingDetail?.plants?.map((p) => p.plant_id) ?? []);
+            const netNew = existingDetail
+                ? results.filter((slim) => !existingIds.has(slim.plant_id)).length
+                : results.length;
+
+            if (existingDetail) {
+                queryClient.setQueryData(['project', projectId], (prev: Project | undefined) => {
+                    if (!prev) return prev;
+                    return results.reduce((acc, slim) => {
+                        const plantHint = plants.find((p) => p.id === slim.plant_id) ?? null;
+                        return mergeAssociationIntoProject(acc, slim, plantHint);
+                    }, prev);
+                });
+            }
+
+            if (netNew > 0) {
+                queryClient.setQueriesData<ProjectListResponse>(
+                    { queryKey: ['projects'] },
+                    (prev) => {
+                        if (!prev || !Array.isArray(prev.items)) return prev;
+                        return bumpListPlantCount(prev, projectId, netNew);
+                    },
+                );
+            }
+
+            showAlert(`Successfully added ${variables.plantIds.length} plant(s) to project.`, 'success');
             setSelectedPlantIds([]);
             setShowProjectModal(false);
             setSelectedProjectId('');

@@ -137,7 +137,7 @@ const ProjectCardMemo = memo(({ project, onEdit, onDelete, onDuplicate }: Projec
                     <div className="flex items-center justify-between mt-auto pt-3 border-t border-border">
                         <Badge variant="secondary" className="text-xs font-medium">
                             <Leaf className="w-3 h-3 mr-1" />
-                            {project.plants?.length ?? 0} {project.plants?.length === 1 ? 'plant' : 'plants'}
+                            {(project.plant_count ?? project.plants?.length ?? 0)} {(project.plant_count ?? project.plants?.length ?? 0) === 1 ? 'plant' : 'plants'}
                         </Badge>
                         <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                             <CalendarDays className="w-3 h-3" />
@@ -176,7 +176,7 @@ const ProjectTableRowMemo = memo(({ project, onEdit, onDelete, onDuplicate }: Pr
             </TableCell>
             <TableCell>
                 <Badge variant="secondary" className="tabular-nums">
-                    {project.plants?.length ?? 0}
+                    {project.plant_count ?? project.plants?.length ?? 0}
                 </Badge>
             </TableCell>
             <TableCell>
