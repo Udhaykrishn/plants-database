@@ -398,7 +398,13 @@ export const PlantManager = () => {
         }
     }, [currentPage, totalPages, plantsParams, queryClient, PAGE_SIZE]);
 
-    const { data: taxonomyTree } = useQuery(taxonomyTreeQueryOptions());
+    // Tree (~158KB) only when create/edit form is open — not on catalog browse.
+    const needsTaxonomyTree =
+        isCreating || !!editingPlantId || !!(location.state as any)?.editPlant;
+    const { data: taxonomyTree } = useQuery({
+        ...taxonomyTreeQueryOptions(),
+        enabled: needsTaxonomyTree,
+    });
     const { data: categoriesOptions } = useQuery(categoriesQueryOptions());
 
 
