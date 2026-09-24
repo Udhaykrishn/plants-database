@@ -47,21 +47,14 @@ async def read_projects(
         count_stmt = count_stmt.where(*filters)
     total = (await db.execute(count_stmt)).scalar_one()
 
-    plant_count_col = func.count(ProjectPlant.plant_id).label("plant_count")
-    query = (
-        select(
-            Project.id,
-            Project.name,
-            Project.client_name,
-            Project.location,
-            Project.description,
-            Project.created_at,
-            Project.updated_at,
-            plant_count_col,
-        )
-        .outerjoin(ProjectPlant, ProjectPlant.project_id == Project.id)
-        .group_by(Project.id)
+    plant_count_sq = (
+        select(func.count(ProjectPlant.plant_id))
+        .where(ProjectPlant.project_id == Project.id)
+        .correlate(Project)
+        .scalar_subquery()
+        .label("plant_count")
     )
+    query = select(Project, plant_count_sq)
     if filters:
         query = query.where(*filters)
 
@@ -81,16 +74,16 @@ async def read_projects(
 
     items = [
         ProjectSummary(
-            id=row.id,
-            name=row.name,
-            client_name=row.client_name,
-            location=row.location,
-            description=row.description,
-            created_at=row.created_at,
-            updated_at=row.updated_at,
-            plant_count=int(row.plant_count or 0),
+            id=proj.id,
+            name=proj.name,
+            client_name=proj.client_name,
+            location=proj.location,
+            description=proj.description,
+            created_at=proj.created_at,
+            updated_at=proj.updated_at,
+            plant_count=int(count or 0),
         )
-        for row in rows
+        for proj, count in rows
     ]
     return {"items": items, "total": total}
 
