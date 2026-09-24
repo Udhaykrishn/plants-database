@@ -27,6 +27,19 @@ class ProjectPlantResponse(ProjectPlantBase):
     plant: Optional[PlantResponse] = None # Nested plant details
     model_config = ConfigDict(from_attributes=True)
 
+
+class ProjectPlantMutationResponse(BaseModel):
+    """Slim association returned by POST/PUT/DELETE project-plant mutations (RIA-18)."""
+    project_id: uuid.UUID
+    plant_id: uuid.UUID
+    notes: Optional[str] = None
+    quantity: Optional[float] = None
+    unit: Optional[str] = None
+    optimum_height_size: Optional[str] = None
+    rate: Optional[float] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
 # Project Schemas
 class ProjectBase(BaseModel):
     name: str
@@ -48,6 +61,21 @@ class ProjectResponse(ProjectBase):
     
     model_config = ConfigDict(from_attributes=True)
 
+
+class ProjectSummary(BaseModel):
+    """List/summary DTO — no nested plants (RIA-14)."""
+    id: uuid.UUID
+    name: str
+    client_name: Optional[str] = None
+    location: Optional[str] = None
+    description: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    plant_count: int = 0
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class ProjectListResponse(BaseModel):
-    items: List[ProjectResponse]
+    items: List[ProjectSummary]
     total: int

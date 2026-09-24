@@ -11,7 +11,7 @@ from app.db.session import get_db
 from app.models.plant import Plant
 from app.models.taxon import Taxon
 from app.models.enums import PlantingPlace, Rank
-from app.schemas.plant import PlantCreate, PlantResponse, PlantUpdate, PlantListResponse
+from app.schemas.plant import PlantCreate, PlantResponse, PlantUpdate, PlantListResponse, PlantListItem
 from app.services.cloudinary_service import upload_image, upload_image_from_url
 from pydantic import BaseModel
 
@@ -29,35 +29,35 @@ async def read_plants(
     sort: Optional[str] = "recent"
 ) -> Any:
     """
-    Retrieve plants with filtering and search.
+    Retrieve slim plant list items (no care_data) with a cheap count (RIA-16).
     """
-    query = select(Plant).options(selectinload(Plant.taxon))
-    
+    filters = []
     if category:
-        query = query.filter(Plant.category == category)
+        filters.append(Plant.category == category)
     if planting_place:
         if planting_place == PlantingPlace.INDOOR:
-            query = query.filter(Plant.planting_place.in_([PlantingPlace.INDOOR, PlantingPlace.BOTH]))
+            filters.append(Plant.planting_place.in_([PlantingPlace.INDOOR, PlantingPlace.BOTH]))
         elif planting_place == PlantingPlace.OUTDOOR:
-            query = query.filter(Plant.planting_place.in_([PlantingPlace.OUTDOOR, PlantingPlace.BOTH]))
+            filters.append(Plant.planting_place.in_([PlantingPlace.OUTDOOR, PlantingPlace.BOTH]))
         elif planting_place == PlantingPlace.BOTH:
-            # If BOTH is requested (meaning both checkboxes in UI), show everything
-            # Actually, showing everything is the same as skipping the filter.
             pass
     if search:
-        query = query.filter(or_(
+        filters.append(or_(
             Plant.common_name.ilike(f"%{search}%"),
-            Plant.scientific_name.ilike(f"%{search}%")
+            Plant.scientific_name.ilike(f"%{search}%"),
         ))
     if taxon_id:
-        query = query.filter(Plant.taxon_id == taxon_id)
-        
-    # Count total
-    count_stmt = select(func.count()).select_from(query.subquery())
-    count_result = await db.execute(count_stmt)
-    total = count_result.scalar_one()
+        filters.append(Plant.taxon_id == taxon_id)
 
-    # Apply sorting
+    count_stmt = select(func.count()).select_from(Plant)
+    if filters:
+        count_stmt = count_stmt.where(*filters)
+    total = (await db.execute(count_stmt)).scalar_one()
+
+    query = select(Plant).options(selectinload(Plant.taxon))
+    if filters:
+        query = query.where(*filters)
+
     if sort == "recent":
         query = query.order_by(Plant.created_at.desc())
     elif sort == "oldest":
@@ -74,10 +74,23 @@ async def read_plants(
         query = query.order_by(Plant.created_at.desc())
 
     query = query.offset(skip).limit(limit)
-    
-    result = await db.execute(query)
-    items = result.scalars().all()
-    
+    plants = (await db.execute(query)).scalars().all()
+
+    items = [
+        PlantListItem(
+            id=p.id,
+            common_name=p.common_name,
+            scientific_name=p.scientific_name,
+            category=p.category,
+            planting_place=p.planting_place,
+            icon_url=p.icon_url,
+            image_url=p.image_url,
+            taxon_id=p.taxon_id,
+            taxon_name=p.taxon.name if p.taxon else None,
+            created_at=p.created_at,
+        )
+        for p in plants
+    ]
     return {"items": items, "total": total}
 
 @router.post("/upload-image")
