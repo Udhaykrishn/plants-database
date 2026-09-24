@@ -1,9 +1,6 @@
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
 import { plantsApi } from '../../api/plants';
-import { taxonomyApi } from '../../api/taxonomy';
-import type { TaxonTree } from '../../types/taxon';
 import {
     ArrowLeft, Edit3, Bug, ListTree, Info, Sprout,
     Droplets, Sun, Wind, ScanText, MapPin, Tag
@@ -18,27 +15,10 @@ export const PlantDetails = () => {
         enabled: !!id,
     });
 
-    const { data: tree } = useQuery({
-        queryKey: ['taxonomy', 'tree'],
-        queryFn: () => taxonomyApi.getTree(),
-    });
-
-    const getTaxonomyPath = (nodes: TaxonTree[], targetId: string, currentPath: TaxonTree[] = []): TaxonTree[] | null => {
-        for (const node of nodes) {
-            const path = [...currentPath, node];
-            if (node.id === targetId) return path;
-            if (node.children?.length) {
-                const found = getTaxonomyPath(node.children, targetId, path);
-                if (found) return found;
-            }
-        }
-        return null;
-    };
-
-    const taxonomyPath = useMemo(() => {
-        if (!tree || !plant?.taxon?.id) return null;
-        return getTaxonomyPath(tree, plant.taxon.id);
-    }, [tree, plant]);
+    // GAP: full taxonomy lineage previously required fetching /taxonomy/tree (~158KB)
+    // just to walk ancestors for one taxon id. Dropped per Eng Lead FE-first decision.
+    // plant.taxon (name/rank) still shown when present; restore lineage via slim path
+    // endpoint later — do not reintroduce full-tree fetch here.
 
     if (plantLoading) return (
         <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">
@@ -167,26 +147,19 @@ export const PlantDetails = () => {
                         </div>
                     )}
 
-                    {/* Taxonomy */}
-                    {taxonomyPath && taxonomyPath.length > 0 && (
+                    {/* Taxonomy — single linked taxon only (no full-tree lineage) */}
+                    {plant.taxon?.name && (
                         <div className="bg-white rounded-xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow">
                             <h3 className="flex items-center gap-2 text-base font-semibold text-foreground mb-4 pb-3 border-b border-border">
-                                <ListTree size={20} className="text-primary" /> Taxonomy Lineage
+                                <ListTree size={20} className="text-primary" /> Taxonomy
                             </h3>
-                            <div className="flex flex-col">
-                                {taxonomyPath.map((t, i) => (
-                                    <div
-                                        key={t.id}
-                                        className={`flex justify-between items-center py-2.5 ${i < taxonomyPath.length - 1 ? 'border-b border-dashed border-border' : ''}`}
-                                    >
-                                        <span className="text-[0.7rem] uppercase tracking-wider font-bold text-muted-foreground">
-                                            {t.rank}
-                                        </span>
-                                        <span className="text-sm font-medium text-foreground">
-                                            {t.name}
-                                        </span>
-                                    </div>
-                                ))}
+                            <div className="flex justify-between items-center py-2.5">
+                                <span className="text-[0.7rem] uppercase tracking-wider font-bold text-muted-foreground">
+                                    {plant.taxon.rank || 'Taxon'}
+                                </span>
+                                <span className="text-sm font-medium text-foreground">
+                                    {plant.taxon.name}
+                                </span>
                             </div>
                         </div>
                     )}

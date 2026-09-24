@@ -791,15 +791,15 @@ export const ProjectDetails = () => {
         return taxon ? `${name} (${taxon})` : name;
     }, [editingPlantId, project]);
 
-    const { data: taxTree } = useQuery(taxonomyTreeQueryOptions());
-
+    // Do not prefetch /taxonomy/tree on project detail (~158KB). PDF export
+    // still needs ancestor paths; fetch on demand at click time only.
     const handleDownloadPdf = async () => {
         if (!project) return;
         setPdfLoading(true);
         try {
             const { prepareProjectImageCache } = await import('../../utils/pdf-images');
             const imgCache = await prepareProjectImageCache(project);
-            
+            const taxTree = await queryClient.fetchQuery(taxonomyTreeQueryOptions());
             const { exportProjectPdfNew } = await import('./ProjectPdfDocument');
             await exportProjectPdfNew(project, taxTree, imgCache, project.name);
         } catch (e) {
