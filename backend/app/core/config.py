@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7 # 1 week
 
+    # Runtime environment (prod → SQLAlchemy echo off)
+    ENVIRONMENT: str = "development"
+
+    # Async engine pool (keep small when using Neon pooler URL)
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
+
     # Neon Postgres
     NEON: Union[str, None] = None
     SQLALCHEMY_DATABASE_URI: Union[PostgresDsn, str] = None

@@ -8,13 +8,18 @@ connect_args = {}
 if "neon.tech" in str(settings.SQLALCHEMY_DATABASE_URI):
     connect_args["ssl"] = True
 
+_env = (settings.ENVIRONMENT or "development").lower()
+_is_prod = _env in ("production", "prod")
+
 engine = create_async_engine(
     str(settings.SQLALCHEMY_DATABASE_URI),
-    echo=True,
+    echo=not _is_prod,
     future=True,
     connect_args=connect_args,
     pool_pre_ping=True,
-    pool_recycle=300
+    pool_recycle=300,
+    pool_size=settings.DB_POOL_SIZE,
+    max_overflow=settings.DB_MAX_OVERFLOW,
 )
 
 AsyncSessionLocal = sessionmaker(
