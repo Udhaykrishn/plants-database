@@ -1,5 +1,5 @@
 import { client } from "./client";
-import type { Project, ProjectCreate, ProjectPlantCreate, ProjectListResponse } from "../types/project";
+import type { Project, ProjectCreate, ProjectPlantCreate, ProjectListResponse, ProjectPlantMutationResponse } from "../types/project";
 
 export interface ShareLinkInfo {
     token: string;
@@ -23,18 +23,18 @@ export const projectsApi = {
         return response.data;
     },
 
-    addPlant: async (projectId: string, data: ProjectPlantCreate): Promise<Project> => {
-        const response = await client.post<Project>(`/projects/${projectId}/plants`, data);
+    addPlant: async (projectId: string, data: ProjectPlantCreate): Promise<ProjectPlantMutationResponse> => {
+        const response = await client.post<ProjectPlantMutationResponse>(`/projects/${projectId}/plants`, data);
         return response.data;
     },
 
-    updatePlant: async (projectId: string, plantId: string, data: ProjectPlantCreate): Promise<Project> => {
-        const response = await client.put<Project>(`/projects/${projectId}/plants/${plantId}`, data);
+    updatePlant: async (projectId: string, plantId: string, data: ProjectPlantCreate): Promise<ProjectPlantMutationResponse> => {
+        const response = await client.put<ProjectPlantMutationResponse>(`/projects/${projectId}/plants/${plantId}`, data);
         return response.data;
     },
 
-    removePlant: async (projectId: string, plantId: string): Promise<Project> => {
-        const response = await client.delete<Project>(`/projects/${projectId}/plants/${plantId}`);
+    removePlant: async (projectId: string, plantId: string): Promise<ProjectPlantMutationResponse> => {
+        const response = await client.delete<ProjectPlantMutationResponse>(`/projects/${projectId}/plants/${plantId}`);
         return response.data;
     },
 
