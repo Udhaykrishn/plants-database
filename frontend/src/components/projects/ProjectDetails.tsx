@@ -14,7 +14,7 @@ import { exportProjectQuotationPdf } from './ProjectQuotationPdfDocument';
 import { projectsApi } from '../../api/projects';
 import type { ShareLinkInfo } from '../../api/projects';
 import { plantsApi } from '../../api/plants';
-import { taxonomyApi } from '../../api/taxonomy';
+import { taxonomyTreeQueryOptions } from '../../api/queryOptions';
 import type { ProjectPlantCreate } from '../../types/project';
 import { useAlert } from '../../contexts/AlertContext';
 import { useConfirm } from '../../contexts/ConfirmContext';
@@ -789,10 +789,7 @@ export const ProjectDetails = () => {
         return taxon ? `${name} (${taxon})` : name;
     }, [editingPlantId, project]);
 
-    const { data: taxTree } = useQuery({
-        queryKey: ['taxonomy', 'tree'],
-        queryFn: () => taxonomyApi.getTree(),
-    });
+    const { data: taxTree } = useQuery(taxonomyTreeQueryOptions());
 
     const handleDownloadPdf = async () => {
         if (!project) return;
