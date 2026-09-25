@@ -1,6 +1,6 @@
 # Frontend and backend performance investigation
 
-Measured September 24, 2026, against the running frontend at `http://localhost:5173`, local FastAPI backend at `http://localhost:8000`, and its configured Neon database. Baseline commit: `cf9d192`. Changes are local, not deployed or committed.
+Measured September 24, 2026, against the running frontend at `http://localhost:5173`, local FastAPI backend at `http://localhost:8000`, and its configured Neon database. Baseline commit: `cf9d192`. On the September 25 continuation, the investigation changes were already present in local commit `863fdda`. Deployment has not been verified.
 
 **The main cause is many sequential round trips over a roughly 265–275 ms database network path, compounded by connection health checks and transaction boundaries. It is not multi-second SQL execution or primarily React rendering.** The reported add-to-project problem was reproduced at **5,809 ms**. Warm inserts improved from **4,456 ms to 1,932 ms (57%)**. The 500 ms target is **not achieved** with this connection topology.
 
@@ -175,7 +175,7 @@ The last two rows illustrate that an index is not a universal fix. Deep offsets 
 - Six baseline/current response-parity checks pass, including full plant/project detail JSON and four list variants.
 - Browser add from the Plants section succeeds, no mutation refetch waterfall, project contents verified. Both cache-related request counts checked with CDP.
 - SQL query timing hooks are confined to the standalone benchmark. Browser observer was removed by cleanup/reload. No application debug middleware or credential logging was added.
-- Test rows cleaned up; original table counts verified in `cleanup.json`. No schema changes, region migration, deployment or commit performed.
+- Test rows cleaned up; original table counts verified in `cleanup.json`. No schema changes, region migration or deployment performed by this investigation. The September 25 continuation found the changes already committed as `863fdda`.
 
 Re-run from `backend/`:
 
