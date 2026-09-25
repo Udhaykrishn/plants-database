@@ -35,22 +35,14 @@ async def read_categories(
             Category.description.ilike(f"%{search}%")
         ))
 
-    # Count total
-    count_stmt = select(func.count()).select_from(Category)
-    if search:
-        count_stmt = count_stmt.where(or_(
-            Category.name.ilike(f"%{search}%"),
-            Category.description.ilike(f"%{search}%"),
-        ))
-    count_result = await db.execute(count_stmt)
-    total = count_result.scalar_one()
-
     # Final items query with ordering and pagination
-    query = query.order_by(Category.name).offset(skip).limit(limit)
+    query = query.add_columns(func.count().over().label("filtered_total")).order_by(Category.name).offset(skip).limit(limit)
     result = await db.execute(query)
     
     categories = []
-    for cat, count in result.all():
+    rows = result.all()
+    total = int(rows[0][2]) if rows else 0
+    for cat, count, _ in rows:
         cat.plant_count = count
         categories.append(cat)
         

@@ -49,17 +49,13 @@ async def read_plants(
     if taxon_id:
         filters.append(Plant.taxon_id == taxon_id)
 
-    count_stmt = select(func.count()).select_from(Plant)
-    if filters:
-        count_stmt = count_stmt.where(*filters)
-    total = (await db.execute(count_stmt)).scalar_one()
-
     # Select only the list DTO columns; join the optional taxon name in the
     # same query instead of loading full Plant and Taxon ORM objects.
     query = select(
         Plant.id, Plant.common_name, Plant.scientific_name, Plant.category,
         Plant.planting_place, Plant.icon_url, Plant.image_url, Plant.taxon_id,
         Taxon.name.label("taxon_name"), Plant.created_at,
+        func.count().over().label("total_count"),
     ).outerjoin(Taxon, Plant.taxon_id == Taxon.id)
     if filters:
         query = query.where(*filters)
@@ -81,6 +77,7 @@ async def read_plants(
 
     query = query.offset(skip).limit(limit)
     rows = (await db.execute(query)).mappings().all()
+    total = int(rows[0]["total_count"]) if rows else 0
     items = [PlantListItem(**row) for row in rows]
     return {"items": items, "total": total}
 

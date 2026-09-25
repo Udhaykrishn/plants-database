@@ -1,6 +1,6 @@
 import { useParams, Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { plantsApi } from '../../api/plants';
+import { plantDetailsQueryOptions } from '../../api/queryOptions';
 import {
     ArrowLeft, Edit3, Bug, ListTree, Info, Sprout,
     Droplets, Sun, Wind, ScanText, MapPin, Tag
@@ -10,8 +10,7 @@ export const PlantDetails = () => {
     const { id } = useParams({ strict: false }) as { id: string };
 
     const { data: plant, isLoading: plantLoading, error: plantError } = useQuery({
-        queryKey: ['plants', id],
-        queryFn: () => plantsApi.getById(id!),
+        ...plantDetailsQueryOptions(id!),
         enabled: !!id,
     });
 
